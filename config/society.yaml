@@ -1,0 +1,6 @@
+attributes:
+  relationship: {stranger: 0.55, casual_follower: 0.35, superfan: 0.10}
+  age_band:     {"18-20": 0.45, "21-24": 0.40, "25-30": 0.15}
+  city_tier:    {metro: 0.40, tier2: 0.40, tier3: 0.20}
+  interest:     {tech: 0.15, study_tips: 0.10, careers: 0.10, comedy: 0.55, fitness: 0.10}
+  scroll_time:  {"<1h": 0.15, "1-3h": 0.40, ">3h": 0.45}
