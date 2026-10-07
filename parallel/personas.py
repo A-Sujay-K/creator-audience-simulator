@@ -27,14 +27,14 @@ def check(a, study):
 def answer(p, study, tries=3):
     for _ in range(tries):
         try:
-            a = PanelAnswer(**ask_json(SYSTEM, prompt(p, study), MODEL_FAST, max_tokens=700))
+            a = PanelAnswer(**ask_json(SYSTEM, prompt(p, study), MODEL_FAST, max_tokens=220))
             check(a, study)
             return a
         except Exception:
             continue
     return None
 
-def run_round(personas, study, workers=6):
+def run_round(personas, study, workers=1):
     with ThreadPoolExecutor(workers) as ex:
         out = list(ex.map(lambda p: answer(p, study), personas))
     return [(p, a) for p, a in zip(personas, out) if a is not None]
