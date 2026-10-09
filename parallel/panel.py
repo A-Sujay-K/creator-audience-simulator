@@ -18,28 +18,35 @@ def load_panel(sids, path="data/real.jsonl"):
         if not item.get("flow", "").endswith("Rate"): continue
         
         raw = item.get("bridge", {})
-        # Note: the exact structure of S1..S8 in Bridge data will be parsed properly after Test S2.
-        # This is a naive fetch assuming the raw keys might match the labels for now.
-        fields = {k: _b64(v) if isinstance(v, str) else v for k, v in raw.items()}
-        
-        # We need to map the fields dynamically or extract the S1-S8 values. 
-        # Until we know the real schema, we look for them.
+        flow_key = item.get("flow", "")
+        # In Bridge, the field values are nested inside bridge[flow_key]
+        nested = raw.get(flow_key, {})
+        merged = dict(raw)
+        if isinstance(nested, dict):
+            merged.update(nested)
+        fields = {k: _b64(v) if isinstance(v, str) else v for k, v in merged.items()}
+
         vals = {}
+        SUFFIX_MAP = {
+            "S1": "_11", "S2": "_13", "S3": "_15", "S4": "_17",
+            "S5": "_19", "S6": "_21", "S7": "_23", "S8": "_25",
+        }
         for s in sids:
-            # Check if any key contains the SID (since Bridge keys have UUIDs)
+            suf = SUFFIX_MAP.get(s, "")
             found = False
             for k, v in fields.items():
-                if f"_{s}_" in k or k.endswith(f"_{s}"):
+                if (suf and k.endswith(suf)) or f"_{s}_" in k or k.endswith(f"_{s}") or k == s:
                     try:
-                        vals[s] = float(v)
+                        val_num = float(v)
+                        # Clamp between 1.0 and 5.0 to handle out-of-range user inputs gracefully
+                        vals[s] = min(max(val_num, 1.0), 5.0)
                         found = True
                         break
-                    except: pass
-            if not found and s in fields:
-                try: vals[s] = float(fields[s])
-                except: pass
-                
-        if all(1 <= v <= 5 for v in vals.values()) and vals:
-            rows[raw.get("MobileNumber", "unknown")] = vals
+                    except Exception:
+                        pass
+        if len(vals) == len(sids):
+            # Key by respondent MobileNumber or BridgeID
+            user_key = raw.get("MobileNumber") or raw.get("UserUUID") or item.get("t")
+            rows[user_key] = vals
             
     return pd.DataFrame.from_dict(rows, orient="index") if rows else pd.DataFrame(columns=sids)
