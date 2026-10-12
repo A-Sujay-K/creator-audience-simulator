@@ -63,6 +63,62 @@ def get_creator_avatar(creator_name: str) -> str:
 
 
 # ─────────────────────────────────────────────────
+#  YOUTUBE VIDEO VERIFICATION (oEmbed API)
+# ─────────────────────────────────────────────────
+
+def verify_youtube_video(url: str) -> dict | None:
+    """
+    Checks if a YouTube URL is actually playable using the free oEmbed API.
+    Returns {'title': ..., 'author': ..., 'url': ..., 'thumbnail': ...} or None if dead/unavailable.
+    """
+    if not url or ("youtube.com" not in url and "youtu.be" not in url):
+        return None
+    try:
+        r = requests.get(
+            f"https://www.youtube.com/oembed?url={url}&format=json",
+            timeout=2.5
+        )
+        if r.status_code == 200:
+            d = r.json()
+            return {
+                "title": d.get("title", ""),
+                "author": d.get("author_name", ""),
+                "url": url,
+                "thumbnail": d.get("thumbnail_url", "")
+            }
+    except Exception:
+        pass
+    return None
+
+
+def _verify_video_list(videos: list[dict], creator_name_lower: str = "", exclude_creator: bool = False) -> list[dict]:
+    """
+    Verifies each YouTube video in a list is actually playable.
+    Optionally excludes videos from a specific creator (by checking oEmbed author name).
+    Returns only verified, playable videos.
+    """
+    verified = []
+    first_name = creator_name_lower.split()[0] if creator_name_lower else ""
+    for v in videos:
+        url = v.get("url", "")
+        if "youtube.com" in url or "youtu.be" in url:
+            check = verify_youtube_video(url)
+            if check:
+                if exclude_creator and first_name:
+                    author_lower = check.get("author", "").lower()
+                    if first_name in author_lower:
+                        continue  # Skip: this is the searched creator's own video
+                # Update title with the real verified title from YouTube
+                v["title"] = check.get("title", v.get("title", ""))
+                v["verified"] = True
+                verified.append(v)
+        elif "instagram.com" in url:
+            # Can't easily verify Instagram, keep as-is
+            verified.append(v)
+    return verified
+
+
+# ─────────────────────────────────────────────────
 #  LEAN 3-CALL PROMPTS (<950 tokens each for speed)
 # ─────────────────────────────────────────────────
 
@@ -197,8 +253,9 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
     """
     Returns (web_results, creator_videos, niche_videos):
       1. Official accounts & subscriber presence
-      2. Creator's own viral uploads (YouTube/Instagram)
-      3. Niche/Internet viral trends from OTHER creators in this niche
+      2. Creator's own viral uploads (YouTube/Instagram) — verified playable
+      3. Real peer/competitor creator videos in the same niche — verified playable
+    All YouTube URLs are verified via oEmbed before returning.
     """
     key = os.getenv("FIRECRAWL_API_KEY")
     web_results = []
@@ -207,6 +264,36 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
 
     if not (FirecrawlApp and key and key.strip() and not key.startswith("paste")):
         return web_results, creator_videos, niche_videos
+
+    name_lower = creator_name.lower()
+    first_name = name_lower.split()[0]
+
+    # Build peer creator search names based on who we're analyzing
+    if "mrbeast" in name_lower:
+        peer_queries = [
+            "site:youtube.com/watch Mark Rober viral",
+            "site:youtube.com/watch Ryan Trahan challenge",
+        ]
+    elif "carry" in name_lower:
+        peer_queries = [
+            "site:youtube.com/watch Ashish Chanchlani vines",
+            "site:youtube.com/watch Bhuvan Bam BB Ki Vines",
+        ]
+    elif "ashish" in name_lower:
+        peer_queries = [
+            "site:youtube.com/watch CarryMinati official",
+            "site:youtube.com/watch Bhuvan Bam BB Ki Vines",
+        ]
+    elif "bhuvan" in name_lower or "bb ki" in name_lower:
+        peer_queries = [
+            "site:youtube.com/watch Ashish Chanchlani vines",
+            "site:youtube.com/watch CarryMinati official",
+        ]
+    else:
+        niche_term = niche if niche else "viral entertainment"
+        peer_queries = [
+            f"site:youtube.com/watch {niche_term} popular creators",
+        ]
 
     try:
         app = FirecrawlApp(api_key=key)
@@ -222,8 +309,8 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
                 web_results.append({"title": t, "url": u, "snippet": s})
 
         # Query 2: Creator's OWN viral videos/reels
-        q2 = f"{creator_name} viral videos site:youtube.com/watch OR site:instagram.com/reel"
-        res2 = app.search(q2, limit=4)
+        q2 = f"site:youtube.com/watch {creator_name} official"
+        res2 = app.search(q2, limit=5)
         if hasattr(res2, "web") and res2.web:
             for item in res2.web:
                 u = getattr(item, "url", "")
@@ -235,25 +322,33 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
                 elif "instagram.com/reel" in u or "instagram.com/p/" in u:
                     creator_videos.append({"platform": "Instagram", "url": u, "title": t})
 
-        # Query 3: Niche/Internet trending videos by OTHER creators
-        niche_term = niche if niche else "viral entertainment shorts"
-        q3 = f"{niche_term} trending videos -{creator_name} site:youtube.com/watch OR site:instagram.com/reel"
-        res3 = app.search(q3, limit=4)
-        if hasattr(res3, "web") and res3.web:
-            for item in res3.web:
-                u = getattr(item, "url", "")
-                t = getattr(item, "title", "")
-                # Ensure it's not the searched creator's own channel
-                if creator_name.lower().split()[0] not in t.lower():
-                    if "youtube.com/watch" in u or "youtu.be/" in u:
-                        niche_videos.append({"platform": "YouTube", "url": u, "title": t})
-                    elif "instagram.com/reel" in u or "instagram.com/p/" in u:
-                        niche_videos.append({"platform": "Instagram", "url": u, "title": t})
+        # Query 3: Peer/Competitor creator videos (specific channel searches)
+        for pq in peer_queries:
+            try:
+                res3 = app.search(pq, limit=3)
+                if hasattr(res3, "web") and res3.web:
+                    for item in res3.web:
+                        u = getattr(item, "url", "")
+                        t = getattr(item, "title", "")
+                        # Exclude if it's the searched creator's own video
+                        if first_name not in t.lower():
+                            if "youtube.com/watch" in u or "youtu.be/" in u:
+                                niche_videos.append({"platform": "YouTube", "url": u, "title": t})
+                            elif "instagram.com/reel" in u or "instagram.com/p/" in u:
+                                niche_videos.append({"platform": "Instagram", "url": u, "title": t})
+            except Exception:
+                pass
 
     except Exception as e:
         print(f"[intelligence] Firecrawl search notice: {e}")
 
+    # Verify all YouTube URLs are actually playable (strip dead links)
+    creator_videos = _verify_video_list(creator_videos)
+    niche_videos = _verify_video_list(niche_videos, name_lower, exclude_creator=True)
+
+    print(f"[intelligence] Firecrawl recon: {len(creator_videos)} verified creator vids, {len(niche_videos)} verified peer vids")
     return web_results, creator_videos, niche_videos
+
 
 
 # ─────────────────────────────────────────────────
@@ -438,12 +533,12 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                 {
                     "id": 1,
                     "platform": "YouTube",
-                    "title": "World's Largest Jello Pool (Mark Rober)",
-                    "views": "150M+ Views",
-                    "url": "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
-                    "opening_hook": "Can you actually swim in 25 tons of real Jello?",
-                    "why_it_went_viral": "Curiosity science experiment with immense visual payoff.",
-                    "adapt_hook_template": "Ask an absurd physical question and show the physical scale."
+                    "title": "I Engineered The Perfect First Date (Mark Rober)",
+                    "views": "42M+ Views",
+                    "url": "https://www.youtube.com/watch?v=S7UM5lSgAg8",
+                    "opening_hook": "Can you actually engineer the perfect first date?",
+                    "why_it_went_viral": "Science meets real human emotion with hilarious stakes.",
+                    "adapt_hook_template": "Ask an absurd engineering question and show the process."
                 },
                 {
                     "id": 2,
@@ -471,10 +566,10 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                 {
                     "id": 2,
                     "platform": "YouTube",
-                    "title": "The Legend of Diwali Melas (Ashish Chanchlani)",
+                    "title": "Lockdown With Parivar (Ashish Chanchlani)",
                     "views": "38M+ Views",
-                    "url": "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
-                    "opening_hook": "Every Indian family goes through this nightmare every festival.",
+                    "url": "https://www.youtube.com/watch?v=61xbuz0_Y6I",
+                    "opening_hook": "Every Indian family goes through this during lockdown.",
                     "why_it_went_viral": "Shared cultural pain-point magnified through energetic caricatures.",
                     "adapt_hook_template": "Highlight a universal cultural annoyance in the first sentence."
                 }
@@ -484,12 +579,12 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                 {
                     "id": 1,
                     "platform": "YouTube",
-                    "title": "Viral Formula: Extreme Curiosity Test (Mark Rober)",
-                    "views": "95M+ Views",
-                    "url": "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
-                    "opening_hook": "We tested if this viral myth is actually physically possible.",
+                    "title": "Engineers vs Junkyard RC Car Death Match (Mark Rober)",
+                    "views": "35M+ Views",
+                    "url": "https://www.youtube.com/watch?v=Xg1ro-zG7AM",
+                    "opening_hook": "We gave engineers 24 hours and a junkyard to build battle cars.",
                     "why_it_went_viral": "Instant proof-of-concept visual before title sequence.",
-                    "adapt_hook_template": "Test an internet myth with tangible physical proof."
+                    "adapt_hook_template": "Test an absurd engineering myth with tangible physical proof."
                 }
             ]
     intel["niche_trending_videos"] = cleaned_n_list
@@ -583,11 +678,11 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                     "why_it_works": "Combines awe-inspiring heavy machinery spectacle with genuine global goodwill.",
                     "estimated_views": "🔥 25M - 50M",
                     "reference_video": {
-                        "title": "World's Largest Jello Pool (Mark Rober)",
-                        "url": "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
+                        "title": "Engineers vs Junkyard RC Car Death Match (Mark Rober)",
+                        "url": "https://www.youtube.com/watch?v=Xg1ro-zG7AM",
                         "platform": "YouTube",
                         "creator": "Mark Rober / TeamSeas",
-                        "why_reference": "Demonstrates heavy physical machinery with positive global impact hook."
+                        "why_reference": "Demonstrates heavy engineering spectacle with creative problem solving."
                     },
                     "candidate_hooks": [
                         {"sid": "S1", "text": "This beach was buried under 50 tons of plastic trash."},
@@ -661,18 +756,26 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                 }
             ]
 
-    # Ensure EVERY suggestion in list has a valid, non-empty playable reference video
+    # Verify each suggestion's reference video individually via oEmbed.
+    # If a reference video is dead/unavailable, mark it so the UI can hide it for that specific suggestion.
     for idx, s in enumerate(suggestions, start=1):
         s["id"] = idx
         ref = s.get("reference_video") or {}
-        if not ref.get("url") or not ref.get("title"):
-            ref = {
-                "title": f"Viral Reference Benchmark #{idx}",
-                "url": "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
-                "platform": "YouTube",
-                "creator": "Viral Pioneer",
-                "why_reference": "Demonstrates proven retention pacing and pattern interrupts."
-            }
+        ref_url = ref.get("url", "")
+
+        if ref_url and ("youtube.com" in ref_url or "youtu.be" in ref_url):
+            check = verify_youtube_video(ref_url)
+            if check:
+                ref["title"] = check.get("title", ref.get("title", ""))
+                ref["verified"] = True
+            else:
+                ref["verified"] = False
+                print(f"[intelligence] Reference video DEAD for suggestion #{idx}: {ref_url}")
+        elif ref_url and "instagram.com" in ref_url:
+            ref["verified"] = True  # Can't easily verify IG, assume playable
+        elif not ref_url:
+            ref["verified"] = False  # No URL at all
+
         s["reference_video"] = ref
 
     intel["content_suggestions"] = suggestions

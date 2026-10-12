@@ -185,40 +185,40 @@ with tab_ideas:
                     with h2:
                         st.metric("Estimated Views", s.get("estimated_views", "—"))
 
-                    # Playable Reference Video Benchmark for this Idea
+                    # Playable Reference Video Benchmark for this Idea (DYNAMIC — only shown if verified playable)
                     ref = s.get("reference_video") or {}
                     ref_url = ref.get("url", "")
                     ref_title = ref.get("title", "Benchmark Video Reference")
                     ref_creator = ref.get("creator", "Proven Creator")
                     ref_why = ref.get("why_reference", "Demonstrates the retention curve.")
+                    ref_verified = ref.get("verified", False)
 
-                    with st.expander(f"🎬 Watch Concept Reference Video: {ref_title} ({ref_creator})", expanded=True):
-                        rv_col1, rv_col2 = st.columns([1.2, 1])
-                        with rv_col1:
-                            if "youtube.com" in ref_url or "youtu.be" in ref_url:
-                                st.video(ref_url)
-                                st.caption(f"▶️ Reference Video: [{ref_title}]({ref_url})")
-                            elif "instagram.com" in ref_url:
-                                m = re.search(r"/(?:reel|p)/([A-Za-z0-9_-]+)", ref_url)
-                                if m:
-                                    code = m.group(1)
-                                    embed_code = f"""
-                                    <iframe src="https://www.instagram.com/reel/{code}/embed" 
-                                            width="100%" height="420" frameborder="0" scrolling="no" allowtransparency="true"></iframe>
-                                    """
-                                    st.components.v1.html(embed_code, height=440)
-                                else:
-                                    st.info(f"Instagram Reference: [{ref_url}]({ref_url})")
-                                st.link_button("📱 Open Reference Reel", ref_url, type="secondary")
-                            else:
-                                if ref_url:
+                    if ref_verified and ref_url:
+                        with st.expander(f"🎬 Watch Concept Reference Video: {ref_title} ({ref_creator})", expanded=True):
+                            rv_col1, rv_col2 = st.columns([1.2, 1])
+                            with rv_col1:
+                                if "youtube.com" in ref_url or "youtu.be" in ref_url:
                                     st.video(ref_url)
+                                    st.caption(f"▶️ Reference Video: [{ref_title}]({ref_url})")
+                                elif "instagram.com" in ref_url:
+                                    m = re.search(r"/(?:reel|p)/([A-Za-z0-9_-]+)", ref_url)
+                                    if m:
+                                        code = m.group(1)
+                                        embed_code = f"""
+                                        <iframe src="https://www.instagram.com/reel/{code}/embed" 
+                                                width="100%" height="420" frameborder="0" scrolling="no" allowtransparency="true"></iframe>
+                                        """
+                                        st.components.v1.html(embed_code, height=440)
+                                    else:
+                                        st.info(f"Instagram Reference: [{ref_url}]({ref_url})")
+                                    st.link_button("📱 Open Reference Reel", ref_url, type="secondary")
                                 else:
-                                    st.info(f"Reference Source: [{ref_title}]({ref_url})")
-                        with rv_col2:
-                            st.markdown(f"**Benchmark Creator / Source:** `{ref_creator}`")
-                            st.info(f"**Why this benchmarks the concept:**\n{ref_why}")
-                            st.markdown("**Takeaway:** Adapt this reference's pattern interrupt and visual pacing to your video.")
+                                    st.video(ref_url)
+                            with rv_col2:
+                                st.markdown(f"**Benchmark Creator / Source:** `{ref_creator}`")
+                                st.info(f"**Why this benchmarks the concept:**\n{ref_why}")
+                                st.markdown("**Takeaway:** Adapt this reference's pattern interrupt and visual pacing to your video.")
+
 
                     hooks = s.get("candidate_hooks", [])
                     if hooks:
