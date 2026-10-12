@@ -63,13 +63,33 @@ with tab_ideas:
 
         st.markdown("---")
 
-        # ── 1. CREATOR OVERVIEW ───────────────────────────────────────────────
+        # ── 1. CREATOR OVERVIEW (WITH VERIFIED PHOTO) ────────────────────────
         tier = profile.get("tier") or "Mega (10M+)"
         niche_disp = profile.get("core_niche") or "Short-form Content"
         loc_disp = profile.get("location") or "India"
+        avatar_url = profile.get("avatar_url", "")
 
-        st.markdown(f"## 👤 {profile.get('name', creator_name_display)}")
-        st.markdown(f"**Tier:** `{tier}` &nbsp;·&nbsp; **Category:** `{niche_disp}` &nbsp;·&nbsp; **Region:** 📍 `{loc_disp}`")
+        c_img_col, c_text_col = st.columns([1, 4])
+        with c_img_col:
+            if avatar_url:
+                st.image(avatar_url, width=130, caption=profile.get('name', creator_name_display))
+            else:
+                st.markdown("### 👤")
+        with c_text_col:
+            st.markdown(f"## {profile.get('name', creator_name_display)}")
+            st.markdown(f"**Tier:** `{tier}` &nbsp;·&nbsp; **Category:** `{niche_disp}` &nbsp;·&nbsp; **Region:** 📍 `{loc_disp}`")
+            accounts = profile.get("discovered_accounts", [])
+            if accounts:
+                acc_pills = []
+                for acc in accounts:
+                    p = acc.get("platform", "Link")
+                    t = acc.get("title", p)
+                    u = acc.get("url", "")
+                    if u:
+                        acc_pills.append(f"[{p}: {t}]({u})")
+                    else:
+                        acc_pills.append(f"{p}: {t}")
+                st.caption("🔗 **Discovered Handles:** " + " · ".join(acc_pills))
 
         c_desc1, c_desc2 = st.columns(2)
         with c_desc1:
@@ -77,31 +97,17 @@ with tab_ideas:
         with c_desc2:
             st.info(f"👥 **Audience Vibe:** {profile.get('audience_vibe') or 'Young, college, mobile-first community.'}")
 
-        # Discovered Social Handles
-        accounts = profile.get("discovered_accounts", [])
-        if accounts:
-            acc_pills = []
-            for acc in accounts:
-                p = acc.get("platform", "Link")
-                t = acc.get("title", p)
-                u = acc.get("url", "")
-                if u:
-                    acc_pills.append(f"[{p}: {t}]({u})")
-                else:
-                    acc_pills.append(f"{p}: {t}")
-            st.caption("🔗 **Discovered Handles:** " + " · ".join(acc_pills))
-
         st.markdown("---")
 
-        # ── 2. NICHE & INTERNET TRENDING CONTENT (PLAYABLE ON SCREEN) ─────────
-        st.markdown("### 🎬 Top Trending in the Niche / Internet — Watch On-Screen & Deconstruct Hooks")
-        st.caption("Real viral videos and Reels trending across the broader internet in this niche (from other creators in the space). Watch directly on screen to analyze winning hook patterns.")
+        # ── 2. NICHE & INTERNET TRENDING CONTENT (OTHER CREATORS) ─────────────
+        st.markdown(f"### 🎬 Top Trending in Niche & Internet (Other Creators) — Watch On-Screen")
+        st.caption(f"Real viral videos and Reels trending across the broader web in this niche by **OTHER creators** (NOT {profile.get('name', creator_name_display)}). Watch directly on screen to analyze winning hook patterns.")
 
-        niche_vids = intel.get("niche_trending_videos") or intel.get("trending_videos", [])
+        niche_vids = intel.get("niche_trending_videos") or []
         if niche_vids:
             vid_labels = [f"[{v.get('platform', 'Video')}] {v.get('title', 'Trending Video')} ({v.get('views', 'Trending')})" for v in niche_vids]
             selected_idx = st.radio(
-                "Pick a viral video to watch on screen:",
+                "Pick a viral video from other creators to watch on screen:",
                 range(len(niche_vids)),
                 format_func=lambda i: vid_labels[i],
                 horizontal=True,
@@ -164,11 +170,11 @@ with tab_ideas:
 
         st.markdown("---")
 
-        # ── 4. HIGH-POTENTIAL CONTENT SUGGESTIONS ─────────────────────────────
+        # ── 4. HIGH-POTENTIAL CONTENT SUGGESTIONS (WITH REFERENCE VIDEO PER IDEA) ──
         suggestions = intel.get("content_suggestions", [])
         if suggestions:
             st.markdown("### 💡 High-Potential Content Suggestions (Ready to Test)")
-            st.caption("AI-engineered ideas based on current trending topics. Click 'Test these hooks' to validate with synthetic audience in Tab 2.")
+            st.caption("AI-engineered ideas based on current trending topics. Every suggestion includes a playable reference video benchmarking the format.")
             for s in suggestions:
                 with st.container(border=True):
                     h1, h2 = st.columns([3, 1])
@@ -178,6 +184,41 @@ with tab_ideas:
                         st.markdown(f"**Why it works:** {s.get('why_it_works', '—')}")
                     with h2:
                         st.metric("Estimated Views", s.get("estimated_views", "—"))
+
+                    # Playable Reference Video Benchmark for this Idea
+                    ref = s.get("reference_video") or {}
+                    ref_url = ref.get("url", "")
+                    ref_title = ref.get("title", "Benchmark Video Reference")
+                    ref_creator = ref.get("creator", "Proven Creator")
+                    ref_why = ref.get("why_reference", "Demonstrates the retention curve.")
+
+                    with st.expander(f"🎬 Watch Concept Reference Video: {ref_title} ({ref_creator})", expanded=True):
+                        rv_col1, rv_col2 = st.columns([1.2, 1])
+                        with rv_col1:
+                            if "youtube.com" in ref_url or "youtu.be" in ref_url:
+                                st.video(ref_url)
+                                st.caption(f"▶️ Reference Video: [{ref_title}]({ref_url})")
+                            elif "instagram.com" in ref_url:
+                                m = re.search(r"/(?:reel|p)/([A-Za-z0-9_-]+)", ref_url)
+                                if m:
+                                    code = m.group(1)
+                                    embed_code = f"""
+                                    <iframe src="https://www.instagram.com/reel/{code}/embed" 
+                                            width="100%" height="420" frameborder="0" scrolling="no" allowtransparency="true"></iframe>
+                                    """
+                                    st.components.v1.html(embed_code, height=440)
+                                else:
+                                    st.info(f"Instagram Reference: [{ref_url}]({ref_url})")
+                                st.link_button("📱 Open Reference Reel", ref_url, type="secondary")
+                            else:
+                                if ref_url:
+                                    st.video(ref_url)
+                                else:
+                                    st.info(f"Reference Source: [{ref_title}]({ref_url})")
+                        with rv_col2:
+                            st.markdown(f"**Benchmark Creator / Source:** `{ref_creator}`")
+                            st.info(f"**Why this benchmarks the concept:**\n{ref_why}")
+                            st.markdown("**Takeaway:** Adapt this reference's pattern interrupt and visual pacing to your video.")
 
                     hooks = s.get("candidate_hooks", [])
                     if hooks:
@@ -196,6 +237,7 @@ with tab_ideas:
                         )
                         st.session_state.prefill_hooks = prefill
                         st.success("✅ Hooks pre-filled! Switch to the **🎯 Hook Testing & Predictions** tab above.")
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -444,9 +486,14 @@ with tab_analytics:
         metrics = intel.get("platform_metrics", {})
         demo = intel.get("audience_demographics", {})
         rate_card = intel.get("rate_card_and_sponsors", {})
-
-        st.markdown(f"### 📊 Channel Reach & Commercial Intelligence: `{profile.get('name', 'Creator')}`")
-        st.caption("Deep multi-platform metrics, audience demographic split, benchmark commercial rate card, and the creator's own top viral uploads.")
+        avatar_url = profile.get("avatar_url", "")
+        t3_img_col, t3_txt_col = st.columns([1, 6])
+        with t3_img_col:
+            if avatar_url:
+                st.image(avatar_url, width=95)
+        with t3_txt_col:
+            st.markdown(f"### 📊 Channel Reach & Commercial Intelligence: `{profile.get('name', 'Creator')}`")
+            st.caption("Deep multi-platform metrics, audience demographic split, benchmark commercial rate card, and the creator's own top viral uploads.")
 
         # ── 1. CROSS-PLATFORM PERFORMANCE & SCALE ─────────────────────────────
         m_yt = metrics.get("youtube_subscribers") or metrics.get("youtube") or "45.0M"
@@ -600,3 +647,5 @@ with tab_analytics:
                     st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\"{c_sel_vid.get('opening_hook', '—')}\"*")
                     st.markdown(f"**🧠 Why Viewers Stayed:**\n{c_sel_vid.get('why_it_went_viral', '—')}")
                     st.info(f"**📋 Adaptable Strategy:**\n{c_sel_vid.get('adapt_hook_template', '—')}")
+        else:
+            st.info("Creator video analysis is currently loading or being calibrated.")
