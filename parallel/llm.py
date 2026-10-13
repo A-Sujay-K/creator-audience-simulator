@@ -48,6 +48,7 @@ def ask_json(
     model: str,
     temperature: float = 1.0,
     max_tokens: int = 250,  # Lowered so Groq TPM limits aren't quickly exhausted
+    no_think: bool = False,  # Reserved for future use; currently a no-op
 ) -> dict:
     """
     Call the Groq model and extract the first JSON object from its reply.
@@ -68,7 +69,27 @@ def ask_json(
             match = re.search(r"\{.*\}", raw, re.S)
             if not match:
                 raise ValueError(f"No JSON found in model output: {raw[:200]}")
-            return json.loads(match.group(0))
+            raw_json = match.group(0)
+            try:
+                return json.loads(raw_json)
+            except json.JSONDecodeError:
+                # Groq may have truncated mid-JSON.
+                # Scan backwards to find the last position where braces are balanced.
+                depth = 0
+                last_valid = -1
+                for i, ch in enumerate(raw_json):
+                    if ch == "{":
+                        depth += 1
+                    elif ch == "}":
+                        depth -= 1
+                        if depth == 0:
+                            last_valid = i
+                if last_valid > 0:
+                    try:
+                        return json.loads(raw_json[:last_valid + 1])
+                    except json.JSONDecodeError:
+                        pass
+                raise ValueError(f"Could not parse JSON even after repair. Raw snippet: {raw_json[:300]}")
 
         except Exception as e:
             err_str = str(e)
