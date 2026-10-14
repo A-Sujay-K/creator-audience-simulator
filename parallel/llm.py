@@ -28,11 +28,11 @@ MODEL_FAST  = os.getenv("MODEL_FAST",  "qwen/qwen3.8-27b")
 MODEL_SMART = os.getenv("MODEL_SMART", "qwen/qwen3.8-27b")
 
 _client = Groq(api_key=os.getenv("GROQ_API_KEY", "NOT_SET"))
-MAX_RETRIES = 6
+MAX_RETRIES = 8
 
 _RATE_LOCK = threading.Lock()
 _last_call_ts = 0.0
-_MIN_INTERVAL = 2.5  # Enforce ~24 RPM to stay safely under Groq's 30 RPM limit
+_MIN_INTERVAL = 3.0  # Safe pacing to respect Groq free tier TPM & RPM
 
 def _throttle():
     global _last_call_ts
@@ -94,12 +94,14 @@ def ask_json(
         except Exception as e:
             err_str = str(e)
             if "429" in err_str or "rate limit" in err_str.lower():
-                # Check if Groq tells us exactly how long to wait
-                m = re.search(r"try again in ([\d\.]+)s", err_str)
+                # Check if Groq tells us exactly how long to wait (e.g. 'try again in 12.5s' or 'try again in 1m2.5s')
+                m = re.search(r"try again in (?:(\d+)m)?([\d\.]+)s", err_str, re.IGNORECASE)
                 if m:
-                    delay = float(m.group(1)) + 0.5  # add 0.5s buffer
+                    minutes = float(m.group(1)) if m.group(1) else 0.0
+                    seconds = float(m.group(2)) if m.group(2) else 5.0
+                    delay = minutes * 60.0 + seconds + 1.0  # add 1.0s buffer
                 else:
-                    delay = 5 * attempt
+                    delay = 6.0 * attempt
                 
                 print(f"[llm] Rate limit hit. Pausing perfectly for {delay:.1f}s to allow tokens to refill...")
                 time.sleep(delay)
