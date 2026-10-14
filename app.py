@@ -1,26 +1,28 @@
 import streamlit as st
 from pathlib import Path
 import plotly.express as px
+import pandas as pd
+import re
 from parallel.pipeline import run_study, brief_text, summary_text
 from parallel.panel import load_panel
 from parallel.fidelity import close_the_loop
 
 st.set_page_config(page_title="Parallel for Creators", page_icon="⚡", layout="wide")
 st.title("⚡ Parallel for Creators")
-st.caption("Your AI-powered content intelligence studio.")
+st.caption("Creator Intelligence Engine & Audience Calibration Studio")
 
 # ─── TOP-LEVEL TABS ──────────────────────────────────────────────────────────
 tab_intel, tab_hook = st.tabs(["🧠 Creator Intelligence", "🎯 Hook Testing"])
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB 1 — CREATOR INTELLIGENCE  (Main Feature)
+#  TAB 1 — CREATOR INTELLIGENCE  (Main Feature — CreatorDB & Reference Videos)
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab_intel:
-    st.markdown("### 🔍 Discover any creator's landscape")
+    st.markdown("### 🔍 Discover Creator Landscape & Reference Videos")
     st.caption(
-        "Enter a creator's name. We'll scan the internet for their accounts, "
-        "trending topics in their niche, competitors, and generate 4 ready-to-test content ideas."
+        "Scan any creator's digital footprint across YouTube and Instagram: cross-platform metrics, "
+        "audience demographics, estimated sponsorship rate cards, top viral videos with in-app player, and AI content ideas."
     )
 
     col_a, col_b = st.columns([2, 1])
@@ -31,19 +33,20 @@ with tab_intel:
         )
     with col_b:
         creator_niche = st.text_input(
-            "Niche (optional)",
-            placeholder="e.g. Comedy Shorts, Finance, Gaming"
+            "Niche / Category (optional)",
+            placeholder="e.g. Comedy Roast Shorts, Tech, Gaming"
         )
 
     run_intel = st.button("🚀 Discover & Analyse", type="primary", key="intel_btn")
 
     if run_intel and creator_name.strip():
-        with st.spinner(f"🌐 Scanning {creator_name}'s digital footprint..."):
+        with st.spinner(f"🌐 Reconnaissance on {creator_name}'s footprint across YouTube & Instagram..."):
             try:
                 from parallel.intelligence import generate_creator_intelligence
                 intel = generate_creator_intelligence(creator_name.strip(), creator_niche.strip())
                 st.session_state.intel = intel
                 st.session_state.intel_name = creator_name.strip()
+                st.success("Reconnaissance complete!")
             except Exception as e:
                 st.error(f"Intelligence engine error: {e}")
     elif run_intel:
@@ -54,67 +57,221 @@ with tab_intel:
         creator_name_display = st.session_state.get("intel_name", "Creator")
         st.markdown("---")
 
-        # ── CREATOR PROFILE CARD ──────────────────────────────────────────────
+        # ── 1. CREATOR OVERVIEW & HERO CARD ───────────────────────────────────
         profile = intel.get("creator_profile", {})
-        if profile:
-            st.markdown("#### 👤 Creator Profile")
-            p1, p2, p3 = st.columns(3)
-            p1.metric("Core Niche", profile.get("core_niche", "—"))
-            p2.metric("Tone & Style", profile.get("tone_and_style", "—"))
-            p3.metric("Audience Vibe", profile.get("audience_vibe", "—"))
+        metrics = intel.get("platform_metrics", {})
+        
+        tier = profile.get("tier", "Mega")
+        niche_disp = profile.get("core_niche", "Creator")
+        loc_disp = profile.get("location", "Global")
 
-            accounts = profile.get("discovered_accounts", [])
-            if accounts:
-                st.markdown("**Discovered Accounts & Links:**")
-                for acc in accounts:
-                    platform = acc.get("platform", "Other")
-                    title = acc.get("title", platform)
-                    url = acc.get("url", "")
-                    if url:
-                        st.markdown(f"- [{platform}] **[{title}]({url})**")
+        st.markdown(f"## 👤 {profile.get('name', creator_name_display)}")
+        st.markdown(f"**Tier:** `{tier}` &nbsp;·&nbsp; **Category:** `{niche_disp}` &nbsp;·&nbsp; **Region:** 📍 `{loc_disp}`")
+        
+        c_desc1, c_desc2 = st.columns(2)
+        with c_desc1:
+            st.info(f"🎭 **Tone & Style:** {profile.get('tone_and_style', '—')}")
+        with c_desc2:
+            st.info(f"👥 **Audience Vibe:** {profile.get('audience_vibe', '—')}")
+
+        # Discovered Social Handles
+        accounts = profile.get("discovered_accounts", [])
+        if accounts:
+            acc_pills = []
+            for acc in accounts:
+                p = acc.get("platform", "Link")
+                t = acc.get("title", p)
+                u = acc.get("url", "")
+                if u:
+                    acc_pills.append(f"[{p}: {t}]({u})")
+                else:
+                    acc_pills.append(f"{p}: {t}")
+            st.caption("🔗 **Official Accounts:** " + " · ".join(acc_pills))
+
+        st.markdown("---")
+
+        # ── 2. CROSS-PLATFORM PERFORMANCE METRICS (CreatorDB Style) ───────────
+        st.markdown("### 📊 Cross-Platform Performance & Audience Scale")
+        st.caption("Cross-platform benchmarking inspired by CreatorDB.")
+
+        m1, m2, m3, m4, m5 = st.columns(5)
+        m1.metric("🌐 Combined Reach", metrics.get("total_reach", "—"))
+        m2.metric("▶️ YouTube Audience", metrics.get("youtube_subscribers", "—"))
+        m3.metric("📸 Instagram Followers", metrics.get("instagram_followers", "—"))
+        m4.metric("⚡ Engagement Rate", metrics.get("engagement_rate", "—"), 
+                  help=f"Category benchmark: {metrics.get('category_median_engagement', '3.2%')}")
+        m5.metric("⏱️ Posting Cadence", metrics.get("youtube_cadence", "—"))
+
+        # Visualizing Platform Share
+        try:
+            yt_str = str(metrics.get("youtube_subscribers", "0"))
+            ig_str = str(metrics.get("instagram_followers", "0"))
+            
+            def parse_num(val_str):
+                m = re.search(r"([\d\.]+)\s*([MKmk]?)", val_str)
+                if not m:
+                    return 0.0
+                num = float(m.group(1))
+                unit = m.group(2).upper()
+                if unit == "M":
+                    return num * 1_000_000
+                elif unit == "K":
+                    return num * 1_000
+                return num
+
+            yt_num = parse_num(yt_str)
+            ig_num = parse_num(ig_str)
+            
+            if yt_num > 0 or ig_num > 0:
+                plat_df = pd.DataFrame([
+                    {"Platform": "YouTube", "Followers": yt_num, "Display": yt_str},
+                    {"Platform": "Instagram", "Followers": ig_num, "Display": ig_str}
+                ])
+                fig_plat = px.bar(
+                    plat_df,
+                    x="Followers",
+                    y="Platform",
+                    orientation="h",
+                    color="Platform",
+                    color_discrete_map={"YouTube": "#FF0000", "Instagram": "#E1306C"},
+                    text="Display",
+                    title="Platform Audience Share (YouTube vs Instagram)"
+                )
+                fig_plat.update_layout(height=180, margin=dict(l=10, r=10, t=35, b=10), showlegend=False)
+                st.plotly_chart(fig_plat, use_container_width=True)
+        except Exception:
+            pass
+
+        st.markdown("---")
+
+        # ── 3. AUDIENCE DEMOGRAPHICS & GEO DISTRIBUTION ───────────────────────
+        st.markdown("### 🌍 Audience Demographics & Geography")
+        demo = intel.get("audience_demographics", {})
+        
+        d_col1, d_col2 = st.columns([2, 1])
+        with d_col1:
+            countries = demo.get("top_countries", [])
+            if countries:
+                st.markdown("**Top Geographic Markets:**")
+                c_df = pd.DataFrame(countries)
+                if "country" in c_df.columns and "share" in c_df.columns:
+                    c_cols = st.columns(len(countries[:4]))
+                    for idx, c_item in enumerate(countries[:4]):
+                        with c_cols[idx]:
+                            st.metric(c_item.get("country", "Market"), c_item.get("share", "—"))
+        with d_col2:
+            st.markdown("**Audience Profile:**")
+            st.markdown(f"- 🎂 **Primary Age Bracket:** `{demo.get('primary_age', '18-24 (Gen Z)')}`")
+            st.markdown(f"- 🚻 **Gender Skew:** `{demo.get('gender_skew', 'Male Dominated')}`")
+            st.markdown(f"- 📲 **Instagram Cadence:** `{metrics.get('instagram_cadence', 'Daily Reels/Stories')}`")
+
+        st.markdown("---")
+
+        # ── 4. ESTIMATED RATE CARD & BRAND SPONSORSHIPS ────────────────────────
+        st.markdown("### 💰 Estimated Brand Rate Card & Partnerships")
+        st.caption("Benchmark commercial pricing (unlocked from CreatorDB's category algorithms).")
+
+        rate_card = intel.get("rate_card_and_sponsors", {})
+        rc1, rc2, rc3 = st.columns(3)
+        rc1.metric("🎥 YouTube Dedicated / Integration", rate_card.get("est_youtube_rate", "—"))
+        rc2.metric("📱 Instagram Dedicated Reel", rate_card.get("est_instagram_reel_rate", "—"))
+        rc3.metric("📸 Instagram Story / Swipe-up", rate_card.get("est_story_rate", "—"))
+
+        b1, b2 = st.columns(2)
+        with b1:
+            st.markdown("**🏷️ High Brand Affinity Sectors:**")
+            aff_niches = rate_card.get("brand_affinity_niches", [])
+            if aff_niches:
+                st.write(", ".join([f"`{n}`" for n in aff_niches]))
+            past_spons = rate_card.get("past_or_likely_sponsors", [])
+            if past_spons:
+                st.markdown("**🤝 Active / Past Advertisers:** " + ", ".join([f"**{s}**" for s in past_spons]))
+        with b2:
+            why_partner = rate_card.get("why_brands_partner", "")
+            if why_partner:
+                st.success(f"**🎯 Strategic Brand Fit:** {why_partner}")
+
+        st.markdown("---")
+
+        # ── 5. TOP TRENDING CONTENT (PLAYABLE ON SCREEN) ──────────────────────
+        st.markdown("### 🎬 Top Trending Content — Watch On-Screen & Deconstruct Hooks")
+        st.caption("Play the creator's top performing videos and Instagram Reels directly on screen for reference.")
+
+        trending_vids = intel.get("trending_videos", [])
+        if trending_vids:
+            # Video selector options
+            vid_labels = [f"[{v.get('platform', 'Video')}] {v.get('title', 'Video')} ({v.get('views', 'Viral')})" for v in trending_vids]
+            selected_idx = st.radio("Select a video to play & analyze:", range(len(trending_vids)), format_func=lambda i: vid_labels[i], horizontal=True)
+
+            sel_vid = trending_vids[selected_idx]
+            v_url = sel_vid.get("url", "")
+            v_plat = sel_vid.get("platform", "YouTube")
+
+            st.markdown(f"#### 📺 {sel_vid.get('title', 'Trending Video')}")
+
+            vcol_player, vcol_analysis = st.columns([1.2, 1])
+
+            with vcol_player:
+                # Video Player
+                if "youtube.com" in v_url or "youtu.be" in v_url:
+                    st.video(v_url)
+                    st.caption(f"▶️ Playing from YouTube: [{v_url}]({v_url})")
+                elif "instagram.com" in v_url:
+                    # Instagram Reel Embed or Link
+                    m = re.search(r"/(?:reel|p)/([A-Za-z0-9_-]+)", v_url)
+                    if m:
+                        code = m.group(1)
+                        embed_code = f"""
+                        <iframe src="https://www.instagram.com/reel/{code}/embed" 
+                                width="100%" height="480" frameborder="0" scrolling="no" allowtransparency="true"></iframe>
+                        """
+                        st.components.v1.html(embed_code, height=500)
                     else:
-                        st.markdown(f"- [{platform}] {title}")
+                        st.info("Instagram Reel Link detected.")
+                    st.link_button("📱 Open on Instagram App", v_url, type="secondary")
+                else:
+                    if v_url:
+                        st.video(v_url)
+                    else:
+                        st.warning("Video preview link currently being indexed.")
 
-        # ── TRENDING LANDSCAPE ────────────────────────────────────────────────
-        trends = intel.get("trending_landscape", {})
-        if trends:
-            st.markdown("---")
-            st.markdown("#### 📈 Trending Landscape")
-            trend_list = trends.get("current_trends_in_niche", [])
-            if trend_list:
-                st.markdown("**Hot topics right now:**")
-                for t in trend_list:
-                    st.markdown(f"- {t}")
-            audience_want = trends.get("what_audience_wants_now", "")
-            if audience_want:
-                st.info(f"🎯 **What the audience wants now:** {audience_want}")
+            with vcol_analysis:
+                with st.container(border=True):
+                    st.markdown("##### 🔍 Viral Reference Anatomy")
+                    st.metric("Estimated Views", sel_vid.get("views", "Viral"))
+                    st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\"{sel_vid.get('opening_hook', '—')}\"*")
+                    st.markdown(f"**🧠 Why Viewers Stayed (Retention Trigger):**\n{sel_vid.get('why_it_went_viral', '—')}")
+                    st.info(f"**📋 Adaptable Hook Template For You:**\n{sel_vid.get('adapt_hook_template', '—')}")
 
-        # ── COMPETITOR BENCHMARKING ───────────────────────────────────────────
+        st.markdown("---")
+
+        # ── 6. COMPETITOR BENCHMARKING ─────────────────────────────────────────
         competitors = intel.get("competitor_benchmarking", [])
         if competitors:
-            st.markdown("---")
-            st.markdown("#### ⚔️ Competitor Benchmarking")
+            st.markdown("### ⚔️ Competitor Benchmarking & Gaps")
+            st.caption("Analyze what rival creators are doing and where they are leaving audience on the table.")
             for comp in competitors:
-                with st.expander(f"🔴 {comp.get('competitor_name', 'Competitor')} — How to beat them"):
+                with st.expander(f"🔴 {comp.get('competitor_name', 'Competitor')} — Breakdown & How To Beat Them"):
                     cc1, cc2 = st.columns(2)
                     with cc1:
                         st.markdown(f"**Recent Focus:** {comp.get('recent_content_focus', '—')}")
                         st.markdown(f"**Their Strength:** {comp.get('their_strength', '—')}")
                     with cc2:
-                        st.markdown(f"**Their Gap:** {comp.get('their_gap', '—')}")
-                        st.success(f"**Your Move:** {comp.get('how_to_beat_them', '—')}")
+                        st.markdown(f"**Their Gap / Weakness:** {comp.get('their_gap', '—')}")
+                        st.success(f"**🏆 Your Winning Strategy:** {comp.get('how_to_beat_them', '—')}")
 
-        # ── CONTENT SUGGESTIONS ───────────────────────────────────────────────
+        st.markdown("---")
+
+        # ── 7. CONTENT SUGGESTIONS (READY TO TEST) ────────────────────────────
         suggestions = intel.get("content_suggestions", [])
         if suggestions:
-            st.markdown("---")
-            st.markdown("#### 💡 Content Suggestions (Ready to Test)")
+            st.markdown("### 💡 High-Potential Content Suggestions")
+            st.caption("AI-generated ideas based on current trends and audience demand. Click 'Test these hooks' to validate in Hook Testing.")
             for s in suggestions:
-                sid_label = f"Idea #{s.get('id', '?')}"
                 with st.container(border=True):
                     h1, h2 = st.columns([3, 1])
                     with h1:
-                        st.markdown(f"##### {s.get('title', 'Untitled')}")
+                        st.markdown(f"##### Idea #{s.get('id', '?')}: {s.get('title', 'Untitled')}")
                         st.caption(f"🔥 Trending topic: {s.get('trending_topic', '—')}")
                         st.markdown(f"**Why it works:** {s.get('why_it_works', '—')}")
                     with h2:
@@ -122,12 +279,12 @@ with tab_intel:
 
                     hooks = s.get("candidate_hooks", [])
                     if hooks:
-                        st.markdown("**Candidate Hooks (AI-generated for 3-sec short-form):**")
+                        st.markdown("**Candidate Hooks (Engineered for 3-sec short-form retention):**")
                         for hk in hooks:
                             st.markdown(f"- **{hk.get('sid', '?')}**: {hk.get('text', '')}")
 
                     # ── Pre-fill Hook Testing tab with these hooks
-                    if st.button(f"▶ Test these hooks in Hook Testing", key=f"test_idea_{s.get('id')}"):
+                    if st.button(f"▶ Test these hooks on audience", key=f"test_idea_{s.get('id')}"):
                         hook_lines = "\n".join(
                             [f"{hk['sid']}: {hk['text']}" for hk in hooks if 'sid' in hk and 'text' in hk]
                         )
@@ -137,11 +294,11 @@ with tab_intel:
                             f"{hook_lines}"
                         )
                         st.session_state.prefill_hooks = prefill
-                        st.success("✅ Hooks pre-filled! Switch to the **🎯 Hook Testing** tab.")
+                        st.success("✅ Hooks pre-filled! Switch to the **🎯 Hook Testing** tab above.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB 2 — HOOK TESTING  (Side Feature)
+#  TAB 2 — HOOK TESTING  (Synthetic Audience Calibration)
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab_hook:
     st.markdown("### 🎯 Hook Testing on Synthetic Audience")
@@ -172,7 +329,6 @@ with tab_hook:
                         text = text + "\n\nBACKGROUND CONTEXT FROM WEBSITE:\n" + scraped_text
                 res = run_study(text, n)
                 st.session_state.res = res
-                # Clear prefill so it doesn't re-appear on next run
                 st.session_state.prefill_hooks = ""
                 Path("data").mkdir(exist_ok=True)
                 Path("data/brief.txt").write_text(brief_text(res["study"]), encoding="utf-8")
