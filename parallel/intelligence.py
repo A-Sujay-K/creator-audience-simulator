@@ -107,9 +107,23 @@ def verify_youtube_video(url: str) -> dict | None:
     return None
 
 
+def is_generic_or_compilation(title: str, url: str = "") -> bool:
+    """Detects and rejects generic listicles, compilation videos, rankings, or news aggregations."""
+    t = (title or "").lower()
+    banned_phrases = [
+        "top 10", "top 20", "top 25", "top 50", "top 100", "top creators", "top 5",
+        "most successful", "youtube stars", "stars of all time", "most viewed",
+        "most subscribed", "compilation", "try not to laugh", "best of",
+        "forbes top", "ranking", "how to see trending", "trending tab",
+        "before everyone else", "inside the list", "channels of all time"
+    ]
+    return any(p in t for p in banned_phrases)
+
+
 def _verify_video_list(videos: list[dict], creator_name_lower: str = "", exclude_creator: bool = False) -> list[dict]:
     """
     Verifies and normalizes videos across YouTube, Instagram, TikTok, and web.
+    Rejects generic compilation/ranking videos.
     If exclude_creator=True, strips any video belonging to the searched creator.
     """
     verified = []
@@ -117,19 +131,23 @@ def _verify_video_list(videos: list[dict], creator_name_lower: str = "", exclude
 
     for v in videos:
         url = v.get("url", "")
-        if not url:
+        title = v.get("title", "")
+        if not url or is_generic_or_compilation(title, url):
             continue
 
         # 1. YouTube (Watch, Shorts, youtu.be)
         if "youtube.com" in url or "youtu.be" in url:
             check = verify_youtube_video(url)
             if check:
+                v_title = check.get("title", title)
+                if is_generic_or_compilation(v_title, url):
+                    continue
                 if exclude_creator and tokens:
                     author_lower = check.get("author", "").lower()
-                    title_lower = check.get("title", "").lower()
+                    title_lower = v_title.lower()
                     if any(t in author_lower or t in title_lower for t in tokens):
                         continue  # Skip: this is the searched creator's own video
-                v["title"] = check.get("title", v.get("title", ""))
+                v["title"] = v_title
                 v["url"] = check.get("url", url)
                 v["platform"] = "YouTube"
                 v["verified"] = True
@@ -138,7 +156,7 @@ def _verify_video_list(videos: list[dict], creator_name_lower: str = "", exclude
         # 2. Instagram (Reels, Posts, IGTV)
         elif "instagram.com" in url:
             if "/reel/" in url or "/p/" in url or "/tv/" in url:
-                t_lower = v.get("title", "").lower()
+                t_lower = title.lower()
                 u_lower = url.lower()
                 if exclude_creator and tokens:
                     if any(t in t_lower or t in u_lower for t in tokens):
@@ -213,15 +231,15 @@ Rules:
 
 
 _SYS_B = """You are a viral video growth strategist.
-Given the creator name and video links, return ONLY a valid JSON object matching this schema:
+Given the creator name, their real uploads found online, and the peer videos/reels found in their niche, return ONLY a valid JSON object matching this schema:
 {
   "creator_videos": [
     {
       "id": 1,
-      "platform": "YouTube | Instagram",
+      "platform": "Instagram | YouTube",
       "title": "string",
       "views": "string",
-      "url": "string (valid youtube watch or instagram reel url of the creator's OWN video)",
+      "url": "string (MUST BE one of the real URLs provided in the creator uploads list)",
       "opening_hook": "string (max 10 words)",
       "why_it_went_viral": "string (max 12 words)",
       "adapt_hook_template": "string (max 12 words)"
@@ -230,10 +248,10 @@ Given the creator name and video links, return ONLY a valid JSON object matching
   "niche_trending_videos": [
     {
       "id": 1,
-      "platform": "YouTube | Instagram",
+      "platform": "Instagram | YouTube",
       "title": "string",
       "views": "string",
-      "url": "string (viral video url by ANOTHER creator in this niche, NOT the searched creator)",
+      "url": "string (MUST BE one of the real URLs provided in the peer videos list, NOT the searched creator)",
       "opening_hook": "string (max 10 words)",
       "why_it_went_viral": "string (max 12 words)",
       "adapt_hook_template": "string (max 12 words)"
@@ -250,9 +268,9 @@ Given the creator name and video links, return ONLY a valid JSON object matching
   ]
 }
 Rules:
-- creator_videos MUST be 2 of the searched creator's OWN top performing uploads.
-- niche_trending_videos MUST be 2 viral videos by OTHER creators in this niche (NEVER by the searched creator!).
-- competitor_benchmarking MUST be 2 key competitors.
+- CRITICAL: You MUST select directly from the real video URLs provided in the prompt.
+- DO NOT hallucinate random YouTube videos or generic listicles (e.g. NEVER output 'Top 25 Most Successful YouTube Stars', 'Top 10 Creators', or compilation videos).
+- For creators who post on Instagram, include their real Instagram Reels! Support both Instagram Reels and YouTube.
 - Keep all descriptions under word limits. Return ONLY valid JSON."""
 
 
@@ -394,9 +412,12 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
                 "Bhuvan Bam BB Ki Vines site:youtube.com/watch"
             ]
         else:
+            primary_topic = detected_niche.split("&")[0].split(",")[0].strip()
             peer_queries = [
-                f"{detected_niche} viral reels site:instagram.com/reel",
-                f"{detected_niche} popular videos site:youtube.com/watch OR site:youtube.com/shorts"
+                f"{primary_topic} reels site:instagram.com/reel",
+                f"{primary_topic} viral site:instagram.com/reel",
+                f"{primary_topic} review OR vlog OR tutorial site:youtube.com/watch -top10 -top25 -compilation -ranking -stars",
+                f"{primary_topic} site:youtube.com/shorts -top10 -top25 -compilation"
             ]
 
         for pq in peer_queries:
@@ -628,30 +649,56 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
 
     # ── Niche Trending Videos Integrity Check (MUST BE FROM OTHER CREATORS) ─
     n_list = intel.get("niche_trending_videos") or []
-    cleaned_n_list = []
     tokens = [t for t in creator_name.lower().replace("_", " ").split() if len(t) > 2]
+
+    cleaned_n_list = []
+    seen_urls = set()
+
+    # 1. First, accept valid, non-compilation videos from LLM Call B
     for v in n_list:
-        t = v.get("title", "").lower()
-        u = v.get("url", "").lower()
-        if not any(tok in t or tok in u for tok in tokens) and v.get("url"):
-            cleaned_n_list.append(v)
+        t = v.get("title", "")
+        u = v.get("url", "")
+        if not u or u in seen_urls:
+            continue
+        if is_generic_or_compilation(t, u):
+            continue
+        if any(tok in t.lower() or tok in u.lower() for tok in tokens):
+            continue
+        plat = v.get("platform") or ("Instagram" if "instagram" in u else "YouTube")
+        v["platform"] = plat
+        seen_urls.add(u)
+        cleaned_n_list.append(v)
 
-    # If LLM didn't return valid niche videos, but Firecrawl found real peer niche_vids:
-    if not cleaned_n_list and niche_vids:
-        cleaned_n_list = []
-        for i, nv in enumerate(niche_vids[:4], 1):
-            plat = nv.get("platform", "Instagram" if "instagram" in nv.get("url", "") else "YouTube")
-            cleaned_n_list.append({
-                "id": i,
-                "platform": plat,
-                "title": nv.get("title", f"Trending {profile.get('core_niche')} Content"),
-                "views": "Trending Wave",
-                "url": nv.get("url", ""),
-                "opening_hook": f"Captures trending {profile.get('core_niche')} curiosity in the first 2 seconds.",
-                "why_it_went_viral": "High shareability and strong community engagement.",
-                "adapt_hook_template": "Open with an unexpected question or dramatic visual transition."
-            })
+    # 2. Merge real crawled peer videos from Firecrawl (niche_vids)
+    # This guarantees authentic Instagram Reels and competitor YouTube videos appear
+    for nv in (niche_vids or []):
+        u = nv.get("url", "")
+        t = nv.get("title", "")
+        if not u or u in seen_urls:
+            continue
+        if is_generic_or_compilation(t, u):
+            continue
+        if any(tok in t.lower() or tok in u.lower() for tok in tokens):
+            continue
+        seen_urls.add(u)
+        plat = nv.get("platform") or ("Instagram" if "instagram" in u else "YouTube")
+        cleaned_n_list.append({
+            "id": len(cleaned_n_list) + 1,
+            "platform": plat,
+            "title": t or f"Trending {profile.get('core_niche')} Content",
+            "views": "Trending Wave",
+            "url": u,
+            "opening_hook": f"Captures trending {profile.get('core_niche')} curiosity in the first 2 seconds.",
+            "why_it_went_viral": "High shareability and authentic community engagement.",
+            "adapt_hook_template": "Open with a visual pattern interrupt or surprising statement."
+        })
 
+    # Keep top 4 items and normalize IDs
+    cleaned_n_list = cleaned_n_list[:4]
+    for idx, item in enumerate(cleaned_n_list, 1):
+        item["id"] = idx
+
+    # 3. Fallback only if absolutely zero peer videos could be retrieved
     if not cleaned_n_list:
         if "mrbeast" in name_lower:
             cleaned_n_list = [
@@ -700,19 +747,26 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                 }
             ]
         else:
-            is_insta = any(k in name_lower for k in ["the_", "@", "insta", "incredi"])
-            plat = "Instagram" if is_insta else "YouTube"
-            url_fallback = "https://www.instagram.com/reel/De1gjRwhpWm/" if plat == "Instagram" else "https://www.youtube.com/watch?v=Xg1ro-zG7AM"
             cleaned_n_list = [
                 {
                     "id": 1,
-                    "platform": plat,
-                    "title": f"Trending {profile.get('core_niche')} Benchmark",
+                    "platform": "Instagram",
+                    "title": f"Cinematic {profile.get('core_niche')} Short",
                     "views": "850K+ Views",
-                    "url": url_fallback,
+                    "url": "https://www.instagram.com/reel/De1gjRwhpWm/",
                     "opening_hook": "Immediate pattern interrupt showing high-energy motion first.",
                     "why_it_went_viral": "Instant curiosity loop and rapid short-form rhythm.",
                     "adapt_hook_template": "Show the surprising outcome within the first 1.5 seconds."
+                },
+                {
+                    "id": 2,
+                    "platform": "YouTube",
+                    "title": f"Viral {profile.get('core_niche')} Deep Dive",
+                    "views": "1.4M+ Views",
+                    "url": "https://www.youtube.com/watch?v=Bz_Wm6-B7IA",
+                    "opening_hook": "Questioning common assumptions within the first 3 seconds.",
+                    "why_it_went_viral": "High storytelling immersion and dynamic b-roll pacing.",
+                    "adapt_hook_template": "Challenge an established niche belief in the first line."
                 }
             ]
     intel["niche_trending_videos"] = cleaned_n_list
