@@ -11,6 +11,65 @@ st.set_page_config(page_title="Parallel for Creators", page_icon="⚡", layout="
 st.title("⚡ Parallel for Creators")
 st.caption("Content Intelligence, Viral Hook Calibration & Monetization Studio")
 
+
+# ─── UNIVERSAL VIDEO PLAYER (YouTube, Instagram, TikTok & Web Media) ──────────
+def render_playable_video(v_url: str, title: str = "", platform: str = ""):
+    if not v_url:
+        st.warning("Video preview link currently loading.")
+        return
+
+    clean_url = v_url.strip()
+    # Normalize YouTube shorts URL to watch URL for guaranteed st.video compatibility
+    if "youtube.com/shorts/" in clean_url:
+        m_short = re.search(r"/shorts/([A-Za-z0-9_-]+)", clean_url)
+        if m_short:
+            clean_url = f"https://www.youtube.com/watch?v={m_short.group(1)}"
+
+    # 1. YouTube
+    if "youtube.com" in clean_url or "youtu.be" in clean_url:
+        st.video(clean_url)
+        st.caption(f"▶️ Playing from YouTube: [{title or clean_url}]({clean_url})")
+
+    # 2. Instagram (Reels, Posts, IGTV)
+    elif "instagram.com" in clean_url:
+        m = re.search(r"/(?:reel|reels|p|tv)/([A-Za-z0-9_-]+)", clean_url)
+        if m:
+            code = m.group(1)
+            embed_code = f"""
+            <iframe src="https://www.instagram.com/reel/{code}/embed" 
+                    width="100%" height="480" frameborder="0" scrolling="no" allowtransparency="true" allowfullscreen></iframe>
+            """
+            st.components.v1.html(embed_code, height=500)
+            st.caption(f"📸 Playing from Instagram: [{title or clean_url}]({clean_url})")
+        else:
+            st.info(f"📸 Instagram Content Link: [{title or clean_url}]({clean_url})")
+        st.link_button("📱 Open on Instagram", clean_url, type="secondary")
+
+    # 3. TikTok
+    elif "tiktok.com" in clean_url:
+        m_tt = re.search(r"/video/(\d+)", clean_url)
+        if m_tt:
+            t_id = m_tt.group(1)
+            embed_code = f"""
+            <iframe src="https://www.tiktok.com/embed/v2/{t_id}" 
+                    width="100%" height="480" frameborder="0" allowfullscreen></iframe>
+            """
+            st.components.v1.html(embed_code, height=500)
+            st.caption(f"🎵 Playing from TikTok: [{title or clean_url}]({clean_url})")
+        else:
+            st.info(f"🎵 TikTok Content: [{title or clean_url}]({clean_url})")
+        st.link_button("🎵 Open on TikTok", clean_url, type="secondary")
+
+    # 4. Other video / media
+    else:
+        try:
+            st.video(clean_url)
+            st.caption(f"▶️ Playing Media: [{title or clean_url}]({clean_url})")
+        except Exception:
+            st.info(f"🔗 Video Link: [{title or clean_url}]({clean_url})")
+            st.link_button("▶️ Open Media Link", clean_url, type="secondary")
+
+
 # ─── TOP-LEVEL TABS (Clean 3-Tab Architecture) ──────────────────────────────
 tab_ideas, tab_hooks, tab_analytics = st.tabs([
     "💡 Viral Ideas & Competitors", 
@@ -122,26 +181,7 @@ with tab_ideas:
 
             vcol_player, vcol_analysis = st.columns([1.2, 1])
             with vcol_player:
-                if "youtube.com" in v_url or "youtu.be" in v_url:
-                    st.video(v_url)
-                    st.caption(f"▶️ Playing from YouTube: [{v_url}]({v_url})")
-                elif "instagram.com" in v_url:
-                    m = re.search(r"/(?:reel|p)/([A-Za-z0-9_-]+)", v_url)
-                    if m:
-                        code = m.group(1)
-                        embed_code = f"""
-                        <iframe src="https://www.instagram.com/reel/{code}/embed" 
-                                width="100%" height="480" frameborder="0" scrolling="no" allowtransparency="true"></iframe>
-                        """
-                        st.components.v1.html(embed_code, height=500)
-                    else:
-                        st.info(f"Instagram Reel Link: [{v_url}]({v_url})")
-                    st.link_button("📱 Open on Instagram", v_url, type="secondary")
-                else:
-                    if v_url:
-                        st.video(v_url)
-                    else:
-                        st.warning("Video preview link currently loading.")
+                render_playable_video(v_url, sel_vid.get("title", "Trending Video"), v_plat)
 
             with vcol_analysis:
                 with st.container(border=True):
@@ -197,23 +237,7 @@ with tab_ideas:
                         with st.expander(f"🎬 Watch Concept Reference Video: {ref_title} ({ref_creator})", expanded=True):
                             rv_col1, rv_col2 = st.columns([1.2, 1])
                             with rv_col1:
-                                if "youtube.com" in ref_url or "youtu.be" in ref_url:
-                                    st.video(ref_url)
-                                    st.caption(f"▶️ Reference Video: [{ref_title}]({ref_url})")
-                                elif "instagram.com" in ref_url:
-                                    m = re.search(r"/(?:reel|p)/([A-Za-z0-9_-]+)", ref_url)
-                                    if m:
-                                        code = m.group(1)
-                                        embed_code = f"""
-                                        <iframe src="https://www.instagram.com/reel/{code}/embed" 
-                                                width="100%" height="420" frameborder="0" scrolling="no" allowtransparency="true"></iframe>
-                                        """
-                                        st.components.v1.html(embed_code, height=440)
-                                    else:
-                                        st.info(f"Instagram Reference: [{ref_url}]({ref_url})")
-                                    st.link_button("📱 Open Reference Reel", ref_url, type="secondary")
-                                else:
-                                    st.video(ref_url)
+                                render_playable_video(ref_url, ref_title, ref.get("platform", ""))
                             with rv_col2:
                                 st.markdown(f"**Benchmark Creator / Source:** `{ref_creator}`")
                                 st.info(f"**Why this benchmarks the concept:**\n{ref_why}")
@@ -619,26 +643,7 @@ with tab_analytics:
 
             cvcol_player, cvcol_analysis = st.columns([1.2, 1])
             with cvcol_player:
-                if "youtube.com" in cv_url or "youtu.be" in cv_url:
-                    st.video(cv_url)
-                    st.caption(f"▶️ Playing from YouTube: [{cv_url}]({cv_url})")
-                elif "instagram.com" in cv_url:
-                    m = re.search(r"/(?:reel|p)/([A-Za-z0-9_-]+)", cv_url)
-                    if m:
-                        code = m.group(1)
-                        embed_code = f"""
-                        <iframe src="https://www.instagram.com/reel/{code}/embed" 
-                                width="100%" height="480" frameborder="0" scrolling="no" allowtransparency="true"></iframe>
-                        """
-                        st.components.v1.html(embed_code, height=500)
-                    else:
-                        st.info(f"Instagram Reel: [{cv_url}]({cv_url})")
-                    st.link_button("📱 Open on Instagram", cv_url, type="secondary")
-                else:
-                    if cv_url:
-                        st.video(cv_url)
-                    else:
-                        st.warning("Video preview link currently loading.")
+                render_playable_video(cv_url, c_sel_vid.get("title", "Creator Video"), cv_plat)
 
             with cvcol_analysis:
                 with st.container(border=True):

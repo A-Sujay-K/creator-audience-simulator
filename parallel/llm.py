@@ -73,8 +73,19 @@ def ask_json(
             try:
                 return json.loads(raw_json)
             except json.JSONDecodeError:
-                # Groq may have truncated mid-JSON.
-                # Scan backwards to find the last position where braces are balanced.
+                # 1. Try auto-closing open brackets/braces if model truncated near the end
+                repaired = raw_json.strip()
+                repaired = re.sub(r",\s*([\]\}])", r"\1", repaired)  # strip trailing commas
+                repaired = re.sub(r",\s*$", "", repaired)
+                open_brackets = repaired.count("[") - repaired.count("]")
+                open_braces = repaired.count("{") - repaired.count("}")
+                repaired_candidate = repaired + ("]" * max(0, open_brackets)) + ("}" * max(0, open_braces))
+                try:
+                    return json.loads(repaired_candidate)
+                except Exception:
+                    pass
+
+                # 2. Scan backwards to find the last position where outer braces are balanced
                 depth = 0
                 last_valid = -1
                 for i, ch in enumerate(raw_json):
