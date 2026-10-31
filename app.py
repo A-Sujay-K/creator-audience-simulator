@@ -6,8 +6,95 @@ import re
 from parallel.pipeline import run_study, brief_text, summary_text
 from parallel.panel import load_panel
 from parallel.fidelity import close_the_loop
+from parallel.profiles import (
+    create_profile, login, profile_exists, save_intel, get_history,
+    get_cached_intel, push_summary_to_bridge,
+    save_clone_run, get_cached_clone,
+    ProfileNotFound, WrongPIN, UsernameTaken
+)
+from parallel.clone_intel import get_style_dna, get_video_blueprint, get_piracy_ideas
 
 st.set_page_config(page_title="Parallel for Creators", page_icon="⚡", layout="wide")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  SIDEBAR — USER PROFILE SYSTEM
+# ═══════════════════════════════════════════════════════════════════════════════
+with st.sidebar:
+    st.markdown("## 👤 Your Profile")
+
+    if "logged_in_user" not in st.session_state:
+        st.session_state.logged_in_user = None
+
+    if st.session_state.logged_in_user:
+        user = st.session_state.logged_in_user
+        st.success(f"Signed in as **{user}**")
+
+        # ── Search History ────────────────────────────────────────────────
+        st.markdown("### 📜 Search History")
+        history = get_history(user)
+        if history:
+            for h in history[:10]:
+                cols = st.columns([1, 4])
+                with cols[0]:
+                    if h.get("avatar_url"):
+                        st.image(h["avatar_url"], width=36)
+                    else:
+                        st.markdown("👤")
+                with cols[1]:
+                    btn_label = f"**{h['creator_name']}**"
+                    if st.button(btn_label, key=f"hist_{h['id']}", use_container_width=True):
+                        cached = get_cached_intel(user, h["creator_name"])
+                        if cached:
+                            st.session_state.intel = cached
+                            st.session_state.intel_name = h["creator_name"]
+                            st.session_state.intel_from_cache = True
+                            st.rerun()
+        else:
+            st.caption("No searches yet. Analyse a creator to build your history.")
+
+        st.markdown("---")
+        if st.button("🚪 Sign Out", use_container_width=True):
+            st.session_state.logged_in_user = None
+            st.rerun()
+    else:
+        auth_tab_login, auth_tab_create = st.tabs(["Sign In", "Create Account"])
+
+        with auth_tab_login:
+            login_user = st.text_input("Username", key="login_user", placeholder="your_username")
+            login_pin = st.text_input("PIN", type="password", key="login_pin", placeholder="4-digit PIN")
+            if st.button("🔑 Sign In", use_container_width=True, key="btn_login"):
+                if login_user.strip() and login_pin.strip():
+                    try:
+                        login(login_user.strip(), login_pin.strip())
+                        st.session_state.logged_in_user = login_user.strip().lower()
+                        st.rerun()
+                    except ProfileNotFound:
+                        st.error("Username not found. Create an account first.")
+                    except WrongPIN:
+                        st.error("Incorrect PIN. Please try again.")
+                else:
+                    st.warning("Enter both username and PIN.")
+
+        with auth_tab_create:
+            new_user = st.text_input("Choose Username", key="new_user", placeholder="e.g. asuja")
+            new_pin = st.text_input("Set a PIN", type="password", key="new_pin", placeholder="e.g. 1234")
+            new_pin2 = st.text_input("Confirm PIN", type="password", key="new_pin2", placeholder="Repeat PIN")
+            if st.button("✨ Create Account", use_container_width=True, key="btn_create"):
+                if not new_user.strip():
+                    st.warning("Enter a username.")
+                elif not new_pin.strip() or len(new_pin.strip()) < 3:
+                    st.warning("PIN must be at least 3 characters.")
+                elif new_pin != new_pin2:
+                    st.error("PINs do not match.")
+                else:
+                    try:
+                        create_profile(new_user.strip(), new_pin.strip())
+                        st.session_state.logged_in_user = new_user.strip().lower()
+                        st.success("Account created!")
+                        st.rerun()
+                    except UsernameTaken:
+                        st.error("This username is already taken.")
+
 st.title("⚡ Parallel for Creators")
 st.caption("Content Intelligence, Viral Hook Calibration & Monetization Studio")
 
@@ -70,11 +157,12 @@ def render_playable_video(v_url: str, title: str = "", platform: str = ""):
             st.link_button("▶️ Open Media Link", clean_url, type="secondary")
 
 
-# ─── TOP-LEVEL TABS (Clean 3-Tab Architecture) ──────────────────────────────
-tab_ideas, tab_hooks, tab_analytics = st.tabs([
+# ─── TOP-LEVEL TABS (4-Tab Architecture) ─────────────────────────────────────
+tab_ideas, tab_hooks, tab_analytics, tab_copy = st.tabs([
     "💡 Viral Ideas & Competitors", 
     "🎯 Hook Testing & Predictions", 
-    "📊 Channel Reach & Commercials"
+    "📊 Channel Reach & Commercials",
+    "🔬 Copy Winning Creator"
 ])
 
 
@@ -109,7 +197,13 @@ with tab_ideas:
                 intel = generate_creator_intelligence(creator_name.strip(), creator_niche.strip())
                 st.session_state.intel = intel
                 st.session_state.intel_name = creator_name.strip()
+                st.session_state.intel_from_cache = False
                 st.success("Analysis complete!")
+                # ── Auto-save to profile if logged in ──
+                if st.session_state.get("logged_in_user"):
+                    niche_detected = intel.get("creator_profile", {}).get("core_niche", creator_niche.strip())
+                    save_intel(st.session_state.logged_in_user, creator_name.strip(), niche_detected, intel)
+                    push_summary_to_bridge(st.session_state.logged_in_user, creator_name.strip(), intel)
             except Exception as e:
                 st.error(f"Intelligence engine notice: {e}")
     elif run_intel:
@@ -119,6 +213,28 @@ with tab_ideas:
     if intel:
         creator_name_display = st.session_state.get("intel_name", "Creator")
         profile = intel.get("creator_profile", {})
+
+        # ── Show cache badge + refresh if loaded from history ──
+        if st.session_state.get("intel_from_cache"):
+            cache_col1, cache_col2 = st.columns([3, 1])
+            with cache_col1:
+                st.info(f"📂 Loaded from saved profile. Data may not be the latest.")
+            with cache_col2:
+                if st.button("🔄 Refresh Live", key="btn_refresh_intel"):
+                    st.session_state.intel = None
+                    st.session_state.intel_from_cache = False
+                    with st.spinner(f"🌐 Re-scanning {creator_name_display}'s latest data..."):
+                        try:
+                            from parallel.intelligence import generate_creator_intelligence
+                            fresh_intel = generate_creator_intelligence(creator_name_display)
+                            st.session_state.intel = fresh_intel
+                            st.session_state.intel_name = creator_name_display
+                            if st.session_state.get("logged_in_user"):
+                                niche_d = fresh_intel.get("creator_profile", {}).get("core_niche", "")
+                                save_intel(st.session_state.logged_in_user, creator_name_display, niche_d, fresh_intel)
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Refresh failed: {e}")
 
         st.markdown("---")
 
@@ -654,3 +770,224 @@ with tab_analytics:
                     st.info(f"**📋 Adaptable Strategy:**\n{c_sel_vid.get('adapt_hook_template', '—')}")
         else:
             st.info("Creator video analysis is currently loading or being calibrated.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  TAB 4 — COPY WINNING CREATOR  (Style Replicator + Blueprint + Niche Piracy)
+# ═══════════════════════════════════════════════════════════════════════════════
+with tab_copy:
+    st.markdown("### 🔬 Copy Winning Creator")
+    st.caption("Clone any creator's formula: reverse-engineer their style DNA, deconstruct their best video into a shooting script, and generate upgrade ideas that beat their content.")
+
+    copy_col_a, copy_col_b = st.columns([2, 1])
+    with copy_col_a:
+        target_creator = st.text_input(
+            "Target Creator to Copy",
+            placeholder="e.g. MrBeast, CarryMinati, Aakash Dhawan",
+            key="input_copy_creator"
+        )
+    with copy_col_b:
+        target_niche = st.text_input(
+            "Their Niche (optional)",
+            placeholder="e.g. Comedy, Motovlog, Tech",
+            key="input_copy_niche"
+        )
+
+    run_copy = st.button("🧬 Reverse-Engineer This Creator", type="primary", key="copy_btn")
+
+    if run_copy and target_creator.strip():
+        st.session_state.copy_data = None  # Clear old
+        with st.spinner(f"🔬 Deconstructing {target_creator}'s content formula..."):
+            try:
+                # First get intelligence on the target to have their video data
+                from parallel.intelligence import generate_creator_intelligence
+                target_intel = generate_creator_intelligence(target_creator.strip(), target_niche.strip())
+
+                t_profile = target_intel.get("creator_profile", {})
+                t_niche = t_profile.get("core_niche", target_niche.strip() or "Digital Content")
+                t_creator_vids = target_intel.get("creator_videos", [])
+                t_niche_vids = target_intel.get("niche_trending_videos", [])
+
+                # Run the 3 clone modules
+                style_card = get_style_dna(target_creator.strip(), t_niche, t_creator_vids, t_niche_vids)
+
+                blueprints = []
+                for bv in t_creator_vids[:2]:
+                    bp = get_video_blueprint(
+                        bv.get("title", ""),
+                        bv.get("url", ""),
+                        bv.get("platform", "YouTube"),
+                        t_niche
+                    )
+                    bp["source_video"] = bv
+                    blueprints.append(bp)
+
+                piracy = get_piracy_ideas(target_creator.strip(), t_niche, t_creator_vids)
+
+                copy_result = {
+                    "target_creator": target_creator.strip(),
+                    "target_niche": t_niche,
+                    "target_profile": t_profile,
+                    "style_card": style_card,
+                    "blueprints": blueprints,
+                    "piracy_ideas": piracy.get("piracy_ideas", []),
+                    "target_intel": target_intel,
+                }
+                st.session_state.copy_data = copy_result
+                st.success("Creator formula reverse-engineered!")
+
+                # Save to profile if logged in
+                if st.session_state.get("logged_in_user"):
+                    save_clone_run(
+                        st.session_state.logged_in_user,
+                        target_creator.strip(),
+                        style_card,
+                        blueprints,
+                        piracy.get("piracy_ideas", [])
+                    )
+
+            except Exception as e:
+                st.error(f"Clone engine notice: {e}")
+    elif run_copy:
+        st.warning("Please enter a creator name to copy.")
+
+    copy_data = st.session_state.get("copy_data")
+    if copy_data:
+        st.markdown("---")
+
+        tc_name = copy_data["target_creator"]
+        tc_niche = copy_data["target_niche"]
+        tc_profile = copy_data.get("target_profile", {})
+
+        # ── SECTION A: STYLE REPLICATOR (DNA Card) ──────────────────────────
+        st.markdown(f"### 🧬 {tc_name}'s Style DNA")
+        st.caption(f"The exact formula this creator uses in every {tc_niche} video — decoded for replication.")
+
+        sc = copy_data.get("style_card", {})
+        dna = sc.get("style_dna", {})
+
+        if dna:
+            dna_c1, dna_c2 = st.columns(2)
+            with dna_c1:
+                with st.container(border=True):
+                    st.markdown("##### 🎯 Hook Formula")
+                    st.markdown(f"> *{dna.get('hook_formula', '—')}*")
+                    st.markdown("##### 🏗️ Content Structure")
+                    st.markdown(f"> *{dna.get('content_structure', '—')}*")
+                    st.markdown("##### ✂️ Editing Rhythm")
+                    st.markdown(f"> *{dna.get('editing_rhythm', '—')}*")
+            with dna_c2:
+                with st.container(border=True):
+                    st.markdown("##### 🖼️ Thumbnail Formula")
+                    st.markdown(f"> *{dna.get('thumbnail_formula', '—')}*")
+                    st.markdown("##### 📢 CTA Pattern")
+                    st.markdown(f"> *{dna.get('cta_pattern', '—')}*")
+                    st.markdown("##### 🧠 Viral Trigger")
+                    st.warning(f"**{dna.get('viral_trigger', '—')}**")
+                    st.markdown("##### 🤝 Audience Contract")
+                    st.info(f"*{dna.get('audience_contract', '—')}*")
+
+        # Clone roadmap
+        roadmap = sc.get("clone_roadmap", [])
+        if roadmap:
+            st.markdown("#### 🗺️ 5-Step Clone Roadmap")
+            for step in roadmap:
+                diff_color = {"Easy": "🟢", "Medium": "🟡", "Hard": "🔴"}.get(step.get("difficulty", "Medium"), "⚪")
+                with st.expander(f"Step {step.get('step', '?')}: {step.get('action', '—')} {diff_color} {step.get('difficulty', '')}"):
+                    st.markdown(f"**Why it works:** {step.get('why_it_works', '—')}")
+
+        diff_angle = sc.get("differentiation_angle", "")
+        if diff_angle:
+            st.success(f"🎯 **Your Differentiation Angle:** {diff_angle}")
+
+        st.markdown("---")
+
+        # ── SECTION B: BLUEPRINT GENERATOR ──────────────────────────────────
+        bps = copy_data.get("blueprints", [])
+        if bps:
+            st.markdown(f"### 📋 Video Blueprints — Ready-to-Film Scripts")
+            st.caption(f"Frame-by-frame deconstruction of {tc_name}'s top videos with a replicable shooting script you can film today.")
+
+            for bp_idx, bp in enumerate(bps):
+                source_v = bp.get("source_video", {})
+                bp_title = source_v.get("title", f"Blueprint #{bp_idx+1}")
+                with st.expander(f"📹 Blueprint: {bp_title}", expanded=bp_idx == 0):
+                    # Source video player
+                    if source_v.get("url"):
+                        render_playable_video(source_v["url"], bp_title, source_v.get("platform", "YouTube"))
+
+                    vb = bp.get("video_breakdown", {})
+                    if vb:
+                        seg_cols = st.columns(3)
+                        for seg_idx, (seg_key, seg_label, seg_icon) in enumerate([
+                            ("hook_segment", "Hook (0-3s)", "⚡"),
+                            ("build_segment", "Build (3-45s)", "📈"),
+                            ("climax_segment", "Climax (45s+)", "🎆")
+                        ]):
+                            seg = vb.get(seg_key, {})
+                            with seg_cols[seg_idx]:
+                                with st.container(border=True):
+                                    st.markdown(f"**{seg_icon} {seg_label}**")
+                                    st.markdown(f"*What happens:* {seg.get('what_happens', seg.get('structure', seg.get('payoff', '—')))}")
+                                    trigger = seg.get("psychological_trigger", seg.get("retention_technique", seg.get("cta", "")))
+                                    if trigger:
+                                        st.caption(f"🧠 {trigger}")
+                                    rep = seg.get("replicate_as", "")
+                                    if rep:
+                                        st.info(f"**Your version:** {rep}")
+
+                    # Shooting script
+                    script = bp.get("shooting_script", [])
+                    if script:
+                        st.markdown("#### 🎬 Shooting Script")
+                        script_data = []
+                        for s in script:
+                            script_data.append({
+                                "Scene": s.get("scene", ""),
+                                "Shot": s.get("shot_type", ""),
+                                "Action": s.get("action", ""),
+                                "Dialogue / Caption": s.get("dialogue_or_caption", ""),
+                                "Duration (s)": s.get("duration_seconds", "")
+                            })
+                        st.dataframe(pd.DataFrame(script_data), hide_index=True)
+
+                    equip = bp.get("equipment_needed", [])
+                    prod_hrs = bp.get("estimated_production_hours", "")
+                    if equip or prod_hrs:
+                        eq1, eq2 = st.columns(2)
+                        with eq1:
+                            if equip:
+                                st.markdown("**🛠️ Equipment:** " + " · ".join([f"`{e}`" for e in equip]))
+                        with eq2:
+                            if prod_hrs:
+                                st.metric("⏱️ Est. Production Time", prod_hrs)
+
+        st.markdown("---")
+
+        # ── SECTION C: NICHE PIRACY IDEAS ───────────────────────────────────
+        piracy_list = copy_data.get("piracy_ideas", [])
+        if piracy_list:
+            st.markdown(f"### 🏴‍☠️ Niche Piracy — 5 Ideas That Beat {tc_name}")
+            st.caption(f"Each idea is a direct upgrade of {tc_name}'s top content. Better hook, better angle, better execution.")
+
+            for idea in piracy_list:
+                angle_emoji = {
+                    "More cinematic": "🎬",
+                    "More emotional": "❤️",
+                    "Faster paced": "⚡",
+                    "More relatable": "🤝",
+                    "Bigger stakes": "💰",
+                    "Better data": "📊"
+                }.get(idea.get("upgrade_angle", ""), "🔥")
+
+                with st.expander(f"{angle_emoji} Idea #{idea.get('id', '?')}: {idea.get('your_upgrade_title', '—')}  —  {idea.get('estimated_views', '')}"):
+                    st.markdown(f"**They did:** {idea.get('competitor_did', '—')}")
+                    st.markdown(f"**Your upgrade:** {idea.get('your_upgrade_title', '—')}")
+                    st.success(f"**Why yours wins:** {idea.get('why_yours_wins', '—')}")
+                    st.caption(f"Upgrade angle: `{idea.get('upgrade_angle', '—')}`")
+
+                    hooks = idea.get("candidate_hooks", [])
+                    if hooks:
+                        st.markdown("**🎯 Test These Hooks:**")
+                        for h in hooks:
+                            st.markdown(f"- `{h.get('sid', '')}`: *{h.get('text', '')}*")
