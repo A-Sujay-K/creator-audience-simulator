@@ -318,3 +318,177 @@ def _fallback_piracy(competitor_name: str, niche: str) -> dict:
         t["id"] = i
         ideas.append(t)
     return {"piracy_ideas": ideas}
+
+
+# ─────────────────────────────────────────────────
+#  FAST UNIFIED CLONE GENERATOR (Under 15 Seconds)
+# ─────────────────────────────────────────────────
+
+_SYS_UNIFIED_CLONE = """You are a viral creator cloning engineer.
+Given a creator name, niche, and top uploads, return a single valid JSON object:
+{
+  "style_dna": {
+    "hook_formula": "string (how they open videos, max 15 words)",
+    "content_structure": "string (their 3-act flow, max 20 words)",
+    "editing_rhythm": "string (cut frequency, audio, max 15 words)",
+    "thumbnail_formula": "string (composition, face, text, max 15 words)",
+    "cta_pattern": "string (retention CTA, max 15 words)",
+    "viral_trigger": "string (core psychology trigger, max 12 words)",
+    "audience_contract": "string (what viewers expect, max 15 words)"
+  },
+  "clone_roadmap": [
+    {"step": 1, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard"},
+    {"step": 2, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard"},
+    {"step": 3, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard"},
+    {"step": 4, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard"},
+    {"step": 5, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard"}
+  ],
+  "differentiation_angle": "string (how to stand out from them, max 20 words)",
+  "blueprint": {
+    "title": "string (concept title)",
+    "hook_segment": {"duration": "0-3s", "what_happens": "string", "trigger": "string", "your_version": "string"},
+    "build_segment": {"duration": "3-45s", "structure": "string", "retention": "string", "your_version": "string"},
+    "climax_segment": {"duration": "45s+", "payoff": "string", "cta": "string", "your_version": "string"},
+    "shooting_script": [
+      {"scene": 1, "shot_type": "Close", "action": "string", "dialogue": "string", "duration_seconds": 3},
+      {"scene": 2, "shot_type": "Medium", "action": "string", "dialogue": "string", "duration_seconds": 5},
+      {"scene": 3, "shot_type": "Wide", "action": "string", "dialogue": "string", "duration_seconds": 7},
+      {"scene": 4, "shot_type": "Medium", "action": "string", "dialogue": "string", "duration_seconds": 8},
+      {"scene": 5, "shot_type": "Close", "action": "string", "dialogue": "string", "duration_seconds": 4}
+    ],
+    "equipment": ["Camera/Phone", "Mic", "Tripod"],
+    "production_time": "2-4 hours"
+  },
+  "piracy_ideas": [
+    {
+      "id": 1,
+      "competitor_did": "string",
+      "your_upgrade_title": "string",
+      "why_yours_wins": "string",
+      "upgrade_angle": "More cinematic | More emotional | Faster paced | More relatable | Bigger stakes",
+      "candidate_hooks": [
+        {"sid": "S1", "text": "string"},
+        {"sid": "S2", "text": "string"}
+      ],
+      "estimated_views": "🔥 2M - 5M"
+    },
+    {
+      "id": 2,
+      "competitor_did": "string",
+      "your_upgrade_title": "string",
+      "why_yours_wins": "string",
+      "upgrade_angle": "More relatable",
+      "candidate_hooks": [
+        {"sid": "S1", "text": "string"},
+        {"sid": "S2", "text": "string"}
+      ],
+      "estimated_views": "🔥 3M - 8M"
+    },
+    {
+      "id": 3,
+      "competitor_did": "string",
+      "your_upgrade_title": "string",
+      "why_yours_wins": "string",
+      "upgrade_angle": "Bigger stakes",
+      "candidate_hooks": [
+        {"sid": "S1", "text": "string"},
+        {"sid": "S2", "text": "string"}
+      ],
+      "estimated_views": "🔥 1.5M - 4M"
+    }
+  ]
+}
+Return ONLY valid JSON."""
+
+
+def generate_unified_clone_dossier(creator_name: str, niche: str, creator_vids: list = None, niche_vids: list = None) -> dict:
+    """
+    Produces complete Style DNA, Video Blueprint, and Piracy Ideas in a single lean fast call.
+    Guarantees non-empty robust results via automatic fallback merge.
+    """
+    vids_text = "\n".join(
+        f"  - [{v.get('platform', 'Video')}] {v.get('title', '')} (Hook: {v.get('opening_hook', '')})"
+        for v in (creator_vids or [])[:4]
+    )
+
+    user_msg = (
+        f"Creator Name: {creator_name}\n"
+        f"Niche / Category: {niche}\n"
+        f"Top Content Sample:\n{vids_text or 'Popular viral uploads in this niche.'}\n"
+        "Generate the complete cloning dossier now."
+    )
+
+    parsed = None
+    try:
+        # Lean token allocation for fast response
+        parsed = ask_json(_SYS_UNIFIED_CLONE, user_msg, MODEL_SMART, max_tokens=1100)
+    except Exception as e:
+        print(f"[clone_intel] Fast unified call note: {e}")
+
+    # Fallback baselines
+    fb_style = _fallback_style_dna(creator_name, niche)
+    first_title = creator_vids[0]["title"] if creator_vids else f"Top {niche} Video"
+    fb_bp = _fallback_blueprint(first_title, niche)
+    fb_piracy = _fallback_piracy(creator_name, niche)
+
+    if not parsed or not isinstance(parsed, dict):
+        return {
+            "style_card": fb_style,
+            "blueprints": [fb_bp],
+            "piracy_ideas": fb_piracy.get("piracy_ideas", [])
+        }
+
+    # Style card
+    style_dna = parsed.get("style_dna") or fb_style["style_dna"]
+    clone_roadmap = parsed.get("clone_roadmap") or fb_style["clone_roadmap"]
+    diff_angle = parsed.get("differentiation_angle") or fb_style["differentiation_angle"]
+
+    style_card = {
+        "style_dna": style_dna,
+        "clone_roadmap": clone_roadmap,
+        "differentiation_angle": diff_angle
+    }
+
+    # Blueprint
+    raw_bp = parsed.get("blueprint") or {}
+    source_v = creator_vids[0] if creator_vids else {"title": raw_bp.get("title", f"Signature {niche} Concept"), "url": "", "platform": "YouTube"}
+    
+    # Format blueprint so it matches what app.py expects
+    blueprint_item = {
+        "source_video": source_v,
+        "video_breakdown": {
+            "hook_segment": {
+                "duration": raw_bp.get("hook_segment", {}).get("duration", "0–3s"),
+                "what_happens": raw_bp.get("hook_segment", {}).get("what_happens", "High-energy pattern interrupt"),
+                "psychological_trigger": raw_bp.get("hook_segment", {}).get("trigger", "Curiosity loop"),
+                "replicate_as": raw_bp.get("hook_segment", {}).get("your_version", "Film unexpected climax first")
+            },
+            "build_segment": {
+                "duration": raw_bp.get("build_segment", {}).get("duration", "3–45s"),
+                "structure": raw_bp.get("build_segment", {}).get("structure", "Escalating stakes with mini obstacles"),
+                "retention_technique": raw_bp.get("build_segment", {}).get("retention", "Open loop storytelling"),
+                "replicate_as": raw_bp.get("build_segment", {}).get("your_version", "Add 3 attempts before success")
+            },
+            "climax_segment": {
+                "duration": raw_bp.get("climax_segment", {}).get("duration", "45s+"),
+                "payoff": raw_bp.get("climax_segment", {}).get("payoff", "High emotional payoff"),
+                "cta": raw_bp.get("climax_segment", {}).get("cta", "Call to comment and follow"),
+                "replicate_as": raw_bp.get("climax_segment", {}).get("your_version", "Deliver payoff then tease next video")
+            }
+        },
+        "shooting_script": raw_bp.get("shooting_script") or fb_bp["shooting_script"],
+        "equipment_needed": raw_bp.get("equipment") or fb_bp["equipment_needed"],
+        "estimated_production_hours": raw_bp.get("production_time") or fb_bp["estimated_production_hours"]
+    }
+
+    # Piracy ideas
+    piracy_ideas = parsed.get("piracy_ideas")
+    if not piracy_ideas or len(piracy_ideas) < 2:
+        piracy_ideas = fb_piracy.get("piracy_ideas", [])
+
+    return {
+        "style_card": style_card,
+        "blueprints": [blueprint_item],
+        "piracy_ideas": piracy_ideas
+    }
+

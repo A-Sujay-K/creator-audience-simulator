@@ -12,7 +12,9 @@ from parallel.profiles import (
     save_clone_run, get_cached_clone,
     ProfileNotFound, WrongPIN, UsernameTaken
 )
-from parallel.clone_intel import get_style_dna, get_video_blueprint, get_piracy_ideas
+from parallel.clone_intel import (
+    get_style_dna, get_video_blueprint, get_piracy_ideas, generate_unified_clone_dossier
+)
 from parallel.suggestions import find_similar_creators, resolve_misspelled_creator_with_llm
 
 st.set_page_config(page_title="Parallel for Creators", page_icon="⚡", layout="wide")
@@ -864,60 +866,84 @@ with tab_copy:
                         on_click=_make_copy_picker(csug["name"], csug["niche"])
                     )
 
+    # ── Quick-Clone Helper if a Creator is Already Loaded in Tab 1 ───────────
+    loaded_intel = st.session_state.get("intel")
+    loaded_name = st.session_state.get("intel_name", "")
+    if loaded_intel and loaded_name:
+        qc_col1, qc_col2 = st.columns([3, 1])
+        with qc_col1:
+            st.info(f"⚡ **{loaded_name}** is already analyzed in memory! You can clone their style instantly without re-scanning.")
+        with qc_col2:
+            def _quick_copy():
+                st.session_state["input_copy_creator"] = loaded_name
+                st.session_state["input_copy_niche"] = loaded_intel.get("creator_profile", {}).get("core_niche", "")
+            st.button("⚡ Fill Active Creator", key="btn_fill_active", use_container_width=True, on_click=_quick_copy)
+
     run_copy = st.button("🧬 Reverse-Engineer This Creator", type="primary", key="copy_btn")
 
     if run_copy and target_creator.strip():
-        st.session_state.copy_data = None  # Clear old
-        with st.spinner(f"🔬 Deconstructing {target_creator}'s content formula..."):
+        with st.status(f"🔬 Reverse-engineering {target_creator}'s viral formula...", expanded=True) as status:
             try:
-                # First get intelligence on the target to have their video data
-                from parallel.intelligence import generate_creator_intelligence
-                target_intel = generate_creator_intelligence(target_creator.strip(), target_niche.strip())
+                target_intel = None
+                
+                # Check 1: Is this creator already in memory from Tab 1?
+                if loaded_intel and (
+                    target_creator.strip().lower() in loaded_name.lower() or 
+                    loaded_name.lower() in target_creator.strip().lower()
+                ):
+                    status.write("⚡ Using verified creator footprint from current session...")
+                    target_intel = loaded_intel
+                
+                # Check 2: Is this creator in the user's saved profile cache?
+                elif st.session_state.get("logged_in_user"):
+                    status.write("📂 Checking saved profile history...")
+                    cached_it = get_cached_intel(st.session_state.logged_in_user, target_creator.strip())
+                    if cached_it:
+                        status.write("⚡ Loaded creator data from your profile cache...")
+                        target_intel = cached_it
+
+                # Check 3: If not cached anywhere, perform fast web recon
+                if not target_intel:
+                    status.write("🌐 Scanning creator uploads and niche footprint online...")
+                    from parallel.intelligence import generate_creator_intelligence
+                    target_intel = generate_creator_intelligence(target_creator.strip(), target_niche.strip())
 
                 t_profile = target_intel.get("creator_profile", {})
                 t_niche = t_profile.get("core_niche", target_niche.strip() or "Digital Content")
                 t_creator_vids = target_intel.get("creator_videos", [])
                 t_niche_vids = target_intel.get("niche_trending_videos", [])
 
-                # Run the 3 clone modules
-                style_card = get_style_dna(target_creator.strip(), t_niche, t_creator_vids, t_niche_vids)
+                status.write("🧬 Deconstructing Style DNA, hook formula & editing rhythm...")
+                status.write("📋 Generating frame-by-frame shooting script & blueprints...")
+                status.write("🏴‍☠️ Formulating 5 direct upgrade concepts...")
 
-                blueprints = []
-                for bv in t_creator_vids[:2]:
-                    bp = get_video_blueprint(
-                        bv.get("title", ""),
-                        bv.get("url", ""),
-                        bv.get("platform", "YouTube"),
-                        t_niche
-                    )
-                    bp["source_video"] = bv
-                    blueprints.append(bp)
-
-                piracy = get_piracy_ideas(target_creator.strip(), t_niche, t_creator_vids)
+                # Single unified fast call with guaranteed non-empty fallback
+                dossier = generate_unified_clone_dossier(target_creator.strip(), t_niche, t_creator_vids, t_niche_vids)
 
                 copy_result = {
                     "target_creator": target_creator.strip(),
                     "target_niche": t_niche,
                     "target_profile": t_profile,
-                    "style_card": style_card,
-                    "blueprints": blueprints,
-                    "piracy_ideas": piracy.get("piracy_ideas", []),
+                    "style_card": dossier["style_card"],
+                    "blueprints": dossier["blueprints"],
+                    "piracy_ideas": dossier["piracy_ideas"],
                     "target_intel": target_intel,
                 }
                 st.session_state.copy_data = copy_result
-                st.success("Creator formula reverse-engineered!")
+                status.update(label="✅ Creator formula reverse-engineered successfully!", state="complete")
 
                 # Save to profile if logged in
                 if st.session_state.get("logged_in_user"):
                     save_clone_run(
                         st.session_state.logged_in_user,
                         target_creator.strip(),
-                        style_card,
-                        blueprints,
-                        piracy.get("piracy_ideas", [])
+                        dossier["style_card"],
+                        dossier["blueprints"],
+                        dossier["piracy_ideas"]
                     )
 
             except Exception as e:
+                status.update(label="⚠️ Error during analysis", state="error")
                 st.error(f"Clone engine notice: {e}")
     elif run_copy:
         st.warning("Please enter a creator name to copy.")
