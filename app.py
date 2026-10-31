@@ -13,6 +13,7 @@ from parallel.profiles import (
     ProfileNotFound, WrongPIN, UsernameTaken
 )
 from parallel.clone_intel import get_style_dna, get_video_blueprint, get_piracy_ideas
+from parallel.suggestions import find_similar_creators, resolve_misspelled_creator_with_llm
 
 st.set_page_config(page_title="Parallel for Creators", page_icon="⚡", layout="wide")
 
@@ -177,15 +178,63 @@ with tab_ideas:
     with col_a:
         creator_name = st.text_input(
             "Creator Name",
-            placeholder="e.g. CarryMinati, MrBeast, Ashish Chanchlani",
+            placeholder="e.g. CarryMinati, MrBeast, Ashish Chanchlani, Aakash Dhawan",
             key="input_creator_name"
         )
     with col_b:
         creator_niche = st.text_input(
             "Niche / Category (optional)",
-            placeholder="e.g. Comedy Roast Shorts, Tech, Gaming",
+            placeholder="e.g. Comedy Roast Shorts, Tech, Gaming, Motovlog",
             key="input_creator_niche"
         )
+
+    # ── Spelling & Similar Creator Suggestions (Auto-Detection) ───────────────
+    if creator_name and len(creator_name.strip()) >= 2:
+        suggestions = find_similar_creators(creator_name.strip(), min_score=0.45, limit=4)
+        is_exact = any(s["name"].lower() == creator_name.strip().lower() for s in suggestions)
+        if suggestions and not is_exact:
+            st.markdown("💡 **Similar / Corrected Creator Options (Click to Select):**")
+            sug_cols = st.columns(min(len(suggestions), 4))
+            for s_idx, sug in enumerate(suggestions[:4]):
+                with sug_cols[s_idx]:
+                    def _make_picker(target_n=sug["name"], target_cat=sug["niche"]):
+                        def _callback():
+                            st.session_state["input_creator_name"] = target_n
+                            if target_cat:
+                                st.session_state["input_creator_niche"] = target_cat
+                        return _callback
+                    st.button(
+                        f"👉 **{sug['name']}**\n\n`{sug['niche'][:24]}`",
+                        key=f"sug_btn_t1_{s_idx}_{sug['name'][:8]}",
+                        use_container_width=True,
+                        on_click=_make_picker(sug["name"], sug["niche"])
+                    )
+        elif not suggestions and len(creator_name.strip()) >= 4:
+            c_spell_a, c_spell_b = st.columns([3, 1])
+            with c_spell_a:
+                st.caption(f"Unfamiliar creator '{creator_name}'? Check if there's a recognized spelling.")
+            with c_spell_b:
+                if st.button("🔍 AI Spell Fix", key="ai_spell_t1", use_container_width=True):
+                    with st.spinner("Finding closest creators..."):
+                        ai_sugs = resolve_misspelled_creator_with_llm(creator_name.strip())
+                        st.session_state["ai_sugs_t1"] = ai_sugs
+            if st.session_state.get("ai_sugs_t1"):
+                st.markdown("🤖 **AI Identified Creators:**")
+                ai_cols = st.columns(len(st.session_state["ai_sugs_t1"]))
+                for a_idx, a_sug in enumerate(st.session_state["ai_sugs_t1"]):
+                    with ai_cols[a_idx]:
+                        def _make_ai_picker(target_n=a_sug["name"], target_cat=a_sug["niche"]):
+                            def _callback():
+                                st.session_state["input_creator_name"] = target_n
+                                if target_cat:
+                                    st.session_state["input_creator_niche"] = target_cat
+                            return _callback
+                        st.button(
+                            f"👉 **{a_sug['name']}**\n\n`{a_sug['niche'][:24]}`",
+                            key=f"ai_btn_t1_{a_idx}_{a_sug['name'][:8]}",
+                            use_container_width=True,
+                            on_click=_make_ai_picker(a_sug["name"], a_sug["niche"])
+                        )
 
     run_intel = st.button("🚀 Discover & Analyse", type="primary", key="intel_btn")
 
@@ -792,6 +841,28 @@ with tab_copy:
             placeholder="e.g. Comedy, Motovlog, Tech",
             key="input_copy_niche"
         )
+
+    # ── Spelling & Similar Creator Suggestions for Copying ───────────────────
+    if target_creator and len(target_creator.strip()) >= 2:
+        copy_suggestions = find_similar_creators(target_creator.strip(), min_score=0.45, limit=4)
+        is_exact_copy = any(s["name"].lower() == target_creator.strip().lower() for s in copy_suggestions)
+        if copy_suggestions and not is_exact_copy:
+            st.markdown("💡 **Similar / Corrected Creator Options (Click to Select):**")
+            cs_cols = st.columns(min(len(copy_suggestions), 4))
+            for cs_idx, csug in enumerate(copy_suggestions[:4]):
+                with cs_cols[cs_idx]:
+                    def _make_copy_picker(target_n=csug["name"], target_cat=csug["niche"]):
+                        def _callback():
+                            st.session_state["input_copy_creator"] = target_n
+                            if target_cat:
+                                st.session_state["input_copy_niche"] = target_cat
+                        return _callback
+                    st.button(
+                        f"👉 **{csug['name']}**\n\n`{csug['niche'][:24]}`",
+                        key=f"csug_btn_t4_{cs_idx}_{csug['name'][:8]}",
+                        use_container_width=True,
+                        on_click=_make_copy_picker(csug["name"], csug["niche"])
+                    )
 
     run_copy = st.button("🧬 Reverse-Engineer This Creator", type="primary", key="copy_btn")
 
