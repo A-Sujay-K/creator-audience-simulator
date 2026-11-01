@@ -19,420 +19,335 @@ from parallel.clone_intel import (
 from parallel.suggestions import find_similar_creators, resolve_misspelled_creator_with_llm
 
 st.set_page_config(
-    page_title="Parallel | Creator Intelligence & Clone OS",
+    page_title="Parallel — Creator Intelligence & Formula Decoupler",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  PREMIUM DESIGN SYSTEM & GLOBAL CSS INJECTION (Dark Glassmorphism SaaS)
+#  DESIGN SYSTEM & REFINED CSS (Zinc / Slate Dark Theme — Stripe & Linear Style)
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
 /* ─── DESIGN TOKENS ────────────────────────────────────────────────────────── */
 :root {
-  --bg-main: #07080F;
-  --bg-card: rgba(14, 16, 32, 0.75);
-  --bg-card-hover: rgba(22, 25, 50, 0.85);
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(124, 58, 237, 0.45);
-  --border-cyan: rgba(6, 182, 212, 0.4);
-  --accent-purple: #7C3AED;
-  --accent-purple-light: #9F67FF;
-  --accent-cyan: #06B6D4;
-  --accent-cyan-light: #22D3EE;
+  --bg-app: #08090E;
+  --bg-surface: #10121A;
+  --bg-surface-elevated: #161824;
+  --bg-surface-hover: #1C1F2E;
+  --border-subtle: #202333;
+  --border-active: #383D56;
+  --border-focus: #6366F1;
+  --accent-indigo: #6366F1;
+  --accent-indigo-hover: #4F46E5;
   --accent-emerald: #10B981;
-  --accent-rose: #EF4444;
+  --accent-rose: #F43F5E;
   --accent-amber: #F59E0B;
-  --text-main: #F8FAFC;
-  --text-muted: #94A3B8;
-  --text-dim: #64748B;
+  --accent-cyan: #06B6D4;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
   --font-heading: 'Plus Jakarta Sans', -apple-system, sans-serif;
   --font-body: 'Inter', -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+  --radius-xs: 6px;
   --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --shadow-glow: 0 0 35px rgba(124, 58, 237, 0.25);
-  --shadow-cyan: 0 0 35px rgba(6, 182, 212, 0.2);
+  --radius-md: 12px;
+  --radius-lg: 16px;
 }
 
-/* ─── BASE CONTAINER & BACKGROUND ─────────────────────────────────────────── */
+/* ─── BASE RESET ─────────────────────────────────────────────────────────── */
 html, body, [data-testid="stAppViewContainer"] {
-  background-color: var(--bg-main) !important;
-  background-image: 
-    radial-gradient(circle at 12% 10%, rgba(124, 58, 237, 0.12) 0%, transparent 45%),
-    radial-gradient(circle at 88% 15%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 50%) !important;
-  background-attachment: fixed !important;
+  background-color: var(--bg-app) !important;
   font-family: var(--font-body) !important;
-  color: var(--text-main) !important;
+  color: var(--text-primary) !important;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Hide default streamlit chrome */
 #MainMenu, footer, header { visibility: hidden !important; }
 [data-testid="stDecoration"] { display: none !important; }
 .stDeployButton { display: none !important; }
 
-/* Main content spacing */
 [data-testid="stMainBlockContainer"] {
-  padding: 1.5rem 2.2rem 4rem !important;
-  max-width: 1450px !important;
+  padding: 1.2rem 2.5rem 4rem !important;
+  max-width: 1440px !important;
 }
 
-/* ─── TYPOGRAPHY ─────────────────────────────────────────────────────────── */
+/* ─── HEADINGS ───────────────────────────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6,
 [data-testid="stMarkdownContainer"] h1,
 [data-testid="stMarkdownContainer"] h2,
 [data-testid="stMarkdownContainer"] h3 {
   font-family: var(--font-heading) !important;
-  color: var(--text-main) !important;
-  letter-spacing: -0.02em !important;
+  color: var(--text-primary) !important;
+  letter-spacing: -0.025em !important;
   font-weight: 700 !important;
 }
 
 /* ─── SIDEBAR ────────────────────────────────────────────────────────────── */
 [data-testid="stSidebar"] {
-  background: linear-gradient(180deg, #090B16 0%, #06070E 100%) !important;
+  background-color: #0B0D14 !important;
   border-right: 1px solid var(--border-subtle) !important;
 }
 
 [data-testid="stSidebar"] .stButton > button {
-  background: rgba(255, 255, 255, 0.03) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
   border: 1px solid var(--border-subtle) !important;
   border-radius: var(--radius-sm) !important;
-  color: var(--text-muted) !important;
+  color: var(--text-secondary) !important;
   font-size: 0.8rem !important;
   font-weight: 500 !important;
-  transition: all 0.2s ease !important;
   text-align: left !important;
+  transition: all 0.15s ease !important;
 }
 [data-testid="stSidebar"] .stButton > button:hover {
-  background: rgba(124, 58, 237, 0.15) !important;
-  border-color: var(--border-glow) !important;
-  color: #FFFFFF !important;
-  transform: translateX(2px) !important;
+  background: var(--bg-surface-elevated) !important;
+  border-color: var(--border-active) !important;
+  color: var(--text-primary) !important;
 }
 
-/* ─── TABS ───────────────────────────────────────────────────────────────── */
+/* ─── WORKSPACE TABS (Clean Segmented Control) ────────────────────────────── */
 [data-testid="stTabs"] [role="tablist"] {
-  background: rgba(14, 16, 32, 0.6) !important;
+  background: var(--bg-surface) !important;
   border: 1px solid var(--border-subtle) !important;
-  border-radius: 14px !important;
+  border-radius: var(--radius-md) !important;
   padding: 4px !important;
   gap: 4px !important;
-  backdrop-filter: blur(12px) !important;
+  margin-bottom: 1.5rem !important;
 }
 
 [data-testid="stTabs"] [role="tab"] {
   background: transparent !important;
-  border-radius: 10px !important;
-  color: var(--text-muted) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text-secondary) !important;
   font-family: var(--font-heading) !important;
   font-weight: 600 !important;
-  font-size: 0.88rem !important;
-  padding: 0.55rem 1.25rem !important;
+  font-size: 0.84rem !important;
+  padding: 0.5rem 1.15rem !important;
   border: none !important;
-  transition: all 0.2s ease !important;
+  transition: all 0.15s ease !important;
 }
 
 [data-testid="stTabs"] [role="tab"]:hover {
-  color: var(--text-main) !important;
-  background: rgba(255, 255, 255, 0.04) !important;
+  color: var(--text-primary) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
 }
 
 [data-testid="stTabs"] [role="tab"][aria-selected="true"] {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.4) 0%, rgba(6, 182, 212, 0.25) 100%) !important;
-  border: 1px solid rgba(124, 58, 237, 0.5) !important;
+  background: var(--bg-surface-elevated) !important;
+  border: 1px solid var(--border-active) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 2px 14px rgba(124, 58, 237, 0.3) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
 [data-testid="stTabs"] [role="tabpanel"] {
-  padding-top: 1.5rem !important;
+  padding-top: 0.5rem !important;
 }
 
 /* ─── BUTTONS ────────────────────────────────────────────────────────────── */
 .stButton > button {
   font-family: var(--font-heading) !important;
   font-weight: 600 !important;
-  border-radius: 11px !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  letter-spacing: 0.01em !important;
+  border-radius: var(--radius-sm) !important;
+  transition: all 0.15s ease !important;
+  letter-spacing: -0.01em !important;
+  font-size: 0.85rem !important;
 }
 
 .stButton > button[kind="primary"],
 .stButton > button[data-testid="baseButton-primary"] {
-  background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: var(--accent-indigo) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   color: #FFFFFF !important;
-  padding: 0.6rem 1.6rem !important;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.35) !important;
+  padding: 0.55rem 1.35rem !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 12px rgba(99, 102, 241, 0.25) !important;
 }
 
 .stButton > button[kind="primary"]:hover,
 .stButton > button[data-testid="baseButton-primary"]:hover {
-  background: linear-gradient(135deg, #9F67FF 0%, #7C3AED 100%) !important;
-  box-shadow: 0 8px 30px rgba(124, 58, 237, 0.55) !important;
-  transform: translateY(-2px) !important;
+  background: var(--accent-indigo-hover) !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35) !important;
 }
 
 .stButton > button:not([kind="primary"]):not([data-testid="baseButton-primary"]) {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: var(--bg-surface) !important;
   border: 1px solid var(--border-subtle) !important;
-  color: var(--text-main) !important;
+  color: var(--text-primary) !important;
 }
 
 .stButton > button:not([kind="primary"]):not([data-testid="baseButton-primary"]):hover {
-  background: rgba(124, 58, 237, 0.12) !important;
-  border-color: var(--border-glow) !important;
-  color: #FFFFFF !important;
-  transform: translateY(-1px) !important;
+  background: var(--bg-surface-elevated) !important;
+  border-color: var(--border-active) !important;
 }
 
-/* ─── INPUT FIELDS & CONTROLS ────────────────────────────────────────────── */
+/* ─── INPUTS ─────────────────────────────────────────────────────────────── */
 .stTextInput input, .stTextArea textarea, .stSelectbox select {
-  background: rgba(10, 12, 24, 0.85) !important;
+  background: var(--bg-surface) !important;
   border: 1px solid var(--border-subtle) !important;
   border-radius: var(--radius-sm) !important;
-  color: var(--text-main) !important;
+  color: var(--text-primary) !important;
   font-family: var(--font-body) !important;
-  font-size: 0.9rem !important;
-  transition: all 0.2s ease !important;
+  font-size: 0.88rem !important;
+  transition: all 0.15s ease !important;
 }
 
 .stTextInput input:focus, .stTextArea textarea:focus {
-  border-color: var(--accent-purple) !important;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25) !important;
-  background: rgba(14, 17, 34, 0.95) !important;
+  border-color: var(--border-focus) !important;
+  box-shadow: 0 0 0 1px var(--border-focus) !important;
+  background: var(--bg-surface-elevated) !important;
 }
 
 .stTextInput label, .stTextArea label, .stSelectbox label {
   font-family: var(--font-heading) !important;
   font-weight: 600 !important;
-  font-size: 0.76rem !important;
+  font-size: 0.74rem !important;
   color: var(--text-muted) !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
+  letter-spacing: 0.04em !important;
 }
 
-/* ─── CARDS & GLASS CONTAINERS ───────────────────────────────────────────── */
+/* ─── CARDS & CONTAINERS ─────────────────────────────────────────────────── */
 [data-testid="stVerticalBlockBorderWrapper"] {
-  background: var(--bg-card) !important;
+  background: var(--bg-surface) !important;
   border: 1px solid var(--border-subtle) !important;
   border-radius: var(--radius-md) !important;
-  backdrop-filter: blur(14px) !important;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: border-color 0.15s ease !important;
 }
 
 [data-testid="stVerticalBlockBorderWrapper"]:hover {
-  border-color: rgba(124, 58, 237, 0.35) !important;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3) !important;
+  border-color: var(--border-active) !important;
 }
 
-/* ─── METRIC CARDS ───────────────────────────────────────────────────────── */
+/* ─── METRIC BLOCKS ──────────────────────────────────────────────────────── */
 [data-testid="stMetric"] {
-  background: rgba(14, 16, 32, 0.7) !important;
+  background: var(--bg-surface) !important;
   border: 1px solid var(--border-subtle) !important;
   border-radius: var(--radius-md) !important;
-  padding: 1rem 1.15rem !important;
-  backdrop-filter: blur(10px) !important;
-  transition: all 0.2s ease !important;
-}
-
-[data-testid="stMetric"]:hover {
-  border-color: var(--border-cyan) !important;
-  box-shadow: var(--shadow-cyan) !important;
+  padding: 0.9rem 1.1rem !important;
 }
 
 [data-testid="stMetricLabel"] {
   font-family: var(--font-heading) !important;
   font-weight: 600 !important;
-  font-size: 0.72rem !important;
-  color: var(--text-dim) !important;
+  font-size: 0.7rem !important;
+  color: var(--text-muted) !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.06em !important;
+  letter-spacing: 0.05em !important;
 }
 
 [data-testid="stMetricValue"] {
   font-family: var(--font-heading) !important;
-  font-weight: 800 !important;
-  font-size: 1.35rem !important;
-  background: linear-gradient(135deg, #FFFFFF 0%, #22D3EE 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  background-clip: text !important;
+  font-weight: 700 !important;
+  font-size: 1.25rem !important;
+  color: var(--text-primary) !important;
 }
 
 /* ─── EXPANDERS ──────────────────────────────────────────────────────────── */
 [data-testid="stExpander"] {
-  background: rgba(14, 16, 32, 0.5) !important;
+  background: var(--bg-surface) !important;
   border: 1px solid var(--border-subtle) !important;
   border-radius: var(--radius-md) !important;
   margin-bottom: 0.6rem !important;
-  overflow: hidden !important;
-  backdrop-filter: blur(8px) !important;
 }
 
 [data-testid="stExpander"] summary {
   font-family: var(--font-heading) !important;
   font-weight: 600 !important;
-  color: var(--text-muted) !important;
-  padding: 0.8rem 1.1rem !important;
-  transition: all 0.2s ease !important;
+  color: var(--text-primary) !important;
+  font-size: 0.85rem !important;
 }
 
-[data-testid="stExpander"] summary:hover {
-  color: #FFFFFF !important;
-  background: rgba(124, 58, 237, 0.08) !important;
-}
-
-/* ─── ALERTS & NOTIFICATIONS ─────────────────────────────────────────────── */
-div[data-testid="stNotification"], .stAlert {
-  border-radius: var(--radius-md) !important;
-  background: rgba(14, 16, 32, 0.85) !important;
-  border: 1px solid var(--border-subtle) !important;
-}
-
-/* ─── ANIMATIONS ─────────────────────────────────────────────────────────── */
-@keyframes pulseDot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
-}
-
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* Custom scrollbars */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-main); }
-::-webkit-scrollbar-thumb { background: rgba(124, 58, 237, 0.35); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent-purple); }
+/* ─── SCROLLBAR ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-app); }
+::-webkit-scrollbar-thumb { background: #262A3B; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #3B405A; }
 </style>
 """, unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TOP BRAND NAVBAR (Modern SaaS Header)
+#  TOP APPLICATION BAR (Linear / Vercel Grade Navigation)
 # ═══════════════════════════════════════════════════════════════════════════════
-st.markdown("""
+logged_user = st.session_state.get("logged_in_user")
+user_badge = f'<span style="font-family: var(--font-mono); font-size: 0.72rem; color: #10B981; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); padding: 3px 8px; border-radius: 6px;">@{logged_user}</span>' if logged_user else '<span style="font-family: var(--font-mono); font-size: 0.72rem; color: #94A3B8; background: rgba(255,255,255,0.04); border: 1px solid #202333; padding: 3px 8px; border-radius: 6px;">Guest Session</span>'
+
+st.markdown(f"""
 <div style="
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.8rem 1.4rem;
-  background: rgba(14, 16, 32, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  backdrop-filter: blur(20px);
-  margin-bottom: 1.8rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  padding: 0.75rem 1.25rem;
+  background: #10121A;
+  border: 1px solid #202333;
+  border-radius: 12px;
+  margin-bottom: 1.4rem;
 ">
-  <div style="display: flex; align-items: center; gap: 14px;">
+  <div style="display: flex; align-items: center; gap: 12px;">
     <div style="
-      width: 36px; height: 36px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #7C3AED, #06B6D4);
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      background: #6366F1;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.15rem;
-      box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);
-    ">⚡</div>
+      font-weight: 800; font-size: 0.95rem; color: #FFFFFF;
+    ">P</div>
     <div>
       <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: -0.02em; color: #FFFFFF;">
+        <span style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; letter-spacing: -0.02em; color: #F8FAFC;">
           PARALLEL
         </span>
-        <span style="
-          background: rgba(124, 58, 237, 0.15);
-          border: 1px solid rgba(124, 58, 237, 0.35);
-          color: #9F67FF;
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.65rem;
-          padding: 2px 7px;
-          border-radius: 6px;
-          font-weight: 600;
-        ">CREATOR OS</span>
+        <span style="font-family: var(--font-mono); font-size: 0.62rem; color: #64748B; border: 1px solid #202333; padding: 1px 6px; border-radius: 4px;">
+          CREATOR OS 2.4
+        </span>
       </div>
-      <div style="font-family: 'Inter', sans-serif; font-size: 0.74rem; color: #94A3B8;">
-        Reverse-engineer viral creators · Decouple hook formulas · Predict video ROI
+      <div style="font-size: 0.72rem; color: #64748B;">
+        Autonomous Content Intelligence &amp; Retention Decoupler
       </div>
     </div>
   </div>
 
-  <div style="display: flex; align-items: center; gap: 12px;">
-    <div style="
-      display: inline-flex; align-items: center; gap: 7px;
-      background: rgba(16, 185, 129, 0.08);
-      border: 1px solid rgba(16, 185, 129, 0.25);
-      padding: 4px 11px;
-      border-radius: 99px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem;
-      color: #34D399;
-      font-weight: 500;
-    ">
-      <span style="width: 7px; height: 7px; border-radius: 50%; background: #10B981; display: inline-block; animation: pulseDot 1.8s infinite;"></span>
-      LIVE ENGINE ACTIVE
-    </div>
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <span style="font-family: var(--font-mono); font-size: 0.68rem; color: #64748B; display: flex; align-items: center; gap: 6px;">
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
+      Engine Ready (Groq Llama-3.3-70b)
+    </span>
+    {user_badge}
   </div>
 </div>
 """, unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  SIDEBAR — USER PROFILE SYSTEM
+#  SIDEBAR — USER PROFILE & PERSISTENT BRIDGE STORE
 # ═══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("""
-    <div style="padding: 0.4rem 0 0.8rem;">
-      <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 0.95rem; color: #FFFFFF; letter-spacing: -0.01em;">
-        👤 User Workspace
-      </div>
-      <div style="font-family: 'Inter', sans-serif; font-size: 0.72rem; color: #64748B;">
-        Secure Private Bridge Store
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("#### User Workspace")
+    st.caption("Private Bridge Cloud Store")
 
     if "logged_in_user" not in st.session_state:
         st.session_state.logged_in_user = None
 
     if st.session_state.logged_in_user:
         user = st.session_state.logged_in_user
-        st.markdown(f"""
-        <div style="
-          background: rgba(124, 58, 237, 0.1);
-          border: 1px solid rgba(124, 58, 237, 0.3);
-          border-radius: 12px;
-          padding: 10px 14px;
-          margin-bottom: 1rem;
-        ">
-          <div style="font-size: 0.68rem; font-family: 'JetBrains Mono', monospace; color: #9F67FF; text-transform: uppercase;">Active Session</div>
-          <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.95rem; color: #FFFFFF;">@{user}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.success(f"Active Account: **@{user}**")
 
-        # ── Search History ────────────────────────────────────────────────
-        st.markdown("##### 📜 Search History")
+        st.markdown("##### Search History")
         history = get_history(user)
         if history:
-            for h in history[:10]:
+            for h in history[:8]:
                 cols = st.columns([1, 4])
                 with cols[0]:
                     if h.get("avatar_url"):
-                        st.image(h["avatar_url"], width=36)
+                        st.image(h["avatar_url"], width=32)
                     else:
                         st.markdown("👤")
                 with cols[1]:
                     comp_label = f" vs {h['comparison_creator']}" if h.get("comparison_creator") else ""
-                    btn_label = f"**{h['creator_name']}**{comp_label}"
+                    btn_label = f"{h['creator_name']}{comp_label}"
                     if st.button(btn_label, key=f"hist_{h['id']}", use_container_width=True):
                         cached = get_cached_intel(user, h["creator_name"])
                         if cached:
@@ -457,19 +372,19 @@ with st.sidebar:
                                 }
                             st.rerun()
         else:
-            st.caption("No searches yet. Analyse a creator to build your history.")
+            st.caption("No history yet. Analyze a creator to record findings.")
 
         st.markdown("---")
-        if st.button("🚪 Sign Out", use_container_width=True):
+        if st.button("Sign Out", use_container_width=True):
             st.session_state.logged_in_user = None
             st.rerun()
     else:
         auth_tab_login, auth_tab_create = st.tabs(["Sign In", "Create Account"])
 
         with auth_tab_login:
-            login_user = st.text_input("Username", key="login_user", placeholder="your_username")
+            login_user = st.text_input("Username", key="login_user", placeholder="username")
             login_pin = st.text_input("PIN", type="password", key="login_pin", placeholder="4-digit PIN")
-            if st.button("🔑 Sign In", use_container_width=True, key="btn_login"):
+            if st.button("Sign In", use_container_width=True, key="btn_login"):
                 if login_user.strip() and login_pin.strip():
                     try:
                         login(login_user.strip(), login_pin.strip())
@@ -478,7 +393,7 @@ with st.sidebar:
                     except ProfileNotFound:
                         st.error("Username not found. Create an account first.")
                     except WrongPIN:
-                        st.error("Incorrect PIN. Please try again.")
+                        st.error("Incorrect PIN.")
                 else:
                     st.warning("Enter both username and PIN.")
 
@@ -486,7 +401,7 @@ with st.sidebar:
             new_user = st.text_input("Choose Username", key="new_user", placeholder="e.g. asuja")
             new_pin = st.text_input("Set a PIN", type="password", key="new_pin", placeholder="e.g. 1234")
             new_pin2 = st.text_input("Confirm PIN", type="password", key="new_pin2", placeholder="Repeat PIN")
-            if st.button("✨ Create Account", use_container_width=True, key="btn_create"):
+            if st.button("Create Account", use_container_width=True, key="btn_create"):
                 if not new_user.strip():
                     st.warning("Enter a username.")
                 elif not new_pin.strip() or len(new_pin.strip()) < 3:
@@ -500,13 +415,13 @@ with st.sidebar:
                         st.success("Account created!")
                         st.rerun()
                     except UsernameTaken:
-                        st.error("This username is already taken.")
+                        st.error("Username already taken.")
 
 
-# ─── UNIVERSAL VIDEO PLAYER (YouTube, Instagram, TikTok & Web Media) ──────────
+# ─── UNIVERSAL VIDEO PLAYER WIDGET ────────────────────────────────────────────
 def render_playable_video(v_url: str, title: str = "", platform: str = ""):
     if not v_url:
-        st.warning("Video preview link currently loading.")
+        st.caption("Media stream currently loading...")
         return
 
     clean_url = v_url.strip()
@@ -515,906 +430,488 @@ def render_playable_video(v_url: str, title: str = "", platform: str = ""):
         if m_short:
             clean_url = f"https://www.youtube.com/watch?v={m_short.group(1)}"
 
-    # 1. YouTube
+    # YouTube
     if "youtube.com" in clean_url or "youtu.be" in clean_url:
         st.video(clean_url)
-        st.caption(f"▶️ Playing from YouTube: [{title or clean_url}]({clean_url})")
+        st.caption(f"Source: [YouTube — {title or clean_url}]({clean_url})")
 
-    # 2. Instagram (Reels, Posts, IGTV)
+    # Instagram
     elif "instagram.com" in clean_url:
         m = re.search(r"/(?:reel|reels|p|tv)/([A-Za-z0-9_-]+)", clean_url)
         if m:
             code = m.group(1)
             embed_code = f"""
             <iframe src="https://www.instagram.com/reel/{code}/embed" 
-                    width="100%" height="480" frameborder="0" scrolling="no" allowtransparency="true" allowfullscreen></iframe>
+                    width="100%" height="450" frameborder="0" scrolling="no" allowtransparency="true" allowfullscreen></iframe>
             """
-            st.components.v1.html(embed_code, height=500)
-            st.caption(f"📸 Playing from Instagram: [{title or clean_url}]({clean_url})")
+            st.components.v1.html(embed_code, height=470)
+            st.caption(f"Source: [Instagram — {title or clean_url}]({clean_url})")
         else:
-            st.info(f"📸 Instagram Content Link: [{title or clean_url}]({clean_url})")
-        st.link_button("📱 Open on Instagram", clean_url, type="secondary")
+            st.info(f"Instagram: [{title or clean_url}]({clean_url})")
+        st.link_button("Open on Instagram", clean_url, type="secondary")
 
-    # 3. TikTok
+    # TikTok
     elif "tiktok.com" in clean_url:
         m_tt = re.search(r"/video/(\d+)", clean_url)
         if m_tt:
             t_id = m_tt.group(1)
             embed_code = f"""
             <iframe src="https://www.tiktok.com/embed/v2/{t_id}" 
-                    width="100%" height="480" frameborder="0" allowfullscreen></iframe>
+                    width="100%" height="450" frameborder="0" allowfullscreen></iframe>
             """
-            st.components.v1.html(embed_code, height=500)
-            st.caption(f"🎵 Playing from TikTok: [{title or clean_url}]({clean_url})")
+            st.components.v1.html(embed_code, height=470)
+            st.caption(f"Source: [TikTok — {title or clean_url}]({clean_url})")
         else:
-            st.info(f"🎵 TikTok Content: [{title or clean_url}]({clean_url})")
-        st.link_button("🎵 Open on TikTok", clean_url, type="secondary")
+            st.info(f"TikTok: [{title or clean_url}]({clean_url})")
+        st.link_button("Open on TikTok", clean_url, type="secondary")
 
-    # 4. Other video / media
+    # Other
     else:
         try:
             st.video(clean_url)
-            st.caption(f"▶️ Playing Media: [{title or clean_url}]({clean_url})")
+            st.caption(f"Media Source: [{title or clean_url}]({clean_url})")
         except Exception:
-            st.info(f"🔗 Video Link: [{title or clean_url}]({clean_url})")
-            st.link_button("▶️ Open Media Link", clean_url, type="secondary")
-
-
-# ─── TOP-LEVEL TABS (Modern Clean 3-Tab Architecture) ─────────────────────────
-tab_home, tab_hooks, tab_analytics = st.tabs([
-    "🏠 Creator Intelligence & Clone Studio", 
-    "🎯 Hook Testing & Predictions", 
-    "📊 Channel Reach & Commercials"
-])
+            st.link_button("Open Media Stream", clean_url, type="secondary")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  HOME PAGE — CREATOR INTELLIGENCE, COMPETITORS & CLONE STUDIO
+#  COMMAND BAR (Unified Raycast / Spotlight Style Reconnaissance Console)
 # ═══════════════════════════════════════════════════════════════════════════════
-with tab_home:
+with st.container(border=True):
     st.markdown("""
-    <div style="margin-bottom: 1.2rem;">
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <span style="font-size: 1.25rem;">⚡</span>
-        <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.35rem; font-weight: 800; margin: 0; color: #FFFFFF;">
-          Creator Reconnaissance &amp; Clone Studio
-        </h2>
-      </div>
-      <p style="font-family: 'Inter', sans-serif; font-size: 0.84rem; color: #94A3B8; margin: 4px 0 0 32px;">
-        Analyze any creator, benchmark against rivals, deconstruct style DNA, and generate frame-by-frame blueprints.
-      </p>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+      <span style="font-family: var(--font-heading); font-size: 0.85rem; font-weight: 700; color: #F8FAFC;">
+        RECONNAISSANCE &amp; DECOUPLING CONSOLE
+      </span>
+      <span style="font-family: var(--font-mono); font-size: 0.68rem; color: #64748B;">
+        LIVE WEB SCRAPE + LLM SYNTHESIS
+      </span>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Search Console Card ──────────────────────────────────────────────────
-    with st.container(border=True):
-        col_a, col_b, col_c = st.columns([1.4, 1.4, 1.0])
-        with col_a:
-            creator_name = st.text_input(
-                "Target Creator to Copy (Creator A)",
-                placeholder="e.g. CarryMinati, MrBeast, Aakash Dhawan",
-                key="input_creator_name"
-            )
-        with col_b:
-            comparison_creator = st.text_input(
-                "Benchmark Creator (Creator B, Optional)",
-                placeholder="e.g. Ashish Chanchlani, Ryan Trahan, your channel",
-                key="input_comparison_creator",
-                help="Add a rival or benchmark creator to run an accurate head-to-head comparison and pinpoint the exact gap to win."
-            )
-        with col_c:
-            creator_niche = st.text_input(
-                "Niche / Category (optional)",
-                placeholder="e.g. Comedy, Motovlog, Tech",
-                key="input_creator_niche"
-            )
+    col_a, col_b, col_c = st.columns([1.5, 1.5, 1.0])
+    with col_a:
+        creator_name = st.text_input(
+            "Target Creator (To Clone)",
+            placeholder="e.g. CarryMinati, MrBeast, Aakash Dhawan",
+            key="input_creator_name"
+        )
+    with col_b:
+        comparison_creator = st.text_input(
+            "Benchmark Creator (Optional Rival)",
+            placeholder="e.g. Ashish Chanchlani, Ryan Trahan, your channel",
+            key="input_comparison_creator",
+            help="Add a rival to generate an accurate head-to-head comparison and hook contrast duel."
+        )
+    with col_c:
+        creator_niche = st.text_input(
+            "Category / Niche (Optional)",
+            placeholder="e.g. Comedy, Motovlog, Tech",
+            key="input_creator_niche"
+        )
 
-        # ── Spelling & Similar Creator Suggestions (Auto-Detection) ───────────
-        if creator_name and len(creator_name.strip()) >= 2:
-            suggestions = find_similar_creators(creator_name.strip(), min_score=0.45, limit=4)
-            is_exact = any(s["name"].lower() == creator_name.strip().lower() for s in suggestions)
-            if suggestions and not is_exact:
-                st.markdown("💡 **Similar / Corrected Creator Options (Click to Select):**")
-                sug_cols = st.columns(min(len(suggestions), 4))
-                for s_idx, sug in enumerate(suggestions[:4]):
-                    with sug_cols[s_idx]:
-                        def _make_picker(target_n=sug["name"], target_cat=sug["niche"]):
-                            def _callback():
-                                st.session_state["input_creator_name"] = target_n
-                                if target_cat:
-                                    st.session_state["input_creator_niche"] = target_cat
-                            return _callback
-                        st.button(
-                            f"👉 **{sug['name']}**\n\n`{sug['niche'][:24]}`",
-                            key=f"sug_btn_t1_{s_idx}_{sug['name'][:8]}",
-                            use_container_width=True,
-                            on_click=_make_picker(sug["name"], sug["niche"])
-                        )
-            elif not suggestions and len(creator_name.strip()) >= 4:
-                c_spell_a, c_spell_b = st.columns([3, 1])
-                with c_spell_a:
-                    st.caption(f"Unfamiliar creator '{creator_name}'? Check if there's a recognized spelling.")
-                with c_spell_b:
-                    if st.button("🔍 AI Spell Fix", key="ai_spell_t1", use_container_width=True):
-                        with st.spinner("Finding closest creators..."):
-                            ai_sugs = resolve_misspelled_creator_with_llm(creator_name.strip())
-                            st.session_state["ai_sugs_t1"] = ai_sugs
-                if st.session_state.get("ai_sugs_t1"):
-                    st.markdown("🤖 **AI Identified Creators:**")
-                    ai_cols = st.columns(len(st.session_state["ai_sugs_t1"]))
-                    for a_idx, a_sug in enumerate(st.session_state["ai_sugs_t1"]):
-                        with ai_cols[a_idx]:
-                            def _make_ai_picker(target_n=a_sug["name"], target_cat=a_sug["niche"]):
-                                def _callback():
-                                    st.session_state["input_creator_name"] = target_n
-                                    if target_cat:
-                                        st.session_state["input_creator_niche"] = target_cat
-                                return _callback
-                            st.button(
-                                f"👉 **{a_sug['name']}**\n\n`{a_sug['niche'][:24]}`",
-                                key=f"ai_btn_t1_{a_idx}_{a_sug['name'][:8]}",
-                                use_container_width=True,
-                                on_click=_make_ai_picker(a_sug["name"], a_sug["niche"])
-                            )
-
-        # ── Spelling & Similar Creator Suggestions for Creator B (Benchmark) ─
-        if comparison_creator and len(comparison_creator.strip()) >= 2:
-            comp_suggestions = find_similar_creators(comparison_creator.strip(), min_score=0.45, limit=3)
-            comp_is_exact = any(s["name"].lower() == comparison_creator.strip().lower() for s in comp_suggestions)
-            if comp_suggestions and not comp_is_exact:
-                st.markdown("💡 **Benchmark Creator Options (Click to Select):**")
-                csug_cols = st.columns(min(len(comp_suggestions), 3))
-                for cs_idx, csug in enumerate(comp_suggestions[:3]):
-                    with csug_cols[cs_idx]:
-                        def _make_comp_picker(target_n=csug["name"]):
-                            def _callback():
-                                st.session_state["input_comparison_creator"] = target_n
-                            return _callback
-                        st.button(
-                            f"👉 **{csug['name']}**\n\n`{csug['niche'][:24]}`",
-                            key=f"comp_sug_btn_{cs_idx}_{csug['name'][:8]}",
-                            use_container_width=True,
-                            on_click=_make_comp_picker(csug["name"])
-                        )
-
-        run_intel = st.button("🚀 Run Deep Analysis & Reverse-Engineer", type="primary", key="intel_btn", use_container_width=True)
-
-    # ── Pipeline Execution ───────────────────────────────────────────────────
-    if run_intel and creator_name.strip():
-        prev_findings = {}
-        if st.session_state.get("logged_in_user"):
-            prev_findings = get_user_previous_findings(st.session_state.logged_in_user, creator_name.strip())
-            st.session_state.prev_findings = prev_findings
-
-        with st.status(f"🌐 Analyzing {creator_name}'s landscape & viral formula...", expanded=True) as status:
-            try:
-                if prev_findings.get("total_past_runs", 0) > 0:
-                    status.write(f"📚 Incorporating {prev_findings['total_past_runs']} previous session(s) — synthesizing fresh angles without repeating past ones...")
-                status.write("🔍 Scanning web footprint, social handles & verified uploads...")
-                from parallel.intelligence import generate_creator_intelligence
-                comp_c_clean = comparison_creator.strip() if comparison_creator else ""
-                intel = generate_creator_intelligence(creator_name.strip(), creator_niche.strip(), previous_findings=prev_findings, comparison_creator=comp_c_clean)
-                st.session_state.comparison_creator_name = comp_c_clean
-                st.session_state.intel = intel
-                st.session_state.intel_name = creator_name.strip()
-                st.session_state.intel_from_cache = False
-
-                t_profile = intel.get("creator_profile", {})
-                t_niche = t_profile.get("core_niche", creator_niche.strip() or "Digital Content")
-                t_creator_vids = intel.get("creator_videos", [])
-                t_niche_vids = intel.get("niche_trending_videos", [])
-
-                status.write("🧬 Deconstructing Style DNA, editing rhythm & blueprints...")
-                status.write("📋 Generating frame-by-frame shooting script & 5 upgrade piracy concepts...")
-
-                dossier = generate_unified_clone_dossier(creator_name.strip(), t_niche, t_creator_vids, t_niche_vids, comparison_creator=comp_c_clean)
-                copy_result = {
-                    "target_creator": creator_name.strip(),
-                    "comparison_creator": comp_c_clean,
-                    "target_niche": t_niche,
-                    "target_profile": t_profile,
-                    "style_card": dossier["style_card"],
-                    "blueprints": dossier["blueprints"],
-                    "piracy_ideas": dossier["piracy_ideas"],
-                    "head_to_head": dossier.get("head_to_head"),
-                    "target_intel": intel,
-                }
-                st.session_state.copy_data = copy_result
-
-                # Auto-save to profile & isolated Bridge store if logged in
-                if st.session_state.get("logged_in_user"):
-                    user_now = st.session_state.logged_in_user
-                    save_intel(user_now, creator_name.strip(), t_niche, intel, comparison_creator=comp_c_clean)
-                    push_summary_to_bridge(user_now, creator_name.strip(), intel)
-                    save_clone_run(
-                        user_now,
-                        creator_name.strip(),
-                        dossier["style_card"],
-                        dossier["blueprints"],
-                        dossier["piracy_ideas"]
-                    )
-                    save_to_bridge_user_store(
-                        user_now,
-                        creator_name.strip(),
-                        intel,
-                        copy_result,
-                        comparison_creator=comp_c_clean
+    # ── Presets & Auto-detection chips ────────────────────────────────────────
+    if creator_name and len(creator_name.strip()) >= 2:
+        suggestions = find_similar_creators(creator_name.strip(), min_score=0.45, limit=4)
+        is_exact = any(s["name"].lower() == creator_name.strip().lower() for s in suggestions)
+        if suggestions and not is_exact:
+            st.markdown("<span style='font-size:0.75rem; color:#94A3B8;'>Suggested Creator Matches:</span>", unsafe_allow_html=True)
+            sug_cols = st.columns(min(len(suggestions), 4))
+            for s_idx, sug in enumerate(suggestions[:4]):
+                with sug_cols[s_idx]:
+                    def _make_picker(target_n=sug["name"], target_cat=sug["niche"]):
+                        def _callback():
+                            st.session_state["input_creator_name"] = target_n
+                            if target_cat:
+                                st.session_state["input_creator_niche"] = target_cat
+                        return _callback
+                    st.button(
+                        f"{sug['name']} ({sug['niche'][:16]})",
+                        key=f"sug_btn_t1_{s_idx}_{sug['name'][:8]}",
+                        use_container_width=True,
+                        on_click=_make_picker(sug["name"], sug["niche"])
                     )
 
-                status.update(label="✅ Analysis & Clone Dossier Complete!", state="complete")
-            except Exception as e:
-                status.update(label="⚠️ Error during analysis", state="error")
-                st.error(f"Engine notice: {e}")
-    elif run_intel:
-        st.warning("Please enter a creator name.")
+    run_intel = st.button("Execute Deep Analysis & Decouple Formula", type="primary", key="intel_btn", use_container_width=True)
 
-    intel = st.session_state.get("intel")
-    if intel:
+
+# ── Pipeline Execution Engine ────────────────────────────────────────────────
+if run_intel and creator_name.strip():
+    prev_findings = {}
+    if st.session_state.get("logged_in_user"):
+        prev_findings = get_user_previous_findings(st.session_state.logged_in_user, creator_name.strip())
+        st.session_state.prev_findings = prev_findings
+
+    with st.status(f"Deconstructing {creator_name}...", expanded=True) as status:
+        try:
+            if prev_findings.get("total_past_runs", 0) > 0:
+                status.write(f"Loaded {prev_findings['total_past_runs']} previous session findings from Bridge.")
+            status.write("Crawling social footprint and verified uploads via Firecrawl...")
+            from parallel.intelligence import generate_creator_intelligence
+            comp_c_clean = comparison_creator.strip() if comparison_creator else ""
+            intel = generate_creator_intelligence(creator_name.strip(), creator_niche.strip(), previous_findings=prev_findings, comparison_creator=comp_c_clean)
+            st.session_state.comparison_creator_name = comp_c_clean
+            st.session_state.intel = intel
+            st.session_state.intel_name = creator_name.strip()
+            st.session_state.intel_from_cache = False
+
+            t_profile = intel.get("creator_profile", {})
+            t_niche = t_profile.get("core_niche", creator_niche.strip() or "Digital Content")
+            t_creator_vids = intel.get("creator_videos", [])
+            t_niche_vids = intel.get("niche_trending_videos", [])
+
+            status.write("Synthesizing Style DNA, blueprints & 5 upgrade concepts...")
+            dossier = generate_unified_clone_dossier(creator_name.strip(), t_niche, t_creator_vids, t_niche_vids, comparison_creator=comp_c_clean)
+            copy_result = {
+                "target_creator": creator_name.strip(),
+                "comparison_creator": comp_c_clean,
+                "target_niche": t_niche,
+                "target_profile": t_profile,
+                "style_card": dossier["style_card"],
+                "blueprints": dossier["blueprints"],
+                "piracy_ideas": dossier["piracy_ideas"],
+                "head_to_head": dossier.get("head_to_head"),
+                "target_intel": intel,
+            }
+            st.session_state.copy_data = copy_result
+
+            # Save to isolated store
+            if st.session_state.get("logged_in_user"):
+                user_now = st.session_state.logged_in_user
+                save_intel(user_now, creator_name.strip(), t_niche, intel, comparison_creator=comp_c_clean)
+                push_summary_to_bridge(user_now, creator_name.strip(), intel)
+                save_clone_run(user_now, creator_name.strip(), dossier["style_card"], dossier["blueprints"], dossier["piracy_ideas"])
+                save_to_bridge_user_store(user_now, creator_name.strip(), intel, copy_result, comparison_creator=comp_c_clean)
+
+            status.update(label="Analysis & Clone Dossier Ready", state="complete")
+        except Exception as e:
+            status.update(label="Engine notice", state="error")
+            st.error(f"Error: {e}")
+elif run_intel:
+    st.warning("Please specify a target creator name.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  WORKSPACE APPLICATION TABS (Clean 6-Section Architecture)
+# ═══════════════════════════════════════════════════════════════════════════════
+intel = st.session_state.get("intel")
+
+tab_dossier, tab_ideas, tab_clone, tab_friction, tab_hooks, tab_analytics = st.tabs([
+    "Executive Dossier",
+    "Viral Content Studio (5)",
+    "Style DNA & Blueprints",
+    "Audience Friction Audit",
+    "Hook Simulator & Economics",
+    "Reach & Commercials"
+])
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. EXECUTIVE DOSSIER
+# ─────────────────────────────────────────────────────────────────────────────
+with tab_dossier:
+    if not intel:
+        st.info("Enter a target creator in the Reconnaissance Console above to generate the Executive Dossier.")
+    else:
         creator_name_display = st.session_state.get("intel_name", "Creator")
         profile = intel.get("creator_profile", {})
-
-        # ── Show cache badge + refresh if loaded from history ────────────────
-        if st.session_state.get("intel_from_cache"):
-            cache_col1, cache_col2 = st.columns([3, 1])
-            with cache_col1:
-                st.info(f"📂 Loaded from saved profile. Data may not be the latest.")
-            with cache_col2:
-                if st.button("🔄 Refresh Live", key="btn_refresh_intel", use_container_width=True):
-                    st.session_state.intel = None
-                    st.session_state.intel_from_cache = False
-                    with st.spinner(f"🌐 Re-scanning {creator_name_display}'s latest data..."):
-                        try:
-                            from parallel.intelligence import generate_creator_intelligence
-                            prev_f = get_user_previous_findings(st.session_state.logged_in_user, creator_name_display) if st.session_state.get("logged_in_user") else {}
-                            comp_name = st.session_state.get("comparison_creator_name", "")
-                            fresh_intel = generate_creator_intelligence(creator_name_display, previous_findings=prev_f, comparison_creator=comp_name)
-                            st.session_state.intel = fresh_intel
-                            st.session_state.intel_name = creator_name_display
-
-                            t_prof = fresh_intel.get("creator_profile", {})
-                            t_nic = t_prof.get("core_niche", "")
-                            fresh_dossier = generate_unified_clone_dossier(
-                                creator_name_display, t_nic,
-                                fresh_intel.get("creator_videos", []),
-                                fresh_intel.get("niche_trending_videos", []),
-                                comparison_creator=comp_name
-                            )
-                            st.session_state.copy_data = {
-                                "target_creator": creator_name_display,
-                                "target_niche": t_nic,
-                                "target_profile": t_prof,
-                                "style_card": fresh_dossier["style_card"],
-                                "blueprints": fresh_dossier["blueprints"],
-                                "piracy_ideas": fresh_dossier["piracy_ideas"],
-                                "target_intel": fresh_intel,
-                            }
-                            if st.session_state.get("logged_in_user"):
-                                user_now = st.session_state.logged_in_user
-                                save_intel(user_now, creator_name_display, t_nic, fresh_intel)
-                                save_clone_run(
-                                    user_now,
-                                    creator_name_display,
-                                    fresh_dossier["style_card"],
-                                    fresh_dossier["blueprints"],
-                                    fresh_dossier["piracy_ideas"]
-                                )
-                                save_to_bridge_user_store(
-                                    user_now,
-                                    creator_name_display,
-                                    fresh_intel,
-                                    st.session_state.copy_data
-                                )
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Refresh failed: {e}")
-
-        # ── 1. CREATOR OVERVIEW (WITH VERIFIED PHOTO & GLOW CARD) ────────────
         tier = profile.get("tier") or "Mega (10M+)"
         niche_disp = profile.get("core_niche") or "Short-form Content"
         loc_disp = profile.get("location") or "India"
         avatar_url = profile.get("avatar_url", "")
 
-        tier_badge_color = "#F59E0B" if "Mega" in tier else "#7C3AED" if "Macro" in tier else "#06B6D4"
-
         with st.container(border=True):
-            c_img_col, c_text_col = st.columns([1, 4])
-            with c_img_col:
+            pcol1, pcol2 = st.columns([1, 4])
+            with pcol1:
                 if avatar_url:
-                    st.markdown(f"""
-                    <div style="display:flex; justify-content:center; align-items:center; padding: 4px;">
-                      <img src="{avatar_url}" style="
-                        width: 110px; height: 110px;
-                        border-radius: 50%;
-                        object-fit: cover;
-                        border: 3px solid rgba(124, 58, 237, 0.6);
-                        box-shadow: 0 0 25px rgba(124, 58, 237, 0.4);
-                      ">
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.image(avatar_url, width=110)
                 else:
-                    st.markdown("""
-                    <div style="
-                      width: 100px; height: 100px; border-radius: 50%;
-                      background: linear-gradient(135deg, #7C3AED, #06B6D4);
-                      display: flex; align-items: center; justify-content: center;
-                      font-size: 2.2rem; margin: auto;
-                    ">👤</div>
-                    """, unsafe_allow_html=True)
-
-            with c_text_col:
-                st.markdown(f"""
-                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;">
-                  <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.6rem; font-weight: 800; margin: 0; color: #FFFFFF;">
-                    {profile.get('name', creator_name_display)}
-                  </h2>
-                  <span style="
-                    background: {tier_badge_color}20;
-                    border: 1px solid {tier_badge_color}60;
-                    color: {tier_badge_color};
-                    font-family: 'JetBrains Mono', monospace;
-                    font-size: 0.72rem;
-                    padding: 2px 9px;
-                    border-radius: 99px;
-                    font-weight: 600;
-                  ">{tier}</span>
-                </div>
-                """, unsafe_allow_html=True)
-
-                st.markdown(f"**Category:** `{niche_disp}` &nbsp;·&nbsp; **Region:** 📍 `{loc_disp}`")
+                    st.markdown("### 👤")
+            with pcol2:
+                st.markdown(f"### {profile.get('name', creator_name_display)}")
+                st.markdown(f"**Tier:** `{tier}` &nbsp;·&nbsp; **Category:** `{niche_disp}` &nbsp;·&nbsp; **Location:** `{loc_disp}`")
                 accounts = profile.get("discovered_accounts", [])
                 if accounts:
-                    acc_pills = []
-                    for acc in accounts:
-                        p = acc.get("platform", "Link")
-                        t = acc.get("title", p)
-                        u = acc.get("url", "")
-                        if u:
-                            acc_pills.append(f"[{p}: {t}]({u})")
-                        else:
-                            acc_pills.append(f"{p}: {t}")
-                    st.caption("🔗 **Discovered Handles:** " + " · ".join(acc_pills))
+                    acc_pills = [f"[{acc.get('platform')}: {acc.get('title')}]({acc.get('url')})" if acc.get("url") else f"{acc.get('platform')}: {acc.get('title')}" for acc in accounts]
+                    st.caption("Verified Handles: " + " · ".join(acc_pills))
 
             c_desc1, c_desc2 = st.columns(2)
             with c_desc1:
-                st.info(f"🎭 **Tone & Style:** {profile.get('tone_and_style') or 'High-energy, satirical, engaging delivery.'}")
+                st.info(f"**Delivery Rhythm:** {profile.get('tone_and_style') or 'High-energy, satirical, engaging delivery.'}")
             with c_desc2:
-                st.info(f"👥 **Audience Vibe:** {profile.get('audience_vibe') or 'Young, college, mobile-first community.'}")
+                st.info(f"**Audience Persona:** {profile.get('audience_vibe') or 'Young, college, mobile-first community.'}")
 
-        # ── UNIFIED SUB-TABS ON HOME PAGE ────────────────────────────────────
-        subtab_ideas, subtab_clone = st.tabs([
-            "💡 Viral Ideas & Competition Benchmarks", 
-            "🔬 Copy Winning Creator (Clone Studio)"
-        ])
-
-        # ─────────────────────────────────────────────────────────────────────
-        #  SUB-TAB A: VIRAL IDEAS, BENCHMARKS & COMPETITION
-        # ─────────────────────────────────────────────────────────────────────
-        with subtab_ideas:
-            # A1. NICHE & INTERNET TRENDING CONTENT (OTHER CREATORS)
-            st.markdown(f"### 🎬 Top Trending in Niche & Internet (Other Creators) — Watch On-Screen")
-            st.caption(f"Real viral videos and Reels trending across the broader web in this niche by **OTHER creators** (NOT {profile.get('name', creator_name_display)}). Watch directly on screen to analyze winning hook patterns.")
-
-            niche_vids = intel.get("niche_trending_videos") or []
-            if niche_vids:
-                vid_labels = [f"[{v.get('platform', 'Video')}] {v.get('title', 'Trending Video')} ({v.get('views', 'Trending')})" for v in niche_vids]
-                selected_idx = st.radio(
-                    "Pick a viral video from other creators to watch on screen:",
-                    range(len(niche_vids)),
-                    format_func=lambda i: vid_labels[i],
-                    horizontal=True,
-                    key="radio_niche_vids"
-                )
-
-                sel_vid = niche_vids[selected_idx]
-                v_url = sel_vid.get("url", "")
-                v_plat = sel_vid.get("platform", "YouTube")
-
-                st.markdown(f"#### 📺 {sel_vid.get('title', 'Trending Video')}")
-
-                vcol_player, vcol_analysis = st.columns([1.2, 1])
-                with vcol_player:
-                    render_playable_video(v_url, sel_vid.get("title", "Trending Video"), v_plat)
-
-                with vcol_analysis:
-                    with st.container(border=True):
-                        st.markdown("##### 🔍 Viral Reference Anatomy")
-                        st.metric("Trending Momentum", sel_vid.get("views", "Viral Wave"))
-                        st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\x22{sel_vid.get('opening_hook', '—')}\x22*")
-                        st.markdown(f"**🧠 Why Viewers Stayed (Retention Trigger):**\n{sel_vid.get('why_it_went_viral', '—')}")
-                        st.info(f"**📋 Adaptable Hook Template For You:**\n{sel_vid.get('adapt_hook_template', '—')}")
-
-            st.markdown("---")
-
-            # A2. CREATOR'S OWN TOP CONTENT (PLAYABLE ON SCREEN)
-            creator_vids = intel.get("creator_videos", [])
-            if creator_vids:
-                st.markdown(f"### 🎬 {profile.get('name', 'Creator')}'s Own Top Content — Watch On-Screen & Deconstruct Hooks")
-                st.caption(f"Watch {profile.get('name', 'the creator')}'s own highest-performing uploads and Instagram Reels directly on screen.")
-
-                cvid_labels = [f"[{v.get('platform', 'Video')}] {v.get('title', 'Video')} ({v.get('views', 'Popular')})" for v in creator_vids]
-                c_selected_idx = st.radio(
-                    "Select a video from this creator to watch & analyze:",
-                    range(len(creator_vids)),
-                    format_func=lambda i: cvid_labels[i],
-                    horizontal=True,
-                    key="radio_creator_vids_home"
-                )
-
-                c_sel_vid = creator_vids[c_selected_idx]
-                cv_url = c_sel_vid.get("url", "")
-                cv_plat = c_sel_vid.get("platform", "YouTube")
-
-                st.markdown(f"#### 📺 {c_sel_vid.get('title', 'Creator Video')}")
-
-                cvcol_player, cvcol_analysis = st.columns([1.2, 1])
-                with cvcol_player:
-                    render_playable_video(cv_url, c_sel_vid.get("title", "Creator Video"), cv_plat)
-
-                with cvcol_analysis:
-                    with st.container(border=True):
-                        st.markdown("##### 🔍 Creator's Proven Hook Breakdown")
-                        st.metric("Views Benchmark", c_sel_vid.get("views", "Top Performer"))
-                        st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\x22{c_sel_vid.get('opening_hook', '—')}\x22*")
-                        st.markdown(f"**🧠 Why Viewers Stayed:**\n{c_sel_vid.get('why_it_went_viral', '—')}")
-                        st.info(f"**📋 Adaptable Strategy:**\n{c_sel_vid.get('adapt_hook_template', '—')}")
-
-                st.markdown("---")
-
-            # A3. COMPETITOR BENCHMARKING & GAPS
-            competitors = intel.get("competitor_benchmarking", [])
-            if competitors:
-                st.markdown("### ⚔️ Competitor Benchmarking & Gaps")
-                st.caption("Detailed reconnaissance of what rivals in your niche are doing, where they are weak, and how you can capture their audience.")
-                for comp in competitors:
-                    with st.expander(f"🔴 {comp.get('competitor_name', 'Competitor')} — Breakdown & How To Beat Them"):
-                        cc1, cc2 = st.columns(2)
-                        with cc1:
-                            st.markdown(f"**Recent Content Focus:** {comp.get('recent_content_focus', '—')}")
-                            st.markdown(f"**Their Main Strength:** {comp.get('their_strength', '—')}")
-                        with cc2:
-                            st.markdown(f"**Their Critical Gap / Weakness:** {comp.get('their_gap', '—')}")
-                            st.success(f"**🏆 Your Winning Move:** {comp.get('how_to_beat_them', '—')}")
-
-                st.markdown("---")
-
-            # ── PREVIOUS FINDINGS & MEMORY BANNER ────────────────────────────
-            prev_data = st.session_state.get("prev_findings") or {}
-            if prev_data.get("total_past_runs", 0) > 0 and st.session_state.get("logged_in_user"):
-                with st.expander(f"📚 Memory & Previous Findings for {creator_name_display} ({prev_data.get('total_past_runs')} past session(s))", expanded=False):
-                    st.caption(f"Stored securely in your private Bridge store (User: `{st.session_state.logged_in_user}`). New ideas below build upon this baseline without duplicating.")
-                    mcol1, mcol2 = st.columns(2)
-                    with mcol1:
-                        st.markdown("**Past Content Ideas Explored:**")
-                        for past_idea in prev_data.get("previous_content_ideas", [])[:5]:
-                            st.markdown(f"- 💡 {past_idea}")
-                    with mcol2:
-                        st.markdown("**Past Benchmarked Competitors:**")
-                        for past_comp in prev_data.get("previous_competitors", [])[:4]:
-                            st.markdown(f"- ⚔️ {past_comp}")
-                st.markdown("---")
-
-            # ── AUDIENCE CRITICISM, NEGATIVE REVIEWS & IMPROVEMENTS ──────────
-            neg_reviews = intel.get("negative_reviews", [])
-            imp_suggs = intel.get("improvement_suggestions", [])
-
-            if neg_reviews or imp_suggs:
-                st.markdown("### 🔴 Audience Friction, Negative Reviews & Improvement Opportunities")
-                st.caption(f"Deconstructing real viewer complaints, drop-off triggers, and negative feedback for **{creator_name_display}** — with tailored upgrades to turn their weaknesses into your unfair advantage.")
-
-                if neg_reviews:
-                    with st.expander("⚠️ View Criticisms & Common Viewer Complaints", expanded=True):
-                        st.markdown("##### 📢 What Viewers Complain About (Audience Friction Analysis)")
-                        n_cols = st.columns(min(len(neg_reviews), 3))
-                        for n_idx, rev in enumerate(neg_reviews):
-                            with n_cols[n_idx % 3]:
-                                with st.container(border=True):
-                                    freq = rev.get("frequency", "Occasional")
-                                    freq_badge = "🔴 High Frequency" if freq == "Common" else "🟡 Moderate Frequency" if freq == "Occasional" else "🟢 Low Frequency"
-                                    st.markdown(f"**{rev.get('criticism_category', 'Criticism')}**")
-                                    st.caption(f"`{freq_badge}`")
-                                    quote = rev.get("audience_quote_example", "")
-                                    if quote:
-                                        st.markdown(f"> *\x22{quote}\x22*")
-                                    st.markdown(f"**Channel Impact:** {rev.get('impact_on_channel', 'Causes viewer attrition.')}")
-
-                if imp_suggs:
-                    st.markdown("#### 💡 Upgraded Content Strategies (Fixing Viewer Weaknesses)")
-                    for imp_idx, imp in enumerate(imp_suggs, 1):
-                        with st.container(border=True):
-                            icol1, icol2 = st.columns([1.8, 1.2])
-                            with icol1:
-                                st.markdown(f"##### Fix #{imp_idx}: {imp.get('fix_title', 'Content Fix')}")
-                                st.markdown(f"**Addressing Weakness:** `{imp.get('problem', 'Audience Fatigue')}`")
-                                st.write(imp.get('fix_description', ''))
-                                st.success(f"**📈 Expected Retention Impact:** {imp.get('expected_impact', '+25% retention')}")
-                            with icol2:
-                                with st.container(border=True):
-                                    st.markdown("**🎯 Upgraded Counter-Hook:**")
-                                    up_hook = imp.get('hook_upgrade', '')
-                                    st.info(f"*\x22{up_hook}\x22*")
-                                    if st.button(f"▶ Test 4 Upgrade Hooks in Simulator", key=f"btn_test_fix_{imp_idx}", use_container_width=True):
-                                        cand_imp_hooks = imp.get("candidate_hooks", [])
-                                        if not cand_imp_hooks or len(cand_imp_hooks) < 3:
-                                            cand_imp_hooks = [
-                                                {"sid": "S1", "text": up_hook},
-                                                {"sid": "S2", "text": f"Why viewers disliked my last video on {imp.get('problem', 'this')} — and how I fixed it."},
-                                                {"sid": "S3", "text": f"I asked 50 honest commenters what went wrong. Here is the real fix."},
-                                                {"sid": "S4", "text": f"No clickbait, zero fluff: the 100% transparent truth about {imp.get('fix_title', 'this topic')}."}
-                                            ]
-                                        hook_lines = "\n".join(f"{h['sid']}: {h['text']}" for h in cand_imp_hooks)
-                                        st.session_state.prefill_hooks = (
-                                            f"Creator: {creator_name_display}. Upgrade Concept: {imp.get('fix_title', '')}\n"
-                                            f"{hook_lines}"
-                                        )
-                                        st.success("✅ 4 upgraded candidate hooks sent to Hook Testing tab!")
-
-                st.markdown("---")
-
-            # A4. HIGH-POTENTIAL CONTENT SUGGESTIONS (WITH REFERENCE VIDEO PER IDEA)
-            suggestions = intel.get("content_suggestions", [])
-            if suggestions:
-                c_sug_col1, c_sug_col2 = st.columns([2, 1.2])
-                with c_sug_col1:
-                    st.markdown(f"### 💡 High-Potential Content Suggestions ({len(suggestions)} Ideas Ready to Test)")
-                    st.caption("AI-engineered concepts based on live trending topics. Every suggestion includes 4 distinct candidate hooks and a playable reference video.")
-                with c_sug_col2:
-                    if st.button("🚀 Test ALL 5 Ideas in Hook Testing", key="btn_test_all_ideas_top", use_container_width=True, type="primary"):
-                        all_idea_hooks = []
-                        for s_i, s_item in enumerate(suggestions[:5], start=1):
-                            s_hks = s_item.get("candidate_hooks", [])
-                            top_t = s_hks[0].get("text", "") if s_hks else s_item.get("title", "")
-                            all_idea_hooks.append(f"S{s_i}: {top_t}")
-                        st.session_state.prefill_hooks = (
-                            f"Creator: {creator_name_display}. 5-Concept Showdown across {profile.get('core_niche', 'Niche')}:\n" +
-                            "\n".join(all_idea_hooks)
-                        )
-                        st.success("✅ Top hooks for ALL 5 ideas pre-filled! Switch to the 🎯 Hook Testing tab above.")
-                for s in suggestions:
-                    with st.container(border=True):
-                        h1, h2 = st.columns([3, 1])
-                        with h1:
-                            st.markdown(f"##### Idea #{s.get('id', '?')}: {s.get('title', 'Untitled')}")
-                            st.caption(f"🔥 Trending topic: {s.get('trending_topic', '—')}")
-                            st.markdown(f"**Why it works:** {s.get('why_it_works', '—')}")
-                        with h2:
-                            st.metric("Estimated Views", s.get("estimated_views", "—"))
-
-                        ref = s.get("reference_video") or {}
-                        ref_url = ref.get("url", "")
-                        ref_title = ref.get("title", "Benchmark Video Reference")
-                        ref_creator = ref.get("creator", "Proven Creator")
-                        ref_why = ref.get("why_reference", "Demonstrates the retention curve.")
-                        ref_verified = ref.get("verified", False)
-
-                        if ref_verified and ref_url:
-                            with st.expander(f"🎬 Watch Concept Reference Video: {ref_title} ({ref_creator})", expanded=True):
-                                rv_col1, rv_col2 = st.columns([1.2, 1])
-                                with rv_col1:
-                                    render_playable_video(ref_url, ref_title, ref.get("platform", ""))
-                                with rv_col2:
-                                    st.markdown(f"**Benchmark Creator / Source:** `{ref_creator}`")
-                                    st.info(f"**Why this benchmarks the concept:**\n{ref_why}")
-                                    st.markdown("**Takeaway:** Adapt this reference's pattern interrupt and visual pacing to your video.")
-
-                        hooks = s.get("candidate_hooks", [])
-                        if hooks:
-                            st.markdown("**🎯 Candidate Hooks (Engineered for 3-sec Short-Form Retention):**")
-                            for hk in hooks:
-                                s_id = hk.get('sid', '?')
-                                h_txt = hk.get('text', '')
-                                st.markdown(f"""
-                                <div style="
-                                  display: flex; align-items: flex-start; gap: 9px;
-                                  background: rgba(124, 58, 237, 0.07);
-                                  border: 1px solid rgba(124, 58, 237, 0.22);
-                                  border-left: 3px solid #7C3AED;
-                                  border-radius: 8px;
-                                  padding: 7px 12px;
-                                  margin-bottom: 5px;
-                                ">
-                                  <span style="
-                                    background: #7C3AED; color: #FFFFFF;
-                                    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
-                                    padding: 2px 6px; border-radius: 4px; font-weight: 700;
-                                    flex-shrink: 0; margin-top: 1px;
-                                  ">{s_id}</span>
-                                  <span style="font-family: 'Inter', sans-serif; font-size: 0.84rem; color: #F1F5F9; line-height: 1.45;">
-                                    {h_txt}
-                                  </span>
-                                </div>
-                                """, unsafe_allow_html=True)
-
-                        # Bridge to Tab 2
-                        if st.button(f"▶ Test all 4 candidate hooks for Idea #{s.get('id')} in Hook Simulator", key=f"test_idea_{s.get('id')}", use_container_width=True):
-                            hook_lines = "\n".join(
-                                [f"{hk['sid']}: {hk['text']}" for hk in hooks if 'sid' in hk and 'text' in hk]
-                            )
-                            prefill = (
-                                f"Creator: {creator_name_display}. Topic: {s.get('trending_topic', '')}.\n"
-                                f"{hook_lines}"
-                            )
-                            st.session_state.prefill_hooks = prefill
-                            st.success("✅ Hooks pre-filled! Switch to the **🎯 Hook Testing & Predictions** tab above.")
-
-        # ─────────────────────────────────────────────────────────────────────
-        #  SUB-TAB B: COPY WINNING CREATOR (CLONE STUDIO)
-        # ─────────────────────────────────────────────────────────────────────
-        with subtab_clone:
-            copy_data = st.session_state.get("copy_data")
-            comp_name_current = st.session_state.get("comparison_creator_name", "")
-            if not copy_data:
-                with st.spinner("Generating Clone Dossier for this creator..."):
-                    t_nic = profile.get("core_niche", "Digital Content")
-                    fresh_dossier = generate_unified_clone_dossier(
-                        creator_name_display, t_nic,
-                        intel.get("creator_videos", []),
-                        intel.get("niche_trending_videos", []),
-                        comparison_creator=comp_name_current
-                    )
-                    copy_data = {
-                        "target_creator": creator_name_display,
-                        "comparison_creator": comp_name_current,
-                        "target_niche": t_nic,
-                        "target_profile": profile,
-                        "style_card": fresh_dossier["style_card"],
-                        "blueprints": fresh_dossier["blueprints"],
-                        "piracy_ideas": fresh_dossier["piracy_ideas"],
-                        "head_to_head": fresh_dossier.get("head_to_head"),
-                        "target_intel": intel,
-                    }
-                    st.session_state.copy_data = copy_data
-
-            tc_name = copy_data.get("target_creator", creator_name_display)
-            tc_niche = copy_data.get("target_niche", profile.get("core_niche", "Digital Content"))
-
-            # ── HEAD-TO-HEAD CREATOR COMPARISON (IF 2 CREATORS PROVIDED) ──────
-            h2h = copy_data.get("head_to_head")
-            if h2h:
-                bench_n = h2h.get("benchmark_creator", "Benchmark Creator")
-                st.markdown(f"### 🥊 Head-to-Head Battle: {tc_name} vs {bench_n}")
-                st.caption(f"Comparative intelligence: Deconstructing why **{tc_name}** wins on retention, where **{bench_n}** bleeds viewers, and how to clone the winning formula.")
-
-                h_col1, h_col2 = st.columns(2)
-                with h_col1:
-                    with st.container(border=True):
-                        st.markdown(f"#### 🏆 {tc_name} (Target to Clone)")
-                        t_avatar = profile.get("avatar_url", "")
-                        if t_avatar:
-                            st.image(t_avatar, width=65)
-                        st.markdown(f"**Dominant Retention Edge:**\n{h2h.get('target_style_edge', 'Fast hook pacing and visual pattern interrupt.')}")
-                with h_col2:
-                    with st.container(border=True):
-                        st.markdown(f"#### 🎯 {bench_n} (Benchmark / Rival)")
-                        comp_avatar = intel.get("comparison_creator", {}).get("avatar_url", "")
-                        if comp_avatar:
-                            st.image(comp_avatar, width=65)
-                        st.markdown(f"**Critical Retention Vulnerability:**\n{h2h.get('benchmark_weakness', 'Pacing drag and slow conversational setup.')}")
-
+        # Head to Head Battle (if benchmark provided)
+        copy_data = st.session_state.get("copy_data", {})
+        h2h = copy_data.get("head_to_head")
+        if h2h:
+            bench_n = h2h.get("benchmark_creator", "Benchmark Creator")
+            st.markdown(f"#### Head-to-Head Comparative Duel: {creator_name_display} vs {bench_n}")
+            h1, h2 = st.columns(2)
+            with h1:
                 with st.container(border=True):
-                    st.markdown(f"##### 🔑 The Winning Clone Formula")
-                    st.success(f"**How to Clone {tc_name} to Beat {bench_n}:**\n{h2h.get('cloning_conversion_rule', 'Adopt fast opening tempo while targeting their core topic.')}")
+                    st.markdown(f"**{creator_name_display} (Retention Edge):**")
+                    st.write(h2h.get("target_style_edge", "Fast hook pacing and visual pattern interrupt."))
+            with h2:
+                with st.container(border=True):
+                    st.markdown(f"**{bench_n} (Retention Leak):**")
+                    st.write(h2h.get("benchmark_weakness", "Slow conversational setup and exposition drag."))
 
-                    hk_contrast = h2h.get("hook_contrast", {})
-                    if hk_contrast:
-                        st.markdown("###### ⚡ Side-by-Side Hook Contrast Duel:")
-                        hc1, hc2 = st.columns(2)
-                        with hc1:
-                            st.markdown(f"**How {tc_name} Opens:**")
-                            st.write(f"> *\x22{hk_contrast.get('creator_a_hook', '—')}\x22*")
-                        with hc2:
-                            st.markdown(f"**How {bench_n} Opens:**")
-                            st.write(f"> *\x22{hk_contrast.get('creator_b_hook', '—')}\x22*")
+            with st.container(border=True):
+                st.markdown(f"**Winning Conversion Rule:** {h2h.get('cloning_conversion_rule', 'Adopt fast opening tempo while targeting their core topic.')}")
+                hk_contrast = h2h.get("hook_contrast", {})
+                if hk_contrast:
+                    win_hook = hk_contrast.get("winning_hybrid_hook", "")
+                    if win_hook:
+                        st.success(f"**Winning Hybrid Hook:** \"{win_hook}\"")
+                        if st.button("Send 4-Hook Contrast Duel to Simulator", key="btn_h2h_send", use_container_width=True):
+                            h2h_cand_hooks = hk_contrast.get("candidate_hooks")
+                            if not h2h_cand_hooks or len(h2h_cand_hooks) < 3:
+                                h2h_cand_hooks = [
+                                    {"sid": "S1", "text": hk_contrast.get("creator_a_hook", f"Stop scrolling — this changes everything about {creator_name_display}'s formula.")},
+                                    {"sid": "S2", "text": hk_contrast.get("creator_b_hook", f"Today we are going to look into an interesting problem.")},
+                                    {"sid": "S3", "text": win_hook},
+                                    {"sid": "S4", "text": f"I took {bench_n}'s biggest video and remade it using {creator_name_display}'s viral formula."}
+                                ]
+                            st.session_state.prefill_hooks = (
+                                f"Battle: {creator_name_display} vs {bench_n}. 4-Hook Comparative Duel:\n" +
+                                "\n".join(f"{h['sid']}: {h['text']}" for h in h2h_cand_hooks)
+                            )
+                            st.success("4 duel hooks prefilled in Hook Simulator tab.")
 
-                        win_hook = hk_contrast.get("winning_hybrid_hook", "")
-                        if win_hook:
-                            st.info(f"🔥 **Your Winning Hybrid Hook:**\n*\x22{win_hook}\x22*")
-                            if st.button("▶ Test 4-Hook Contrast Duel in Simulator", key="btn_test_hybrid_hook", use_container_width=True):
-                                h2h_cand_hooks = hk_contrast.get("candidate_hooks")
-                                if not h2h_cand_hooks or len(h2h_cand_hooks) < 3:
-                                    h2h_cand_hooks = [
-                                        {"sid": "S1", "text": hk_contrast.get("creator_a_hook", f"Stop scrolling — this changes everything about {tc_name}'s formula.")},
-                                        {"sid": "S2", "text": hk_contrast.get("creator_b_hook", f"Today we are going to look into an interesting problem.")},
-                                        {"sid": "S3", "text": win_hook},
-                                        {"sid": "S4", "text": f"I took {bench_n}'s biggest video and remade it using {tc_name}'s secret viral formula."}
-                                    ]
-                                hook_lines = "\n".join(f"{h['sid']}: {h['text']}" for h in h2h_cand_hooks)
-                                st.session_state.prefill_hooks = (
-                                    f"Battle: {tc_name} vs {bench_n}. 4-Hook Comparative Duel:\n"
-                                    f"{hook_lines}"
-                                )
-                                st.success("✅ 4 comparative duel hooks sent to Hook Testing tab!")
+        # Creator's Top Video Breakdown
+        creator_vids = intel.get("creator_videos", [])
+        if creator_vids:
+            st.markdown("#### Creator Proven Uploads (Watch & Deconstruct)")
+            cvid_labels = [f"[{v.get('platform', 'Video')}] {v.get('title', 'Video')} ({v.get('views', 'Popular')})" for v in creator_vids]
+            c_selected_idx = st.radio("Select upload:", range(len(creator_vids)), format_func=lambda i: cvid_labels[i], horizontal=True, key="radio_dossier_vids")
+            c_sel_vid = creator_vids[c_selected_idx]
+            cvcol1, cvcol2 = st.columns([1.2, 1])
+            with cvcol1:
+                render_playable_video(c_sel_vid.get("url", ""), c_sel_vid.get("title", ""), c_sel_vid.get("platform", "YouTube"))
+            with cvcol2:
+                with st.container(border=True):
+                    st.metric("Views Benchmark", c_sel_vid.get("views", "Top Performer"))
+                    st.markdown(f"**Opening 3-Second Hook:**\n> *\"{c_sel_vid.get('opening_hook', '—')}\"*")
+                    st.markdown(f"**Retention Trigger:** {c_sel_vid.get('why_it_went_viral', '—')}")
 
-                st.markdown("---")
 
-            # B1. STYLE REPLICATOR (DNA Card)
-            st.markdown(f"### 🧬 {tc_name}'s Style DNA")
-            st.caption(f"The exact formula this creator uses in every {tc_niche} video — decoded for replication.")
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. VIRAL CONTENT STUDIO (5 IDEAS + 4 HOOKS EACH)
+# ─────────────────────────────────────────────────────────────────────────────
+with tab_ideas:
+    if not intel:
+        st.info("Run analysis on a creator to unlock 5 engineered viral concepts with 4 hook archetypes each.")
+    else:
+        suggestions = intel.get("content_suggestions", [])
+        creator_name_display = st.session_state.get("intel_name", "Creator")
 
-            sc = copy_data.get("style_card", {})
-            dna = sc.get("style_dna", {})
+        col_hdr, col_btn = st.columns([3, 1.2])
+        with col_hdr:
+            st.markdown(f"### High-Potential Content Concepts ({len(suggestions)} Ideas)")
+            st.caption("Engineered based on verified live trending topics. Every idea contains 4 distinct short-form hook archetypes.")
+        with col_btn:
+            if st.button("🚀 Push ALL 5 Concepts to Simulator", key="btn_push_all_ideas", use_container_width=True, type="primary"):
+                all_idea_hooks = []
+                for s_i, s_item in enumerate(suggestions[:5], start=1):
+                    s_hks = s_item.get("candidate_hooks", [])
+                    top_t = s_hks[0].get("text", "") if s_hks else s_item.get("title", "")
+                    all_idea_hooks.append(f"S{s_i}: {top_t}")
+                st.session_state.prefill_hooks = (
+                    f"Creator: {creator_name_display}. 5-Concept Showdown:\n" +
+                    "\n".join(all_idea_hooks)
+                )
+                st.success("Top hook for all 5 concepts prefilled in Hook Simulator tab.")
 
-            if dna:
-                dna_c1, dna_c2 = st.columns(2)
-                with dna_c1:
+        for s in suggestions:
+            with st.container(border=True):
+                h1, h2 = st.columns([3, 1])
+                with h1:
+                    st.markdown(f"##### Concept #{s.get('id', '?')}: {s.get('title', 'Untitled')}")
+                    st.caption(f"Trending Topic: `{s.get('trending_topic', '—')}`")
+                    st.markdown(f"**Strategic Rationale:** {s.get('why_it_works', '—')}")
+                with h2:
+                    st.metric("Est. Views Potential", s.get("estimated_views", "—"))
+
+                ref = s.get("reference_video") or {}
+                if ref.get("url") and ref.get("verified"):
+                    with st.expander(f"Watch Reference Benchmark: {ref.get('title', 'Video')} ({ref.get('creator', 'Source')})", expanded=False):
+                        r1, r2 = st.columns([1.2, 1])
+                        with r1:
+                            render_playable_video(ref["url"], ref.get("title", ""), ref.get("platform", ""))
+                        with r2:
+                            st.markdown(f"**Why this benchmarks the concept:**\n{ref.get('why_reference', 'Demonstrates retention.')}")
+
+                hooks = s.get("candidate_hooks", [])
+                if hooks:
+                    st.markdown("**4 Candidate Hook Archetypes (3-Second Retention Pacing):**")
+                    archetypes = ["INCIDENT", "CURIOSITY", "SHOCK", "CONTRARIAN"]
+                    for idx, hk in enumerate(hooks):
+                        arch = archetypes[idx % len(archetypes)]
+                        s_id = hk.get('sid', f"S{idx+1}")
+                        h_txt = hk.get('text', '')
+                        st.markdown(f"""
+                        <div style="
+                          display: flex; align-items: flex-start; gap: 8px;
+                          background: #141622; border: 1px solid #232638;
+                          border-left: 3px solid #6366F1;
+                          border-radius: 6px; padding: 6px 10px; margin-bottom: 4px;
+                        ">
+                          <span style="font-family: var(--font-mono); font-size: 0.65rem; color: #818CF8; background: rgba(99,102,241,0.15); padding: 1px 5px; border-radius: 4px; font-weight: 700;">{s_id}</span>
+                          <span style="font-family: var(--font-mono); font-size: 0.62rem; color: #64748B; background: rgba(255,255,255,0.04); padding: 1px 5px; border-radius: 4px;">{arch}</span>
+                          <span style="font-size: 0.82rem; color: #F1F5F9; line-height: 1.4;">{h_txt}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                if st.button(f"Test all 4 candidate hooks for Concept #{s.get('id')}", key=f"test_concept_{s.get('id')}", use_container_width=True):
+                    hook_lines = "\n".join([f"{hk['sid']}: {hk['text']}" for hk in hooks if 'sid' in hk and 'text' in hk])
+                    st.session_state.prefill_hooks = (
+                        f"Creator: {creator_name_display}. Concept: {s.get('title', '')}.\n" + hook_lines
+                    )
+                    st.success("4 candidate hooks sent to Hook Simulator.")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. STYLE DNA & READY-TO-FILM BLUEPRINTS
+# ─────────────────────────────────────────────────────────────────────────────
+with tab_clone:
+    copy_data = st.session_state.get("copy_data")
+    if not copy_data:
+        st.info("Run analysis above to decouple Style DNA, shooting blueprints, and niche piracy ideas.")
+    else:
+        creator_name_display = copy_data.get("target_creator", "Creator")
+        sc = copy_data.get("style_card", {})
+        dna = sc.get("style_dna", {})
+
+        st.markdown(f"### {creator_name_display}'s Decoupled Style DNA")
+        if dna:
+            d1, d2 = st.columns(2)
+            with d1:
+                with st.container(border=True):
+                    st.markdown("**Hook Formula:**")
+                    st.caption(dna.get("hook_formula", "—"))
+                    st.markdown("**Content Structure:**")
+                    st.caption(dna.get("content_structure", "—"))
+                    st.markdown("**Editing Cadence:**")
+                    st.caption(dna.get("editing_rhythm", "—"))
+            with d2:
+                with st.container(border=True):
+                    st.markdown("**Thumbnail Formula:**")
+                    st.caption(dna.get("thumbnail_formula", "—"))
+                    st.markdown("**CTA Pattern:**")
+                    st.caption(dna.get("cta_pattern", "—"))
+                    st.markdown(f"**Viral Psychological Trigger:** `{dna.get('viral_trigger', '—')}`")
+
+        # 5-Step Clone Roadmap
+        roadmap = sc.get("clone_roadmap", [])
+        if roadmap:
+            st.markdown("#### 5-Step Implementation Roadmap")
+            for step in roadmap:
+                with st.expander(f"Step {step.get('step', '?')}: {step.get('action', '—')} ({step.get('difficulty', 'Medium')})"):
+                    st.write(step.get("why_it_works", "—"))
+
+        # Blueprints & Shooting Scripts
+        bps = copy_data.get("blueprints", [])
+        if bps:
+            st.markdown("#### Frame-by-Frame Video Shooting Scripts")
+            for bp_idx, bp in enumerate(bps):
+                source_v = bp.get("source_video", {})
+                with st.expander(f"Script #{bp_idx+1}: {source_v.get('title', 'Blueprint')}", expanded=bp_idx == 0):
+                    script = bp.get("shooting_script", [])
+                    if script:
+                        st.dataframe(pd.DataFrame(script), use_container_width=True, hide_index=True)
+                    equip = bp.get("equipment_needed", [])
+                    if equip:
+                        st.caption("Required Equipment: " + " · ".join(f"`{e}`" for e in equip))
+
+        # Niche Piracy Ideas
+        piracy_list = copy_data.get("piracy_ideas", [])
+        if piracy_list:
+            st.markdown(f"#### 5 Niche Piracy Upgrade Concepts")
+            for idea in piracy_list:
+                with st.expander(f"Upgrade #{idea.get('id', '?')}: {idea.get('your_upgrade_title', '—')} ({idea.get('estimated_views', '')})"):
+                    st.markdown(f"**Competitor Baseline:** {idea.get('competitor_did', '—')}")
+                    st.markdown(f"**Why Yours Outperforms:** {idea.get('why_yours_wins', '—')}")
+                    p_hooks = idea.get("candidate_hooks", [])
+                    if p_hooks:
+                        st.markdown("**Upgrade Hooks:**")
+                        for phk in p_hooks:
+                            st.markdown(f"- **{phk.get('sid', '')}**: {phk.get('text', '')}")
+                        if st.button(f"Test 4 Piracy Hooks for Upgrade #{idea.get('id')}", key=f"btn_piracy_{idea.get('id')}", use_container_width=True):
+                            hook_lines = "\n".join([f"{h['sid']}: {h['text']}" for h in p_hooks if 'sid' in h and 'text' in h])
+                            st.session_state.prefill_hooks = (
+                                f"Creator: {creator_name_display} (Piracy Upgrade). Topic: {idea.get('your_upgrade_title', '')}.\n" + hook_lines
+                            )
+                            st.success("4 piracy hooks prefilled in Hook Simulator.")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. AUDIENCE FRICTION & RETENTION LEAKS
+# ─────────────────────────────────────────────────────────────────────────────
+with tab_friction:
+    if not intel:
+        st.info("Analyze a creator to audit real audience complaints, retention friction, and counter-hook upgrades.")
+    else:
+        creator_name_display = st.session_state.get("intel_name", "Creator")
+        neg_reviews = intel.get("negative_reviews", [])
+        imp_suggs = intel.get("improvement_suggestions", [])
+
+        st.markdown(f"### Audience Friction & Viewer Drop-off Audit: {creator_name_display}")
+        st.caption("Real viewer complaints crawled from public forums, comments, and sentiment clusters.")
+
+        if neg_reviews:
+            ncols = st.columns(min(len(neg_reviews), 3))
+            for n_idx, rev in enumerate(neg_reviews):
+                with ncols[n_idx % 3]:
                     with st.container(border=True):
-                        st.markdown("##### 🎯 Hook Formula")
-                        st.markdown(f"> *{dna.get('hook_formula', '—')}*")
-                        st.markdown("##### 🏗️ Content Structure")
-                        st.markdown(f"> *{dna.get('content_structure', '—')}*")
-                        st.markdown("##### ✂️ Editing Rhythm")
-                        st.markdown(f"> *{dna.get('editing_rhythm', '—')}*")
-                with dna_c2:
-                    with st.container(border=True):
-                        st.markdown("##### 🖼️ Thumbnail Formula")
-                        st.markdown(f"> *{dna.get('thumbnail_formula', '—')}*")
-                        st.markdown("##### 📢 CTA Pattern")
-                        st.markdown(f"> *{dna.get('cta_pattern', '—')}*")
-                        st.markdown("##### 🧠 Viral Trigger")
-                        st.warning(f"**{dna.get('viral_trigger', '—')}**")
-                        st.markdown("##### 🤝 Audience Contract")
-                        st.info(f"*{dna.get('audience_contract', '—')}*")
+                        freq = rev.get("frequency", "Occasional")
+                        badge_color = "#F43F5E" if freq == "Common" else "#F59E0B"
+                        st.markdown(f"**{rev.get('criticism_category', 'Criticism')}**")
+                        st.caption(f"Frequency: `{freq}`")
+                        quote = rev.get("audience_quote_example", "")
+                        if quote:
+                            st.markdown(f"> *\"{quote}\"*")
+                        st.markdown(f"**Channel Impact:** {rev.get('impact_on_channel', 'Causes viewer attrition.')}")
 
-            # Clone roadmap
-            roadmap = sc.get("clone_roadmap", [])
-            if roadmap:
-                st.markdown("#### 🗺️ 5-Step Clone Roadmap")
-                for step in roadmap:
-                    diff_color = {"Easy": "🟢", "Medium": "🟡", "Hard": "🔴"}.get(step.get("difficulty", "Medium"), "⚪")
-                    with st.expander(f"Step {step.get('step', '?')}: {step.get('action', '—')} {diff_color} {step.get('difficulty', '')}"):
-                        st.markdown(f"**Why it works:** {step.get('why_it_works', '—')}")
-
-            diff_angle = sc.get("differentiation_angle", "")
-            if diff_angle:
-                st.success(f"🎯 **Your Differentiation Angle:** {diff_angle}")
-
-            st.markdown("---")
-
-            # B2. BLUEPRINT GENERATOR
-            bps = copy_data.get("blueprints", [])
-            if bps:
-                st.markdown(f"### 📋 Video Blueprints — Ready-to-Film Scripts")
-                st.caption(f"Frame-by-frame deconstruction of {tc_name}'s top videos with a replicable shooting script you can film today.")
-
-                for bp_idx, bp in enumerate(bps):
-                    source_v = bp.get("source_video", {})
-                    bp_title = source_v.get("title", f"Blueprint #{bp_idx+1}")
-                    with st.expander(f"📹 Blueprint: {bp_title}", expanded=bp_idx == 0):
-                        if source_v.get("url"):
-                            render_playable_video(source_v["url"], bp_title, source_v.get("platform", "YouTube"))
-
-                        vb = bp.get("video_breakdown", {})
-                        if vb:
-                            seg_cols = st.columns(3)
-                            for seg_idx, (seg_key, seg_label, seg_icon) in enumerate([
-                                ("hook_segment", "Hook (0-3s)", "⚡"),
-                                ("build_segment", "Build (3-45s)", "📈"),
-                                ("climax_segment", "Climax (45s+)", "🎆")
-                            ]):
-                                seg = vb.get(seg_key, {})
-                                with seg_cols[seg_idx]:
-                                    with st.container(border=True):
-                                        st.markdown(f"**{seg_icon} {seg_label}**")
-                                        st.markdown(f"*What happens:* {seg.get('what_happens', seg.get('structure', seg.get('payoff', '—')))}")
-                                        trigger = seg.get("psychological_trigger", seg.get("retention_technique", seg.get("cta", "")))
-                                        if trigger:
-                                            st.caption(f"🧠 {trigger}")
-                                        rep = seg.get("replicate_as", "")
-                                        if rep:
-                                            st.info(f"**Your version:** {rep}")
-
-                        # Shooting script
-                        script = bp.get("shooting_script", [])
-                        if script:
-                            st.markdown("#### 🎬 Shooting Script")
-                            script_data = []
-                            for s in script:
-                                script_data.append({
-                                    "Scene": s.get("scene", ""),
-                                    "Shot": s.get("shot_type", ""),
-                                    "Action": s.get("action", ""),
-                                    "Dialogue / Caption": s.get("dialogue_or_caption", ""),
-                                    "Duration (s)": s.get("duration_seconds", "")
-                                })
-                            st.dataframe(pd.DataFrame(script_data), hide_index=True)
-
-                        equip = bp.get("equipment_needed", [])
-                        prod_hrs = bp.get("estimated_production_hours", "")
-                        if equip or prod_hrs:
-                            eq1, eq2 = st.columns(2)
-                            with eq1:
-                                if equip:
-                                    st.markdown("**🛠️ Equipment:** " + " · ".join([f"`{e}`" for e in equip]))
-                            with eq2:
-                                if prod_hrs:
-                                    st.metric("⏱️ Est. Production Time", prod_hrs)
-
-            st.markdown("---")
-
-            # B3. NICHE PIRACY IDEAS
-            piracy_list = copy_data.get("piracy_ideas", [])
-            if piracy_list:
-                st.markdown(f"### 🏴‍☠️ Niche Piracy — 5 Ideas That Beat {tc_name}")
-                st.caption(f"Each idea is a direct upgrade of {tc_name}'s top content. Better hook, better angle, better execution.")
-
-                for idea in piracy_list:
-                    angle_emoji = {
-                        "More cinematic": "🎬",
-                        "More emotional": "❤️",
-                        "Faster paced": "⚡",
-                        "More relatable": "🤝",
-                        "Bigger stakes": "💰",
-                        "Better data": "📊"
-                    }.get(idea.get("upgrade_angle", ""), "🔥")
-
-                    with st.expander(f"{angle_emoji} Idea #{idea.get('id', '?')}: {idea.get('your_upgrade_title', '—')}  —  {idea.get('estimated_views', '')}"):
-                        st.markdown(f"**They did:** {idea.get('competitor_did', '—')}")
-                        st.markdown(f"**Your upgrade:** {idea.get('your_upgrade_title', '—')}")
-                        st.success(f"**Why yours wins:** {idea.get('why_yours_wins', '—')}")
-                        st.caption(f"Upgrade angle: `{idea.get('upgrade_angle', '—')}`")
-
-                        hooks = idea.get("candidate_hooks", [])
-                        if hooks:
-                            st.markdown("**🎯 Candidate Upgrade Hooks (Engineered Retention Pacing):**")
-                            for h in hooks:
-                                s_id = h.get('sid', '?')
-                                h_txt = h.get('text', '')
-                                st.markdown(f"""
-                                <div style="
-                                  display: flex; align-items: flex-start; gap: 9px;
-                                  background: rgba(6, 182, 212, 0.07);
-                                  border: 1px solid rgba(6, 182, 212, 0.22);
-                                  border-left: 3px solid #06B6D4;
-                                  border-radius: 8px;
-                                  padding: 7px 12px;
-                                  margin-bottom: 5px;
-                                ">
-                                  <span style="
-                                    background: #06B6D4; color: #000000;
-                                    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
-                                    padding: 2px 6px; border-radius: 4px; font-weight: 700;
-                                    flex-shrink: 0; margin-top: 1px;
-                                  ">{s_id}</span>
-                                  <span style="font-family: 'Inter', sans-serif; font-size: 0.84rem; color: #F1F5F9; line-height: 1.45;">
-                                    {h_txt}
-                                  </span>
-                                </div>
-                                """, unsafe_allow_html=True)
-
-                            # Bridge to Tab 2
-                            if st.button(f"▶ Test all 4 piracy upgrade hooks for Upgrade #{idea.get('id')} in Simulator", key=f"test_piracy_{idea.get('id')}", use_container_width=True):
-                                hook_lines = "\n".join(
-                                    [f"{h['sid']}: {h['text']}" for h in hooks if 'sid' in h and 'text' in h]
-                                )
-                                prefill = (
-                                    f"Creator: {tc_name} (Piracy Upgrade). Topic: {idea.get('your_upgrade_title', '')}.\n"
-                                    f"{hook_lines}"
-                                )
-                                st.session_state.prefill_hooks = prefill
-                                st.success("✅ Hooks pre-filled! Switch to the **🎯 Hook Testing & Predictions** tab above.")
+        if imp_suggs:
+            st.markdown("#### Counter-Hook Upgrades (Turning Weaknesses into Retention)")
+            for imp_idx, imp in enumerate(imp_suggs, 1):
+                with st.container(border=True):
+                    i1, i2 = st.columns([2, 1])
+                    with i1:
+                        st.markdown(f"##### Solution #{imp_idx}: {imp.get('fix_title', 'Content Fix')}")
+                        st.markdown(f"**Addressing:** `{imp.get('problem', 'Audience Fatigue')}`")
+                        st.write(imp.get('fix_description', ''))
+                        st.success(f"Expected Retention Boost: {imp.get('expected_impact', '+25% retention')}")
+                    with i2:
+                        up_hook = imp.get('hook_upgrade', '')
+                        st.markdown(f"**Upgraded Counter-Hook:**\n> *\"{up_hook}\"*")
+                        if st.button(f"Test Upgrade Hooks in Simulator", key=f"btn_fric_test_{imp_idx}", use_container_width=True):
+                            cand_imp_hooks = imp.get("candidate_hooks", [])
+                            if not cand_imp_hooks or len(cand_imp_hooks) < 3:
+                                cand_imp_hooks = [
+                                    {"sid": "S1", "text": up_hook},
+                                    {"sid": "S2", "text": f"Why viewers disliked my last video on {imp.get('problem', 'this')} — and how I fixed it."},
+                                    {"sid": "S3", "text": f"I asked 50 honest commenters what went wrong. Here is the real fix."},
+                                    {"sid": "S4", "text": f"No clickbait, zero fluff: the 100% transparent truth about {imp.get('fix_title', 'this topic')}."}
+                                ]
+                            st.session_state.prefill_hooks = (
+                                f"Creator: {creator_name_display}. Upgrade Concept: {imp.get('fix_title', '')}\n" +
+                                "\n".join(f"{h['sid']}: {h['text']}" for h in cand_imp_hooks)
+                            )
+                            st.success("4 counter-hooks sent to Hook Simulator.")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-#  TAB 2 — HOOK TESTING & REVENUE/FAME PREDICTIONS
-# ═══════════════════════════════════════════════════════════════════════════════
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. HOOK SIMULATOR & PREDICTIVE MONETIZATION
+# ─────────────────────────────────────────────────────────────────────────────
 with tab_hooks:
-    st.markdown("""
-    <div style="margin-bottom: 1.2rem;">
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <span style="font-size: 1.25rem;">🎯</span>
-        <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.35rem; font-weight: 800; margin: 0; color: #FFFFFF;">
-          Hook Testing on Synthetic Audience
-        </h2>
-      </div>
-      <p style="font-family: 'Inter', sans-serif; font-size: 0.84rem; color: #94A3B8; margin: 4px 0 0 32px;">
-        Calibrate hooks against simulated student audiences (18–24), filter clickbait, and predict estimated video revenue and viral fame index.
-      </p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("### Hook Testing & Algorithmic Simulator")
+    st.caption("Evaluate short-form candidate hooks across simulated demographic panels (18–24), calculate clickbait penalty, and project video earnings.")
 
     with st.container(border=True):
         col_t1, col_t2 = st.columns([3, 1])
         with col_t2:
-            if st.button("⚡ Load Live Trending Hooks", help="Fetches real trending comedy/roast hooks from live internet research", use_container_width=True):
+            if st.button("Load Trending Preset", help="Loads trending viral hook patterns", use_container_width=True):
                 st.session_state.prefill_hooks = (
                     "Creator: CarryMinati. Niche: Viral Roasts & Parody Shorts.\n"
                     "S1: I found the fakest gym influencer on Instagram and confronted him.\n"
@@ -1426,21 +923,17 @@ with tab_hooks:
 
         default_text = st.session_state.get("prefill_hooks", "")
         text = st.text_area(
-            "Candidate Hooks (or paste channel brief + hooks S1 to S4):",
+            "Candidate Hooks (or paste brief + hooks S1 to S4):",
             value=default_text,
-            height=140,
-            placeholder="e.g. Comedy Shorts for Indian college students. S1: Hook 1... S2: Hook 2..."
+            height=130,
+            placeholder="S1: Hook 1... S2: Hook 2..."
         )
 
-        n = st.slider(
-            "Synthetic audience sample size", 10, 150, 15, 5,
-            help="15-20 personas takes ~25s on Groq free tier. 50+ gives maximum demographic granularity."
-        )
-
-        run_hook_test = st.button("▶ Run on Synthetic Audience", type="primary", use_container_width=True)
+        n = st.slider("Simulated Persona Sample Size", 10, 150, 15, 5, help="15-20 personas completes in ~20s. 50+ provides high demographic granularity.")
+        run_hook_test = st.button("Run Synthetic Audience Calibration", type="primary", use_container_width=True)
 
     if run_hook_test and text:
-        with st.spinner("Asking synthetic personas & predicting performance..."):
+        with st.spinner("Calibrating stop-scroll retention across personas..."):
             try:
                 res = run_study(text, n)
                 st.session_state.res = res
@@ -1448,20 +941,20 @@ with tab_hooks:
                 Path("data").mkdir(exist_ok=True)
                 Path("data/brief.txt").write_text(brief_text(res["study"]), encoding="utf-8")
                 Path("data/summary.txt").write_text(summary_text(res), encoding="utf-8")
-                st.success("Audience calibration study complete!")
+                st.success("Simulation complete.")
             except Exception as e:
-                st.error(f"Error running study: {e}")
+                st.error(f"Error: {e}")
 
     res = st.session_state.get("res")
     if res:
         st.markdown("---")
         label, why = res["confidence"]
         if label == "LOW":
-            st.error(f"**Confidence: {label}**. {why}")
+            st.error(f"Confidence: {label}. {why}")
         elif label != "OK":
-            st.warning(f"**Confidence: {label}**. {why}")
+            st.warning(f"Confidence: {label}. {why}")
         else:
-            st.success(f"**Confidence: {label}**. {why}")
+            st.success(f"Statistical Confidence: {label}. {why}")
 
         if label != "LOW":
             items_df = res["items"].rename(columns={"text": "hook_text"}).copy()
@@ -1473,43 +966,37 @@ with tab_hooks:
             top_hook_name = top_row["sid"]
             top_hook_content = top_row["hook_text"]
 
-            # ── PREDICTED REVENUE & FAME INDEX SECTION ─────────────────────────
-            st.markdown("### 💰 Predicted Revenue & 🌟 Viral Fame Index")
-            st.caption("Machine-learning predictions based on stop-scroll retention, audience polarization, and short-form monetization algorithms.")
-
-            # Modeling formulas
+            # Mathematical projection modeling
             if top_score >= 4.2:
-                views_tier = "2.5M – 5.0M Views (Viral Breakout)"
+                views_tier = "2.5M – 5.0M Views"
                 min_v, max_v = 2_500_000, 5_000_000
-                fame_label = "🔥 Ultra Viral Breakout (Top 3% of Niche)"
-                subs_gain = "+25,000 – 50,000 New Followers"
-                algo_prob = "95% Algorithmic Push"
+                fame_label = "Ultra Viral Breakout (Top 3% of Niche)"
+                subs_gain = "+25,000 – 50,000 Followers"
+                algo_prob = "95% Push Likelihood"
             elif top_score >= 3.6:
-                views_tier = "1.0M – 2.5M Views (High Momentum)"
+                views_tier = "1.0M – 2.5M Views"
                 min_v, max_v = 1_000_000, 2_500_000
-                fame_label = "⚡ Strong Category Performer (Top 15%)"
-                subs_gain = "+10,000 – 25,000 New Followers"
-                algo_prob = "84% Algorithmic Push"
+                fame_label = "Strong Category Performer (Top 15%)"
+                subs_gain = "+10,000 – 25,000 Followers"
+                algo_prob = "84% Push Likelihood"
             elif top_score >= 3.0:
-                views_tier = "300K – 1.0M Views (Core Baseline)"
+                views_tier = "300K – 1.0M Views"
                 min_v, max_v = 300_000, 1_000_000
-                fame_label = "📈 Steady Audience Retention"
-                subs_gain = "+3,000 – 10,000 New Followers"
-                algo_prob = "65% Algorithmic Push"
+                fame_label = "Steady Baseline Retention"
+                subs_gain = "+3,000 – 10,000 Followers"
+                algo_prob = "65% Push Likelihood"
             else:
-                views_tier = "100K – 300K Views (High Drop-off)"
+                views_tier = "100K – 300K Views"
                 min_v, max_v = 100_000, 300_000
-                fame_label = "⚠️ Drop-off Alert (Needs punchier first second)"
-                subs_gain = "< 3,000 New Followers"
-                algo_prob = "35% Algorithmic Push"
+                fame_label = "High Drop-off Risk"
+                subs_gain = "< 3,000 Followers"
+                algo_prob = "35% Push Likelihood"
 
-            # 2. Clickbait penalty
             if top_clickbait > 0.15:
                 penalty = 1.0 - (top_clickbait * 0.8)
                 min_v = int(min_v * penalty)
                 max_v = int(max_v * penalty)
 
-            # 3. Revenue calculations (AdSense + Brand Integration)
             adsense_min = int((min_v / 1000) * 28)
             adsense_max = int((max_v / 1000) * 42)
 
@@ -1525,293 +1012,109 @@ with tab_hooks:
             tot_rev_usd_min = int(tot_rev_min / 84)
             tot_rev_usd_max = int(tot_rev_max / 84)
 
-            # 4. Fame / Viral Index score (0 - 100)
             viral_index = int(min(98, max(30, (top_score / 5.0) * 82 + (top_best * 20) - (top_worst * 15) - (top_clickbait * 20))))
 
-            # Render Cards
+            st.markdown("#### Economic Projections & Viral Fame Index")
             p_rev_col, p_fame_col = st.columns(2)
             with p_rev_col:
                 with st.container(border=True):
-                    st.markdown(f"#### 💵 Predicted Revenue: `{top_hook_name}`")
-                    st.markdown(f"**Estimated Range:** `₹{tot_rev_min:,} – ₹{tot_rev_max:,}` &nbsp;(`${tot_rev_usd_min:,} – ${tot_rev_usd_max:,}`)")
-                    st.metric("Expected Views Potential", views_tier)
-                    st.markdown(f"- 📺 **Shorts/Reels AdSense Share:** `₹{adsense_min:,} – ₹{adsense_max:,}`")
-                    st.markdown(f"- 🤝 **Sponsor Value Conversion:** `₹{sponsor_min:,} – ₹{sponsor_max:,}`")
+                    st.markdown(f"**Predicted Video Earnings ({top_hook_name})**")
+                    st.markdown(f"### ₹{tot_rev_min:,} – ₹{tot_rev_max:,} <span style='font-size:0.9rem; color:#94A3B8;'>(${tot_rev_usd_min:,} – ${tot_rev_usd_max:,})</span>", unsafe_allow_html=True)
+                    st.caption(f"Estimated View Potential: **{views_tier}**")
+                    st.markdown(f"- AdSense Conversion: `₹{adsense_min:,} – ₹{adsense_max:,}`")
+                    st.markdown(f"- Brand Sponsor Value: `₹{sponsor_min:,} – ₹{sponsor_max:,}`")
                     if top_clickbait <= 0.10:
-                        st.success("✅ High advertiser suitability (Safe clickbait ratio)")
+                        st.caption("Clean advertiser suitability score.")
                     else:
-                        st.warning(f"⚠️ {top_clickbait:.0%} clickbait perception slightly reduces sponsor payout")
+                        st.caption(f"⚠️ {top_clickbait:.0%} clickbait ratio applied.")
 
             with p_fame_col:
                 with st.container(border=True):
-                    st.markdown(f"#### 🌟 Fame & Viral Potential Index: `{viral_index}/100`")
-                    st.markdown(f"**Tier:** `{fame_label}`")
-                    st.metric("Projected Audience Growth", subs_gain)
-                    st.markdown(f"- 🚀 **Recommendation Push Likelihood:** `{algo_prob}`")
-                    st.markdown(f"- 🏆 **Top Hook:** *\x22{top_hook_content}\x22*")
-                    st.info(f"✨ **Stop-Scroll Rating:** `{top_score:.2f} / 5.0` &nbsp;·&nbsp; **Favorite Rate:** `{top_best:.0%}`")
+                    st.markdown(f"**Viral Fame Index: {viral_index} / 100**")
+                    st.markdown(f"### {fame_label}")
+                    st.caption(f"Projected Follower Acquisition: **{subs_gain}**")
+                    st.markdown(f"- Recommendation Likelihood: `{algo_prob}`")
+                    st.markdown(f"- Stop-Scroll Score: `{top_score:.2f} / 5.0` (Favorite: `{top_best:.0%}`)")
 
-            st.markdown("---")
-
-            # ── 1. HOOK RANKING VISUALIZATION (Dark Themed Plotly) ─────────────
-            st.subheader("🏆 Hook Performance Ranking")
+            # Visual charts
+            st.markdown("#### Hook Stop-Scroll Ranking")
             fig_score = px.bar(
-                items_df,
-                x="score",
-                y="sid",
-                orientation="h",
+                items_df, x="score", y="sid", orientation="h",
                 text=items_df["score"].apply(lambda s: f"{s:.2f}"),
-                color="score",
-                color_continuous_scale="Purples",
+                color="score", color_continuous_scale="Purples",
                 hover_data={"hook_text": True, "score": ":.2f", "clickbait": ":.0%"},
-                labels={"score": "Stop-Scroll Rating (1.0 to 5.0)", "sid": "Hook", "hook_text": "Hook Text"},
-                title="Viewer Stop-Scroll Score (Higher = Better Retention)"
+                labels={"score": "Stop-Scroll Rating (1.0 to 5.0)", "sid": "Hook"}
             )
             fig_score.update_layout(
-                yaxis={"autorange": "reversed"},
-                height=300,
-                margin=dict(l=10, r=10, t=35, b=10),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                font={"color": "#F8FAFC", "family": "Plus Jakarta Sans, sans-serif"},
-                xaxis={"gridcolor": "rgba(255,255,255,0.08)"},
-                yaxis_gridcolor="rgba(255,255,255,0.08)"
+                yaxis={"autorange": "reversed"}, height=280,
+                margin=dict(l=10, r=10, t=30, b=10),
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font={"color": "#F8FAFC", "family": "Inter, sans-serif"},
+                xaxis={"gridcolor": "#202333"}, yaxis_gridcolor="#202333"
             )
             st.plotly_chart(fig_score, use_container_width=True)
 
-            # Polarization & Clickbait Alert
             pol_col1, pol_col2 = st.columns(2)
             with pol_col1:
-                st.markdown("##### 🌟 Audience Favorite (`Best`) Share")
-                fig_best = px.bar(
-                    items_df, x="best", y="sid", orientation="h",
-                    color_discrete_sequence=["#10B981"],
-                    labels={"best": "% Picked as Best", "sid": "Hook"}
-                )
-                fig_best.update_layout(
-                    xaxis_tickformat='.0%', height=220, margin=dict(l=10, r=10, t=20, b=10),
-                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                    font={"color": "#F8FAFC", "family": "Plus Jakarta Sans, sans-serif"},
-                    xaxis_gridcolor="rgba(255,255,255,0.08)"
-                )
+                st.markdown("**Audience Favorite Share**")
+                fig_best = px.bar(items_df, x="best", y="sid", orientation="h", color_discrete_sequence=["#10B981"], labels={"best": "% Picked as Best", "sid": "Hook"})
+                fig_best.update_layout(xaxis_tickformat='.0%', height=200, margin=dict(l=10, r=10, t=10, b=10), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font={"color": "#F8FAFC"}, xaxis_gridcolor="#202333")
                 st.plotly_chart(fig_best, use_container_width=True)
 
             with pol_col2:
-                st.markdown("##### ⚠️ High Drop-off (`Worst`) Share")
-                fig_worst = px.bar(
-                    items_df, x="worst", y="sid", orientation="h",
-                    color_discrete_sequence=["#EF4444"],
-                    labels={"worst": "% Picked as Worst", "sid": "Hook"}
-                )
-                fig_worst.update_layout(
-                    xaxis_tickformat='.0%', height=220, margin=dict(l=10, r=10, t=20, b=10),
-                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                    font={"color": "#F8FAFC", "family": "Plus Jakarta Sans, sans-serif"},
-                    xaxis_gridcolor="rgba(255,255,255,0.08)"
-                )
+                st.markdown("**High Drop-off Share**")
+                fig_worst = px.bar(items_df, x="worst", y="sid", orientation="h", color_discrete_sequence=["#F43F5E"], labels={"worst": "% Picked as Worst", "sid": "Hook"})
+                fig_worst.update_layout(xaxis_tickformat='.0%', height=200, margin=dict(l=10, r=10, t=10, b=10), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font={"color": "#F8FAFC"}, xaxis_gridcolor="#202333")
                 st.plotly_chart(fig_worst, use_container_width=True)
 
-            clickbait_hooks = items_df[items_df["clickbait"] >= 0.15]
-            if not clickbait_hooks.empty:
-                for _, r in clickbait_hooks.iterrows():
-                    st.warning(
-                        f"🚨 **Clickbait Risk on {r['sid']}**: "
-                        f"{r['clickbait']:.0%} of viewers felt misled by: *\x22{r['hook_text']}\x22*"
-                    )
-
-            with st.expander("📋 View Complete Ranking Data Table"):
-                st.dataframe(
-                    items_df[["sid", "hook_text", "score", "best", "worst", "clickbait"]],
-                    use_container_width=True
-                )
-
-        # Segment breakdown
-        c1, c2 = st.columns(2)
-        with c1:
-            st.subheader("📊 Segment Disagreements")
-            st.dataframe(res["segments"]["matrix"], use_container_width=True)
-        with c2:
-            st.subheader("🚩 Audience Bias Flags")
-            if res["bias"]:
-                for flag in res["bias"]:
-                    st.caption(f"⚠ {flag}")
-            else:
-                st.caption("✅ No extreme segment deviations found.")
-
-        st.markdown("---")
-        st.subheader("⚙️ Calibration with Real Panel")
-        if st.button("Compare with real panel"):
-            sids = [s.sid for s in res["study"].stimuli]
-            real_df = load_panel(sids)
-            if len(real_df) > 0:
-                fid = close_the_loop(res["study"], res["items"], real_df)
-                st.write(fid)
-                st.success("Calibration updated with live panel fidelity data!")
-            else:
-                st.warning(
-                    "No real panel data found yet. "
-                    "Invite users to the Bridge app and have them fill out the Rate form first!"
-                )
+            with st.expander("Detailed Ranking Table"):
+                st.dataframe(items_df[["sid", "hook_text", "score", "best", "worst", "clickbait"]], use_container_width=True)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-#  TAB 3 — CHANNEL REACH, COMMERCIALS & CREATOR'S OWN VIDEOS
-# ═══════════════════════════════════════════════════════════════════════════════
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. CHANNEL REACH & COMMERCIALS
+# ─────────────────────────────────────────────────────────────────────────────
 with tab_analytics:
-    intel = st.session_state.get("intel")
     if not intel:
-        st.info("💡 Please search and analyze a creator in the **🏠 Creator Intelligence & Clone Studio** tab first.")
+        st.info("Analyze a creator in the Reconnaissance Console above to evaluate channel reach, audience demographics, and rate card benchmarks.")
     else:
         profile = intel.get("creator_profile", {})
         metrics = intel.get("platform_metrics", {})
         demo = intel.get("audience_demographics", {})
         rate_card = intel.get("rate_card_and_sponsors", {})
-        avatar_url = profile.get("avatar_url", "")
-        t3_img_col, t3_txt_col = st.columns([1, 6])
-        with t3_img_col:
-            if avatar_url:
-                st.image(avatar_url, width=95)
-        with t3_txt_col:
-            st.markdown(f"### 📊 Channel Reach & Commercial Intelligence: `{profile.get('name', 'Creator')}`")
-            st.caption("Deep multi-platform metrics, audience demographic split, benchmark commercial rate card, and the creator's own top viral uploads.")
 
-        # ── 1. CROSS-PLATFORM PERFORMANCE & SCALE ─────────────────────────────
         m_yt = metrics.get("youtube_subscribers") or metrics.get("youtube") or "45.0M"
         m_ig = metrics.get("instagram_followers") or metrics.get("instagram") or "21.5M"
         m_reach = metrics.get("total_reach") or f"{m_yt} + {m_ig}"
         m_eng = metrics.get("engagement_rate") or "7.2%"
-        m_med = metrics.get("category_median_engagement") or "3.2%"
         m_cad = metrics.get("youtube_cadence") or "1-2 videos/month"
 
+        st.markdown(f"### Platform Scale & Commercials: {profile.get('name', 'Creator')}")
+
         m1, m2, m3, m4, m5 = st.columns(5)
-        m1.metric("🌐 Combined Reach", m_reach)
-        m2.metric("▶️ YouTube Audience", m_yt)
-        m3.metric("📸 Instagram Followers", m_ig)
-        m4.metric("⚡ Engagement Rate", m_eng, help=f"Category benchmark: {m_med}")
-        m5.metric("⏱️ Posting Cadence", m_cad)
-
-        # Platform share chart
-        try:
-            def parse_num(val_str):
-                m = re.search(r"([\d\.]+)\s*([MKmk]?)", str(val_str))
-                if not m:
-                    return 0.0
-                num = float(m.group(1))
-                unit = m.group(2).upper()
-                if unit == "M":
-                    return num * 1_000_000
-                elif unit == "K":
-                    return num * 1_000
-                return num
-
-            yt_num = parse_num(m_yt)
-            ig_num = parse_num(m_ig)
-            if yt_num > 0 or ig_num > 0:
-                plat_df = pd.DataFrame([
-                    {"Platform": "YouTube", "Followers": yt_num, "Display": m_yt},
-                    {"Platform": "Instagram", "Followers": ig_num, "Display": m_ig}
-                ])
-                fig_plat = px.bar(
-                    plat_df,
-                    x="Followers",
-                    y="Platform",
-                    orientation="h",
-                    color="Platform",
-                    color_discrete_map={"YouTube": "#FF0000", "Instagram": "#E1306C"},
-                    text="Display",
-                    title="Audience Scale Distribution (YouTube vs Instagram)"
-                )
-                fig_plat.update_layout(
-                    height=180, margin=dict(l=10, r=10, t=35, b=10), showlegend=False,
-                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                    font={"color": "#F8FAFC", "family": "Plus Jakarta Sans, sans-serif"},
-                    xaxis_gridcolor="rgba(255,255,255,0.08)"
-                )
-                st.plotly_chart(fig_plat, use_container_width=True)
-        except Exception:
-            pass
+        m1.metric("Combined Reach", m_reach)
+        m2.metric("YouTube Base", m_yt)
+        m3.metric("Instagram Base", m_ig)
+        m4.metric("Engagement", m_eng)
+        m5.metric("Cadence", m_cad)
 
         st.markdown("---")
-
-        # ── 2. AUDIENCE DEMOGRAPHICS & GEOGRAPHY ───────────────────────────────
-        st.markdown("### 🌍 Audience Demographics & Geography")
-        d_col1, d_col2 = st.columns([2, 1])
-        with d_col1:
-            countries = demo.get("top_countries", [])
-            if countries:
-                st.markdown("**Top Geographic Markets:**")
-                c_cols = st.columns(len(countries[:4]))
-                for idx, c_item in enumerate(countries[:4]):
-                    with c_cols[idx]:
-                        st.metric(c_item.get("country", "Market"), c_item.get("share", "—"))
-        with d_col2:
-            st.markdown("**Audience Profile:**")
-            st.markdown(f"- 🎂 **Primary Age Bracket:** `{demo.get('primary_age', '18-24 (Gen Z)')}`")
-            st.markdown(f"- 🚻 **Gender Skew:** `{demo.get('gender_skew', 'Male Dominated')}`")
-            st.markdown(f"- 📲 **Instagram Cadence:** `{metrics.get('instagram_cadence', 'Daily Reels/Stories')}`")
-
-        st.markdown("---")
-
-        # ── 3. ESTIMATED BRAND RATE CARD & PARTNERSHIPS ────────────────────────
-        st.markdown("### 💰 Estimated Brand Rate Card & Partnerships")
-        st.caption("Benchmark commercial pricing for brand integrations and brand affinity modeling.")
-
-        rc_yt = rate_card.get("est_youtube_rate") or "₹35L - ₹75L ($45K - $90K)"
-        rc_ig = rate_card.get("est_instagram_reel_rate") or "₹12L - ₹25L ($15K - $30K)"
-        rc_st = rate_card.get("est_story_rate") or "₹3L - ₹6L ($3.5K - $7.5K)"
-
+        st.markdown("#### Commercial Rate Card Estimates")
         rc1, rc2, rc3 = st.columns(3)
-        rc1.metric("🎥 YouTube Dedicated / Integration", rc_yt)
-        rc2.metric("📱 Instagram Dedicated Reel", rc_ig)
-        rc3.metric("📸 Instagram Story / Swipe-up", rc_st)
+        rc1.metric("YouTube Dedicated Integration", rate_card.get("est_youtube_rate") or "₹35L - ₹75L")
+        rc2.metric("Instagram Dedicated Reel", rate_card.get("est_instagram_reel_rate") or "₹12L - ₹25L")
+        rc3.metric("Instagram Story Series", rate_card.get("est_story_rate") or "₹3L - ₹6L")
 
         b1, b2 = st.columns(2)
         with b1:
-            st.markdown("**🏷️ High Brand Affinity Sectors:**")
+            st.markdown("**High Affinity Sponsor Sectors:**")
             aff_niches = rate_card.get("brand_affinity_niches", [])
             if aff_niches:
                 st.write(", ".join([f"`{n}`" for n in aff_niches]))
             past_spons = rate_card.get("past_or_likely_sponsors", [])
             if past_spons:
-                st.markdown("**🤝 Active / Past Advertisers:** " + ", ".join([f"**{s}**" for s in past_spons]))
+                st.markdown("**Recent Active Advertisers:** " + ", ".join([f"**{s}**" for s in past_spons]))
         with b2:
             why_partner = rate_card.get("why_brands_partner", "")
             if why_partner:
-                st.success(f"**🎯 Strategic Brand Fit:** {why_partner}")
-
-        st.markdown("---")
-
-        # ── 4. CREATOR'S OWN TOP CONTENT (PLAYABLE ON SCREEN) ─────────────────
-        st.markdown(f"### 🎬 {profile.get('name', 'Creator')}'s Own Top Content — Watch On-Screen & Deconstruct Hooks")
-        st.caption(f"Watch {profile.get('name', 'the creator')}'s own highest-performing uploads and Instagram Reels directly on screen.")
-
-        creator_vids = intel.get("creator_videos", [])
-        if creator_vids:
-            cvid_labels = [f"[{v.get('platform', 'Video')}] {v.get('title', 'Video')} ({v.get('views', 'Popular')})" for v in creator_vids]
-            c_selected_idx = st.radio(
-                "Select a video from this creator to watch & analyze:",
-                range(len(creator_vids)),
-                format_func=lambda i: cvid_labels[i],
-                horizontal=True,
-                key="radio_creator_vids"
-            )
-
-            c_sel_vid = creator_vids[c_selected_idx]
-            cv_url = c_sel_vid.get("url", "")
-            cv_plat = c_sel_vid.get("platform", "YouTube")
-
-            st.markdown(f"#### 📺 {c_sel_vid.get('title', 'Creator Video')}")
-
-            cvcol_player, cvcol_analysis = st.columns([1.2, 1])
-            with cvcol_player:
-                render_playable_video(cv_url, c_sel_vid.get("title", "Creator Video"), cv_plat)
-
-            with cvcol_analysis:
-                with st.container(border=True):
-                    st.markdown("##### 🔍 Creator's Proven Hook Breakdown")
-                    st.metric("Views Benchmark", c_sel_vid.get("views", "Top Performer"))
-                    st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\x22{c_sel_vid.get('opening_hook', '—')}\x22*")
-                    st.markdown(f"**🧠 Why Viewers Stayed:**\n{c_sel_vid.get('why_it_went_viral', '—')}")
-                    st.info(f"**📋 Adaptable Strategy:**\n{c_sel_vid.get('adapt_hook_template', '—')}")
-        else:
-            st.info("Creator video analysis is currently loading or being calibrated.")
+                st.success(f"**Strategic Value:** {why_partner}")
