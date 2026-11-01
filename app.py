@@ -10,6 +10,7 @@ from parallel.profiles import (
     create_profile, login, profile_exists, save_intel, get_history,
     get_cached_intel, push_summary_to_bridge,
     save_clone_run, get_cached_clone,
+    save_to_bridge_user_store, get_bridge_user_store, get_user_previous_findings,
     ProfileNotFound, WrongPIN, UsernameTaken
 )
 from parallel.clone_intel import (
@@ -51,6 +52,7 @@ with st.sidebar:
                             st.session_state.intel = cached
                             st.session_state.intel_name = h["creator_name"]
                             st.session_state.intel_from_cache = True
+                            st.session_state.prev_findings = get_user_previous_findings(user, h["creator_name"])
                             cached_clone = get_cached_clone(user, h["creator_name"])
                             if cached_clone:
                                 st.session_state.copy_data = {
@@ -251,11 +253,19 @@ with tab_home:
     run_intel = st.button("🚀 Analyze & Reverse-Engineer", type="primary", key="intel_btn")
 
     if run_intel and creator_name.strip():
+        # Check previous findings for this user and creator to avoid duplicates & ensure continuity
+        prev_findings = {}
+        if st.session_state.get("logged_in_user"):
+            prev_findings = get_user_previous_findings(st.session_state.logged_in_user, creator_name.strip())
+            st.session_state.prev_findings = prev_findings
+
         with st.status(f"🌐 Analyzing {creator_name}'s landscape & viral formula...", expanded=True) as status:
             try:
+                if prev_findings.get("total_past_runs", 0) > 0:
+                    status.write(f"📚 Incorporating {prev_findings['total_past_runs']} previous session(s) — synthesizing fresh angles without repeating past ones...")
                 status.write("🔍 Scanning web footprint, social handles & verified uploads...")
                 from parallel.intelligence import generate_creator_intelligence
-                intel = generate_creator_intelligence(creator_name.strip(), creator_niche.strip())
+                intel = generate_creator_intelligence(creator_name.strip(), creator_niche.strip(), previous_findings=prev_findings)
                 st.session_state.intel = intel
                 st.session_state.intel_name = creator_name.strip()
                 st.session_state.intel_from_cache = False
@@ -280,16 +290,23 @@ with tab_home:
                 }
                 st.session_state.copy_data = copy_result
 
-                # Auto-save to profile if logged in
+                # Auto-save to profile & isolated Bridge store if logged in
                 if st.session_state.get("logged_in_user"):
-                    save_intel(st.session_state.logged_in_user, creator_name.strip(), t_niche, intel)
-                    push_summary_to_bridge(st.session_state.logged_in_user, creator_name.strip(), intel)
+                    user_now = st.session_state.logged_in_user
+                    save_intel(user_now, creator_name.strip(), t_niche, intel)
+                    push_summary_to_bridge(user_now, creator_name.strip(), intel)
                     save_clone_run(
-                        st.session_state.logged_in_user,
+                        user_now,
                         creator_name.strip(),
                         dossier["style_card"],
                         dossier["blueprints"],
                         dossier["piracy_ideas"]
+                    )
+                    save_to_bridge_user_store(
+                        user_now,
+                        creator_name.strip(),
+                        intel,
+                        copy_result
                     )
 
                 status.update(label="✅ Analysis & Clone Dossier Complete!", state="complete")
@@ -316,7 +333,8 @@ with tab_home:
                     with st.spinner(f"🌐 Re-scanning {creator_name_display}'s latest data..."):
                         try:
                             from parallel.intelligence import generate_creator_intelligence
-                            fresh_intel = generate_creator_intelligence(creator_name_display)
+                            prev_f = get_user_previous_findings(st.session_state.logged_in_user, creator_name_display) if st.session_state.get("logged_in_user") else {}
+                            fresh_intel = generate_creator_intelligence(creator_name_display, previous_findings=prev_f)
                             st.session_state.intel = fresh_intel
                             st.session_state.intel_name = creator_name_display
 
@@ -337,13 +355,20 @@ with tab_home:
                                 "target_intel": fresh_intel,
                             }
                             if st.session_state.get("logged_in_user"):
-                                save_intel(st.session_state.logged_in_user, creator_name_display, t_nic, fresh_intel)
+                                user_now = st.session_state.logged_in_user
+                                save_intel(user_now, creator_name_display, t_nic, fresh_intel)
                                 save_clone_run(
-                                    st.session_state.logged_in_user,
+                                    user_now,
                                     creator_name_display,
                                     fresh_dossier["style_card"],
                                     fresh_dossier["blueprints"],
                                     fresh_dossier["piracy_ideas"]
+                                )
+                                save_to_bridge_user_store(
+                                    user_now,
+                                    creator_name_display,
+                                    fresh_intel,
+                                    st.session_state.copy_data
                                 )
                             st.rerun()
                         except Exception as e:
@@ -481,6 +506,70 @@ with tab_home:
                         with cc2:
                             st.markdown(f"**Their Critical Gap / Weakness:** {comp.get('their_gap', '—')}")
                             st.success(f"**🏆 Your Winning Move:** {comp.get('how_to_beat_them', '—')}")
+
+                st.markdown("---")
+
+            # ── PREVIOUS FINDINGS & MEMORY BANNER ────────────────────────────
+            prev_data = st.session_state.get("prev_findings") or {}
+            if prev_data.get("total_past_runs", 0) > 0 and st.session_state.get("logged_in_user"):
+                with st.expander(f"📚 Memory & Previous Findings for {creator_name_display} ({prev_data.get('total_past_runs')} past session(s))", expanded=False):
+                    st.caption(f"Stored securely in your private Bridge store (User: `{st.session_state.logged_in_user}`). New ideas below build upon this baseline without duplicating.")
+                    mcol1, mcol2 = st.columns(2)
+                    with mcol1:
+                        st.markdown("**Past Content Ideas Explored:**")
+                        for past_idea in prev_data.get("previous_content_ideas", [])[:5]:
+                            st.markdown(f"- 💡 {past_idea}")
+                    with mcol2:
+                        st.markdown("**Past Benchmarked Competitors:**")
+                        for past_comp in prev_data.get("previous_competitors", [])[:4]:
+                            st.markdown(f"- ⚔️ {past_comp}")
+                st.markdown("---")
+
+            # ── AUDIENCE CRITICISM, NEGATIVE REVIEWS & IMPROVEMENTS ──────────
+            neg_reviews = intel.get("negative_reviews", [])
+            imp_suggs = intel.get("improvement_suggestions", [])
+
+            if neg_reviews or imp_suggs:
+                st.markdown("### 🔴 Audience Friction, Negative Reviews & Improvement Opportunities")
+                st.caption(f"Deconstructing real viewer complaints, drop-off triggers, and negative feedback for **{creator_name_display}** — with tailored upgrades to turn their weaknesses into your unfair advantage.")
+
+                if neg_reviews:
+                    with st.expander("⚠️ View Criticisms & Common Viewer Complaints", expanded=True):
+                        st.markdown("##### 📢 What Viewers Complain About (Audience Friction Analysis)")
+                        n_cols = st.columns(min(len(neg_reviews), 3))
+                        for n_idx, rev in enumerate(neg_reviews):
+                            with n_cols[n_idx % 3]:
+                                with st.container(border=True):
+                                    freq = rev.get("frequency", "Occasional")
+                                    freq_badge = "🔴 High Frequency" if freq == "Common" else "🟡 Moderate Frequency" if freq == "Occasional" else "🟢 Low Frequency"
+                                    st.markdown(f"**{rev.get('criticism_category', 'Criticism')}**")
+                                    st.caption(f"`{freq_badge}`")
+                                    quote = rev.get("audience_quote_example", "")
+                                    if quote:
+                                        st.markdown(f"> *\"{quote}\"*")
+                                    st.markdown(f"**Channel Impact:** {rev.get('impact_on_channel', 'Causes viewer attrition.')}")
+
+                if imp_suggs:
+                    st.markdown("#### 💡 Upgraded Content Strategies (Fixing Viewer Weaknesses)")
+                    for imp_idx, imp in enumerate(imp_suggs, 1):
+                        with st.container(border=True):
+                            icol1, icol2 = st.columns([1.8, 1.2])
+                            with icol1:
+                                st.markdown(f"##### Fix #{imp_idx}: {imp.get('fix_title', 'Content Fix')}")
+                                st.markdown(f"**Addressing Weakness:** `{imp.get('problem', 'Audience Fatigue')}`")
+                                st.write(imp.get('fix_description', ''))
+                                st.success(f"**📈 Expected Retention Impact:** {imp.get('expected_impact', '+25% retention')}")
+                            with icol2:
+                                with st.container(border=True):
+                                    st.markdown("**🎯 Upgraded Counter-Hook:**")
+                                    up_hook = imp.get('hook_upgrade', '')
+                                    st.info(f"*\"{up_hook}\"*")
+                                    if st.button(f"▶ Test in Hook Simulator", key=f"btn_test_fix_{imp_idx}"):
+                                        st.session_state.prefill_hooks = (
+                                            f"Creator: {creator_name_display}. Upgrade Concept: {imp.get('fix_title', '')}\n"
+                                            f"S1: {up_hook}"
+                                        )
+                                        st.success("✅ Upgraded hook sent to Hook Testing tab!")
 
                 st.markdown("---")
 

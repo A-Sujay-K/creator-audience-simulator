@@ -187,6 +187,138 @@ def get_cached_by_id(username: str, search_id: str) -> Optional[dict]:
 
 # ─── Clone History ────────────────────────────────────────────────────────────
 
+
+
+# ─── Per-User Bridge Store & Historical Continuity ───────────────────────────
+
+def get_user_previous_findings(username: str, creator_name: str) -> dict:
+    """
+    Returns a structured summary of the user's PREVIOUS findings for a creator.
+    Used to inject into the LLM prompt so new suggestions build upon past data without repeating.
+    """
+    try:
+        profile = _load(username)
+    except ProfileNotFound:
+        return {"previous_content_ideas": [], "previous_hooks": [], "previous_competitors": [], "previous_niches_explored": [], "total_past_runs": 0}
+
+    result = {
+        "previous_content_ideas": [],
+        "previous_hooks": [],
+        "previous_competitors": [],
+        "previous_niches_explored": [],
+        "total_past_runs": 0,
+        "past_sessions": []
+    }
+
+    # Check search history
+    for s in profile.get("searches", []):
+        if s.get("creator_name", "").lower() != creator_name.lower():
+            continue
+        result["total_past_runs"] += 1
+        intel = s.get("intel", {})
+
+        # Collect past content idea titles
+        for sugg in intel.get("content_suggestions", []):
+            t = sugg.get("title", "").strip()
+            if t and t not in result["previous_content_ideas"]:
+                result["previous_content_ideas"].append(t)
+            for hk in sugg.get("candidate_hooks", []):
+                h = hk.get("text", "").strip()
+                if h and h not in result["previous_hooks"]:
+                    result["previous_hooks"].append(h)
+            tt = sugg.get("trending_topic", "").strip()
+            if tt and tt not in result["previous_niches_explored"]:
+                result["previous_niches_explored"].append(tt)
+
+        # Collect past competitor names
+        for cb in intel.get("competitor_benchmarking", []):
+            cn = cb.get("competitor_name", "").strip()
+            if cn and cn not in result["previous_competitors"]:
+                result["previous_competitors"].append(cn)
+
+    # Also check bridge_store if present
+    creator_key = creator_name.lower().strip().replace(" ", "_")
+    b_sessions = profile.get("bridge_store", {}).get(creator_key, [])
+    for b in b_sessions:
+        result["past_sessions"].append({
+            "session_id": b.get("session_id"),
+            "stored_at": b.get("stored_at"),
+            "ideas_count": b.get("content_ideas_count", 0),
+        })
+
+    return result
+
+
+def save_to_bridge_user_store(username: str, creator_name: str, intel: dict, clone_data: dict = None, notes: str = "") -> bool:
+    """
+    Saves full analysis data (intel + clone dossier + negative reviews) into the user's profile Bridge store.
+    Each user's data is completely isolated under their username namespace.
+    """
+    try:
+        profile = _load(username)
+
+        if "bridge_store" not in profile:
+            profile["bridge_store"] = {}
+
+        creator_key = creator_name.lower().strip().replace(" ", "_")
+
+        session_entry = {
+            "session_id": str(uuid.uuid4())[:8],
+            "stored_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "creator_name": creator_name,
+            "niche": intel.get("creator_profile", {}).get("core_niche", ""),
+            "content_ideas_count": len(intel.get("content_suggestions", [])),
+            "hooks_generated": sum(
+                len(s.get("candidate_hooks", []))
+                for s in intel.get("content_suggestions", [])
+            ),
+            "negative_reviews_count": len(intel.get("negative_reviews", [])),
+            "intel_snapshot": {
+                "creator_profile": intel.get("creator_profile", {}),
+                "content_suggestions": intel.get("content_suggestions", []),
+                "competitor_benchmarking": intel.get("competitor_benchmarking", []),
+                "negative_reviews": intel.get("negative_reviews", []),
+                "improvement_suggestions": intel.get("improvement_suggestions", []),
+            },
+            "notes": notes
+        }
+
+        if clone_data:
+            session_entry["clone_snapshot"] = {
+                "style_card": clone_data.get("style_card", {}),
+                "piracy_ideas": clone_data.get("piracy_ideas", []),
+            }
+
+        if creator_key not in profile["bridge_store"]:
+            profile["bridge_store"][creator_key] = []
+
+        profile["bridge_store"][creator_key].insert(0, session_entry)
+        profile["bridge_store"][creator_key] = profile["bridge_store"][creator_key][:10]
+
+        _save(profile)
+        return True
+    except Exception as e:
+        print(f"[profiles] bridge_store save failed: {e}")
+        return False
+
+
+def get_bridge_user_store(username: str, creator_name: str = None) -> list | dict:
+    """
+    Retrieve stored sessions from the user's isolated Bridge store.
+    If creator_name is given, returns list of sessions for that creator.
+    If None, returns full bridge_store dict.
+    """
+    try:
+        profile = _load(username)
+        bs = profile.get("bridge_store", {})
+        if creator_name:
+            creator_key = creator_name.lower().strip().replace(" ", "_")
+            return bs.get(creator_key, [])
+        return bs
+    except ProfileNotFound:
+        return [] if creator_name else {}
+
+
 def save_clone_run(username: str, target_creator: str, style_card: dict,
                    blueprints: list, piracy_ideas: list) -> str:
     """Save a style-copy / piracy run to the user's profile."""
