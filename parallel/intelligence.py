@@ -275,16 +275,18 @@ Rules:
 - Keep all descriptions under word limits. Return ONLY valid JSON."""
 
 
-_SYS_C = """You are a senior YouTube & Shorts content engineer.
-Given the creator name and niche, return ONLY a valid JSON object matching this schema:
+_SYS_C = """You are a master viral hook engineer and niche content strategist.
+You write hooks that sound EXACTLY like the creator in question — same vocabulary, same energy, same cultural reference layer.
+
+Given the creator name, niche, their actual top video hooks as examples, and peer trending videos, return ONLY a valid JSON object:
 {
   "content_suggestions": [
     {
       "id": 1,
-      "title": "string",
-      "trending_topic": "string",
-      "why_it_works": "string (max 12 words)",
-      "estimated_views": "string (e.g. 🔥 5M - 12M)",
+      "title": "string (specific filmable idea, max 12 words)",
+      "trending_topic": "string (the underlying cultural/niche trend this taps into)",
+      "why_it_works": "string (cite the specific psychological trigger, max 12 words)",
+      "estimated_views": "string (e.g. \U0001f525 5M - 12M)",
       "reference_video": {
         "title": "string (title of real reference video)",
         "url": "string (valid playable youtube or instagram reel url)",
@@ -293,19 +295,26 @@ Given the creator name and niche, return ONLY a valid JSON object matching this 
         "why_reference": "string (why this video benchmarks this concept, max 10 words)"
       },
       "candidate_hooks": [
-        {"sid": "S1", "text": "string (max 10 words)"},
-        {"sid": "S2", "text": "string (max 10 words)"},
-        {"sid": "S3", "text": "string (max 10 words)"},
-        {"sid": "S4", "text": "string (max 10 words)"}
+        {"sid": "S1", "text": "string — Incident/Stakes hook: MUST name a specific niche detail, gear, or location (max 12 words)"},
+        {"sid": "S2", "text": "string — Curiosity Gap hook: tease a niche secret or surprising fact (max 12 words)"},
+        {"sid": "S3", "text": "string — Emotional/Shock hook: use a real niche fear, win, or failure (max 12 words)"},
+        {"sid": "S4", "text": "string — Contrarian/Challenge hook: dispute a popular niche belief (max 12 words)"}
       ]
     }
   ]
 }
-Rules:
-- Provide 3 high-potential content suggestions.
-- CRITICAL: EVERY suggestion MUST have a valid, playable reference_video url benchmarking the format!
-- candidate_hooks: 4 punchy 3-sec hooks for each idea.
-- Return ONLY valid JSON."""
+Hook Engineering Rules (CRITICAL — every rule is enforced):
+1. NEVER write a generic hook. Every hook must contain at least ONE niche-specific noun, activity, brand, or cultural reference.
+   BAD (generic): "This changed everything for me."
+   GOOD (moto-vlogger): "My KTM Duke slid at 80kmph on NH-48. Here is what saved me."
+   GOOD (finance): "I put ₹50,000 into this IPO and lost it all in 4 minutes."
+   GOOD (comedy): "My dadi tried Instagram Reels for the first time. It did not go well."
+2. Write in the creator's proven tone. Mirror the style of their sample hooks provided in the prompt.
+3. Each of the 4 hooks (S1–S4) must use a DIFFERENT archetype as labelled above — no two hooks can use the same structure.
+4. Use real specifics: brand names, city names, community slang, rupee amounts, gear names, platform names.
+5. Provide 3 content suggestions total.
+6. EVERY suggestion MUST have a valid, playable reference_video url.
+7. Return ONLY valid JSON."""
 
 
 # ─────────────────────────────────────────────────
@@ -1214,12 +1223,24 @@ def generate_creator_intelligence(creator_name: str, niche: str = "") -> dict:
     except Exception as e:
         print(f"[intelligence] Call B notice: {e}")
 
-    # 5. Call C: Suggestions WITH Reference Video for every single idea (max_tokens=1400, ~3.5s)
+    # 5. Call C: Suggestions WITH Reference Video for every single idea (max_tokens=1600, ~3.5s)
+    # Build creator's actual hook examples to ground niche-specific hook generation
+    creator_hook_examples = ""
+    if creator_vids:
+        hook_lines = []
+        for v in creator_vids[:4]:
+            title = v.get("title", "")
+            hook = v.get("opening_hook", "")
+            if title or hook:
+                hook_lines.append(f"  - Video: '{title}' | Opening Hook: '{hook}'")
+        if hook_lines:
+            creator_hook_examples = "Creator's Real Opening Hooks (mirror this tone & vocabulary):\n" + "\n".join(hook_lines) + "\n\n"
     prompt_c = (
         f"Creator: {creator_name}\n"
-        f"Niche: {detected_niche}\n"
-        f"Peer Reference Videos in this Niche:\n{n_text}\n\n"
-        f"Generate 3 viral content ideas specifically tailored to {detected_niche}. "
+        f"Niche: {detected_niche}\n\n"
+        f"{creator_hook_examples}"
+        f"Peer Trending Videos in this Niche (by OTHER creators):\n{n_text}\n\n"
+        f"Generate 3 viral content ideas specifically tailored to {detected_niche} and this creator's exact tone. "
         f"For EVERY idea, provide a real reference video from this niche (Instagram Reel or YouTube video).\n\n"
         f"/no_think"
     )

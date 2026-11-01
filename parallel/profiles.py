@@ -234,23 +234,48 @@ def get_cached_clone(username: str, target_creator: str) -> Optional[dict]:
 
 def push_summary_to_bridge(username: str, creator_name: str, intel: dict) -> bool:
     """
-    Push a creator analysis summary to Cosmitude Bridge via the local ingest service.
+    Push a warm follower-facing teaser message to Cosmitude Bridge via the local ingest service.
+    Sends a human, conversational idea teaser — not a dry data dump.
     Returns True on success, False if ingest service is not running.
     """
     try:
         import requests
         profile_summary = intel.get("creator_profile", {})
         niche = profile_summary.get("core_niche", "Unknown")
-        hooks = []
-        for s in intel.get("content_suggestions", [])[:3]:
-            for c in s.get("candidate_hooks", [])[:2]:
-                hooks.append(c.get("text", ""))
+
+        # Pick the single best content idea and its top hook
+        suggestions = intel.get("content_suggestions", [])
+        best_idea_title = ""
+        best_hook = ""
+        best_trending_topic = ""
+        if suggestions:
+            best = suggestions[0]
+            best_idea_title = best.get("title", "")
+            best_trending_topic = best.get("trending_topic", "")
+            hooks = best.get("candidate_hooks", [])
+            if hooks:
+                best_hook = hooks[0].get("text", "")
+
+        # Craft a warm, engaging teaser for followers (not a sync log)
+        if best_idea_title and best_hook:
+            teaser_body = (
+                f"🎬 New content idea dropping soon in {niche}!\n\n"
+                f"Concept: *{best_idea_title}*\n"
+                f"Trend tapped: {best_trending_topic}\n\n"
+                f"Opening hook we're testing:\n"
+                f"\U0001f449 {chr(34)}{best_hook}{chr(34)}\n\n"
+                f"Drop a 🔥 if you want to see this video first!"
+            )
+        else:
+            teaser_body = (
+                f"🎬 We're cooking up something new in {niche}! "
+                f"Stay tuned — big content coming from {creator_name}. Drop a 🔥 to be the first to know!"
+            )
 
         text = (
-            f"[HookLab Profile Sync] User: {username}\n"
-            f"Creator: {creator_name} | Niche: {niche}\n"
-            f"Top Hooks Tested:\n" +
-            "\n".join(f"  • {h}" for h in hooks if h)
+            f"[Parallel Creator Intelligence — {creator_name}]\n\n"
+            f"{teaser_body}\n\n"
+            f"— Powered by Parallel for Creators (@{username})"
         )
 
         resp = requests.post(
