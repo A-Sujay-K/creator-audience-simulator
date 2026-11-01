@@ -3,7 +3,7 @@ import {
   Film, Sparkles, Layers, ShieldAlert, Target, BarChart3,
   Search, ArrowRight, ExternalLink, Check, Copy, User,
   LogOut, RefreshCw, ChevronRight, Swords, Compass, Lock,
-  Play, Clock, DollarSign, TrendingUp, HelpCircle
+  Play, Clock, DollarSign, TrendingUp, HelpCircle, AlertCircle
 } from 'lucide-react';
 
 const PRESET_CREATORS = [
@@ -31,6 +31,10 @@ export default function App() {
   const [copyData, setCopyData] = useState(null);
   const [prevFindings, setPrevFindings] = useState(null);
 
+  // Tab 1 selector states
+  const [selectedUploadIdx, setSelectedUploadIdx] = useState(0);
+  const [selectedPeerIdx, setSelectedPeerIdx] = useState(0);
+
   // Hook Simulator State
   const [hooksText, setHooksText] = useState('');
   const [sampleSize, setSampleSize] = useState(15);
@@ -49,7 +53,7 @@ export default function App() {
   // Copy Feedback
   const [copiedKey, setCopiedKey] = useState(null);
 
-  // Suggestion lookup
+  // Suggestion lookup (fills fields only, NEVER auto-analyzes)
   useEffect(() => {
     if (creatorName.trim().length >= 2) {
       const timer = setTimeout(async () => {
@@ -110,8 +114,48 @@ export default function App() {
     }
   };
 
-  const handleAnalyze = async (overrideTarget, overrideComp) => {
-    const target = overrideTarget || creatorName.trim();
+  // Restore cached run instantly without re-calling LLM
+  const handleLoadCached = async (targetCreator, targetComp) => {
+    if (!user) return;
+    setCreatorName(targetCreator);
+    if (targetComp) setComparisonCreator(targetComp);
+    setLoading(true);
+    setStatusText(`Restoring cached dossier for ${targetCreator}...`);
+    try {
+      const res = await fetch(`/api/user/cached?username=${encodeURIComponent(user)}&creator=${encodeURIComponent(targetCreator)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.intel) {
+          setIntelData(data.intel);
+          if (data.clone) {
+            setCopyData({
+              target_creator: targetCreator,
+              comparison_creator: targetComp || '',
+              target_niche: data.intel.creator_profile?.core_niche || '',
+              target_profile: data.intel.creator_profile || {},
+              style_card: data.clone.style_card || {},
+              blueprints: data.clone.blueprints || [],
+              piracy_ideas: data.clone.piracy_ideas || [],
+              head_to_head: data.clone.head_to_head || null,
+              target_intel: data.intel
+            });
+          }
+          setPrevFindings(data.prev_findings || {});
+          setSelectedUploadIdx(0);
+          setSelectedPeerIdx(0);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to restore cached intel', e);
+    } finally {
+      setLoading(false);
+      setStatusText('');
+    }
+  };
+
+  // Explicit Analyze action — ONLY runs when user clicks button or presses Enter
+  const handleAnalyze = async () => {
+    const target = creatorName.trim();
     if (!target) return;
 
     setLoading(true);
@@ -119,6 +163,8 @@ export default function App() {
     setStatusStep(1);
     setStatusText(`Reconnaissance: Scanning verified web & video footprint for ${target}...`);
     setElapsedSeconds(0);
+    setSelectedUploadIdx(0);
+    setSelectedPeerIdx(0);
 
     const startTime = Date.now();
     const intervalId = setInterval(() => {
@@ -145,7 +191,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           creator_name: target,
-          comparison_creator: overrideComp !== undefined ? overrideComp : comparisonCreator.trim(),
+          comparison_creator: comparisonCreator.trim(),
           niche: niche.trim(),
           username: user || ''
         })
@@ -201,7 +247,7 @@ export default function App() {
     setTimeout(() => setCopiedKey(null), 1800);
   };
 
-  // Video render helper
+  // Universal Video Player (Supports YouTube, Shorts, Instagram, TikTok)
   const renderVideo = (url, title) => {
     if (!url) return null;
     let cleanUrl = url.trim();
@@ -221,12 +267,36 @@ export default function App() {
               className="w-full h-full border-0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
-              title={title}
+              title={title || 'YouTube Stream'}
             />
           ) : (
             <div className="flex items-center justify-center h-full">
               <a href={cleanUrl} target="_blank" rel="noreferrer" className="text-xs text-[#8E95A5] hover:text-[#E2E5EE] flex items-center gap-1">
-                Open YouTube stream <ExternalLink className="w-3.5 h-3.5" />
+                Open YouTube Stream <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (cleanUrl.includes('instagram.com')) {
+      const match = cleanUrl.match(/\/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
+      const code = match ? match[1] : '';
+      return (
+        <div className="w-full rounded-lg overflow-hidden bg-[#0A0C10] border border-[#212533] p-2 text-center">
+          {code ? (
+            <iframe
+              src={`https://www.instagram.com/reel/${code}/embed`}
+              className="w-full h-80 border-0 rounded"
+              scrolling="no"
+              allowFullScreen
+              title={title || 'Instagram Reel'}
+            />
+          ) : (
+            <div className="py-8">
+              <a href={cleanUrl} target="_blank" rel="noreferrer" className="text-xs text-[#8E95A5] hover:text-[#E2E5EE] inline-flex items-center gap-1">
+                View on Instagram <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
           )}
@@ -235,9 +305,9 @@ export default function App() {
     }
 
     return (
-      <div className="p-3 bg-[#11131A] border border-[#212533] rounded-lg text-center">
+      <div className="p-4 bg-[#11131A] border border-[#212533] rounded-lg text-center">
         <a href={cleanUrl} target="_blank" rel="noreferrer" className="text-xs text-[#8E95A5] hover:text-[#E2E5EE] inline-flex items-center gap-1">
-          Open media link <ExternalLink className="w-3 h-3" />
+          Open Media Link ({title || cleanUrl}) <ExternalLink className="w-3 h-3" />
         </a>
       </div>
     );
@@ -245,14 +315,18 @@ export default function App() {
 
   const profile = intelData?.creator_profile || {};
   const h2h = copyData?.head_to_head;
+  const creatorVideos = intelData?.creator_videos || [];
+  const peerVideos = intelData?.niche_trending_videos || [];
   const suggestionsList = intelData?.content_suggestions || [];
   const styleDna = copyData?.style_card?.style_dna || {};
+  const cloneRoadmap = copyData?.style_card?.clone_roadmap || [];
   const blueprints = copyData?.blueprints || [];
   const piracyIdeas = copyData?.piracy_ideas || [];
   const negativeReviews = intelData?.negative_reviews || [];
   const improvementSuggestions = intelData?.improvement_suggestions || [];
   const metrics = intelData?.platform_metrics || {};
   const rateCard = intelData?.rate_card_and_sponsors || {};
+  const demographics = intelData?.audience_demographics || {};
 
   return (
     <div className="min-h-screen flex bg-[#0D0F14] text-[#E2E5EE]">
@@ -260,74 +334,61 @@ export default function App() {
       <aside className="w-60 bg-[#11131A] border-r border-[#212533] flex flex-col justify-between shrink-0 select-none hidden md:flex">
         <div>
           {/* Brand header */}
-          <div className="h-14 px-4 flex items-center gap-2.5 border-b border-[#212533]">
-            <div className="w-6 h-6 rounded bg-[#2B3042] flex items-center justify-center text-xs font-bold text-[#E2E5EE]">
+          <div className="h-14 border-b border-[#212533] px-4 flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-md bg-[#252A38] border border-[#31374A] flex items-center justify-center font-bold text-xs text-[#E2E5EE]">
               P
             </div>
             <div>
-              <span className="font-heading text-xs font-bold tracking-tight text-[#E2E5EE] block">PARALLEL</span>
-              <span className="text-[10px] text-[#5E6577] block font-mono">Creator Studio v2.4</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-heading font-bold text-xs tracking-tight text-[#E2E5EE]">PARALLEL</span>
+                <span className="font-mono text-[9px] px-1 rounded bg-[#181B24] border border-[#262A38] text-[#8E95A5]">2.4</span>
+              </div>
+              <div className="text-[10px] text-[#5E6577]">Creator Intelligence OS</div>
             </div>
           </div>
 
-          {/* Active Creator Context Pill */}
-          <div className="p-3 border-b border-[#212533]">
-            <div className="text-[10px] font-mono text-[#5E6577] uppercase tracking-wider mb-1">Active Target</div>
-            <div className="flex items-center gap-2 p-1.5 rounded bg-[#151821] border border-[#212533]">
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
-              ) : (
-                <div className="w-5 h-5 rounded-full bg-[#2B3042] flex items-center justify-center text-[10px]">👤</div>
-              )}
-              <span className="text-xs font-medium text-[#E2E5EE] truncate">
-                {profile.name || creatorName || 'No creator selected'}
-              </span>
-            </div>
-          </div>
-
-          {/* Workspace Navigation Links */}
-          <nav className="p-2 space-y-0.5">
+          {/* Navigation Items */}
+          <nav className="p-3 space-y-1">
             {[
               { id: 'dossier', label: 'Executive Dossier', icon: Film },
-              { id: 'ideas', label: `Viral Concepts (${suggestionsList.length || 5})`, icon: Sparkles },
+              { id: 'ideas', label: 'Viral Content Studio (5)', icon: Sparkles },
               { id: 'blueprints', label: 'Style DNA & Blueprints', icon: Layers },
-              { id: 'friction', label: 'Retention Friction Audit', icon: ShieldAlert },
-              { id: 'simulator', label: 'Hook Simulator', icon: Target },
-              { id: 'reach', label: 'Reach & Commercials', icon: BarChart3 },
-            ].map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
+              { id: 'friction', label: 'Audience Friction Audit', icon: ShieldAlert },
+              { id: 'simulator', label: 'Hook Simulator & Economics', icon: Target },
+              { id: 'reach', label: 'Reach & Commercials', icon: BarChart3 }
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
               return (
                 <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition text-left ${
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition ${
                     isActive
-                      ? 'bg-[#1D212D] text-[#E2E5EE] font-semibold border border-[#2B3042]'
-                      : 'text-[#8E95A5] hover:text-[#E2E5EE] hover:bg-[#151821]'
+                      ? 'bg-[#1C202C] text-[#E2E5EE] border border-[#2B3042]'
+                      : 'text-[#8E95A5] hover:text-[#E2E5EE] hover:bg-[#151821] border border-transparent'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5 shrink-0 opacity-80" />
-                  <span className="truncate">{item.label}</span>
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#8E95A5]' : 'text-[#5E6577]'}`} />
+                  <span>{tab.label}</span>
                 </button>
               );
             })}
           </nav>
 
-          {/* Search History (if available) */}
-          {userHistory.length > 0 && (
-            <div className="px-3 py-2 border-t border-[#212533] mt-2">
-              <div className="text-[10px] font-mono text-[#5E6577] uppercase tracking-wider mb-1.5">Recent Analyzed</div>
-              <div className="space-y-1">
-                {userHistory.slice(0, 5).map((h) => (
+          {/* Search History */}
+          {user && userHistory.length > 0 && (
+            <div className="p-3 border-t border-[#212533]">
+              <div className="text-[10px] font-mono uppercase text-[#5E6577] mb-2 px-1">
+                Saved Sessions
+              </div>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {userHistory.map((h, idx) => (
                   <button
-                    key={h.id}
-                    onClick={() => {
-                      setCreatorName(h.creator_name);
-                      if (h.comparison_creator) setComparisonCreator(h.comparison_creator);
-                      handleAnalyze(h.creator_name, h.comparison_creator || '');
-                    }}
-                    className="w-full text-left px-2 py-1 text-[11px] text-[#8E95A5] hover:text-[#E2E5EE] hover:bg-[#151821] rounded truncate block"
+                    key={h.id || idx}
+                    type="button"
+                    onClick={() => handleLoadCached(h.creator_name, h.comparison_creator || '')}
+                    className="w-full text-left px-2 py-1 text-[11px] text-[#8E95A5] hover:text-[#E2E5EE] hover:bg-[#151821] rounded truncate block transition"
                   >
                     {h.creator_name} {h.comparison_creator ? `vs ${h.comparison_creator}` : ''}
                   </button>
@@ -337,7 +398,7 @@ export default function App() {
           )}
         </div>
 
-        {/* User Workspace Profile Card */}
+        {/* User Profile Card */}
         <div className="p-3 border-t border-[#212533]">
           {user ? (
             <div className="flex items-center justify-between bg-[#151821] border border-[#212533] rounded-md p-2">
@@ -366,57 +427,13 @@ export default function App() {
 
       {/* ─── MAIN CONTENT VIEWPORT ────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header Bar with Minimalist Search */}
+        {/* Top Header Bar */}
         <header className="h-14 bg-[#11131A] border-b border-[#212533] px-5 flex items-center justify-between gap-4 sticky top-0 z-30">
-          <div className="flex items-center gap-3 flex-1 max-w-2xl">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                value={creatorName}
-                onChange={(e) => setCreatorName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
-                placeholder="Search or analyze target creator (e.g. CarryMinati)..."
-                className="w-full bg-[#151821] border border-[#212533] focus:border-[#4F6382] rounded-md px-3 py-1.5 text-xs text-[#E2E5EE] placeholder-[#5E6577] outline-none transition"
-              />
-              {suggestions.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-[#151821] border border-[#2B3042] rounded-md shadow-xl z-50 max-h-48 overflow-y-auto">
-                  {suggestions.map((s, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        setCreatorName(s.name);
-                        if (s.niche) setNiche(s.niche);
-                        setSuggestions([]);
-                      }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-[#8E95A5] hover:text-[#E2E5EE] hover:bg-[#1C202C] border-b border-[#212533] last:border-0 flex justify-between"
-                    >
-                      <span className="font-medium text-[#E2E5EE]">{s.name}</span>
-                      <span className="text-[10px] text-[#5E6577]">{s.niche}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <input
-              type="text"
-              value={comparisonCreator}
-              onChange={(e) => setComparisonCreator(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
-              placeholder="Benchmark vs (optional)..."
-              className="w-48 bg-[#151821] border border-[#212533] focus:border-[#4F6382] rounded-md px-2.5 py-1.5 text-xs text-[#E2E5EE] placeholder-[#5E6577] outline-none transition hidden lg:block"
-            />
-
-            <button
-              onClick={() => handleAnalyze()}
-              disabled={loading || !creatorName.trim()}
-              className="px-3.5 py-1.5 rounded-md bg-[#252A38] hover:bg-[#2D3344] disabled:opacity-50 text-xs font-medium text-[#E2E5EE] border border-[#31374A] transition shrink-0"
-            >
-              {loading ? 'Analyzing...' : 'Analyze'}
-            </button>
+          <div className="flex items-center gap-2">
+            <span className="font-heading font-semibold text-xs text-[#E2E5EE]">PARALLEL CREATOR OS</span>
+            <span className="text-xs text-[#5E6577] hidden sm:inline">· Continuous Creator Intelligence &amp; Retention Decoupler</span>
           </div>
 
-          {/* Engine indicator */}
           <div className="flex items-center gap-2 font-mono text-[11px] text-[#5E6577] shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-[#3B7A57] animate-pulse"></span>
             <span>Groq LPU (GPT-OSS-120B)</span>
@@ -438,22 +455,127 @@ export default function App() {
             </div>
           )}
 
-          {/* Quick preset chips */}
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-[11px] text-[#5E6577] mr-1">Suggested Targets:</span>
-            {PRESET_CREATORS.map((p, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  setCreatorName(p.name);
-                  setNiche(p.niche);
-                  handleAnalyze(p.name);
-                }}
-                className="px-2.5 py-0.5 rounded bg-[#151821] hover:bg-[#1A1D28] text-[#8E95A5] hover:text-[#E2E5EE] border border-[#212533] transition text-[11px]"
-              >
-                {p.name}
-              </button>
-            ))}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* RECONNAISSANCE & DECOUPLING CONSOLE (Inputs ONLY fill; click to run)*/}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-[#212533]">
+              <div>
+                <h2 className="font-heading font-semibold text-sm text-[#E2E5EE] tracking-tight">
+                  Reconnaissance &amp; Decoupling Console
+                </h2>
+                <p className="text-xs text-[#8E95A5]">Multi-platform web scrape + Groq LPU neural synthesis</p>
+              </div>
+              <span className="text-[11px] font-mono text-[#5E6577]">
+                Live Footprint Crawl
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+              {/* Target Creator Input */}
+              <div className="md:col-span-5 relative">
+                <label className="block text-[10px] font-mono uppercase text-[#5E6577] mb-1 font-semibold">
+                  Target Creator (To Clone) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={creatorName}
+                    onChange={(e) => setCreatorName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
+                    placeholder="e.g. CarryMinati, MrBeast, Aakash Dhawan"
+                    className="w-full bg-[#11131A] border border-[#212533] focus:border-[#4F6382] rounded-md px-3 py-2 text-xs text-[#E2E5EE] placeholder-[#5E6577] outline-none transition"
+                  />
+                  {suggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-[#151821] border border-[#2B3042] rounded-md shadow-2xl z-50 max-h-48 overflow-y-auto">
+                      {suggestions.map((s, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setCreatorName(s.name);
+                            if (s.niche) setNiche(s.niche);
+                            setSuggestions([]);
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs text-[#8E95A5] hover:text-[#E2E5EE] hover:bg-[#1C202C] border-b border-[#212533] last:border-0 flex justify-between"
+                        >
+                          <span className="font-medium text-[#E2E5EE]">{s.name}</span>
+                          <span className="text-[10px] text-[#5E6577]">{s.niche}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Benchmark Rival Input */}
+              <div className="md:col-span-4">
+                <label className="block text-[10px] font-mono uppercase text-[#5E6577] mb-1 font-semibold">
+                  Benchmark Creator (Optional Rival)
+                </label>
+                <input
+                  type="text"
+                  value={comparisonCreator}
+                  onChange={(e) => setComparisonCreator(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
+                  placeholder="e.g. Ashish Chanchlani, Ryan Trahan"
+                  className="w-full bg-[#11131A] border border-[#212533] focus:border-[#4F6382] rounded-md px-3 py-2 text-xs text-[#E2E5EE] placeholder-[#5E6577] outline-none transition"
+                />
+              </div>
+
+              {/* Category / Niche Input */}
+              <div className="md:col-span-3">
+                <label className="block text-[10px] font-mono uppercase text-[#5E6577] mb-1 font-semibold">
+                  Category / Niche (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={niche}
+                  onChange={(e) => setNiche(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
+                  placeholder="e.g. Comedy, Motovlog, Tech"
+                  className="w-full bg-[#11131A] border border-[#212533] focus:border-[#4F6382] rounded-md px-3 py-2 text-xs text-[#E2E5EE] placeholder-[#5E6577] outline-none transition"
+                />
+              </div>
+            </div>
+
+            {/* Quick Preset Chips (Fills fields ONLY — does NOT auto-analyze) */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <span className="text-[11px] text-[#5E6577] mr-1">Suggested Targets:</span>
+              {PRESET_CREATORS.map((p, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setCreatorName(p.name);
+                    setNiche(p.niche);
+                  }}
+                  className="px-2.5 py-1 rounded bg-[#11131A] hover:bg-[#1A1D28] text-[#8E95A5] hover:text-[#E2E5EE] border border-[#212533] transition text-[11px]"
+                >
+                  {p.name} <span className="text-[9px] text-[#5E6577]">({p.niche})</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Explicit Action Button */}
+            <button
+              type="button"
+              onClick={handleAnalyze}
+              disabled={loading || !creatorName.trim()}
+              className="w-full py-2.5 px-4 rounded-lg bg-[#252A38] hover:bg-[#2D3344] disabled:opacity-50 text-xs font-semibold text-[#E2E5EE] border border-[#31374A] transition shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#8E95A5]" />
+                  <span>Executing Deep Analysis &amp; Decoupling Formula...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5 text-[#8E95A5]" />
+                  <span>Execute Deep Analysis &amp; Decouple Formula</span>
+                </>
+              )}
+            </button>
           </div>
 
           {/* Multi-step loading widget */}
@@ -468,7 +590,6 @@ export default function App() {
                   {elapsedSeconds}s elapsed · avg ~35s
                 </span>
               </div>
-              {/* Stage Progress Bar */}
               <div className="w-full bg-[#11131A] h-1.5 rounded-full overflow-hidden border border-[#212533]">
                 <div
                   className="bg-[#4F6382] h-full rounded-full transition-all duration-700 ease-out"
@@ -494,7 +615,7 @@ export default function App() {
               {!intelData ? (
                 <div className="text-center py-16 text-[#5E6577] border border-dashed border-[#212533] rounded-xl">
                   <Film className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-xs">Search or pick a creator in the top bar to generate the Executive Dossier.</p>
+                  <p className="text-xs">Specify a target creator above and click "Execute Deep Analysis" to generate the Executive Dossier.</p>
                 </div>
               ) : (
                 <>
@@ -506,11 +627,11 @@ export default function App() {
                       ) : (
                         <div className="w-16 h-16 rounded-full bg-[#1E222D] flex items-center justify-center text-xl">👤</div>
                       )}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h2 className="text-lg font-heading font-bold text-[#E2E5EE]">{profile.name}</h2>
-                          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#1E222D] text-[#8E95A5] border border-[#2B3042]">
-                            {profile.tier || 'Mega 10M+'}
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="font-heading font-bold text-lg text-[#E2E5EE]">{profile.name}</h2>
+                          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#1D212D] text-[#8E95A5] border border-[#2B3042]">
+                            {profile.tier || 'Macro'}
                           </span>
                         </div>
                         <div className="text-xs text-[#8E95A5] space-x-3">
@@ -518,6 +639,24 @@ export default function App() {
                           <span>•</span>
                           <span>Region: <strong className="text-[#E2E5EE]">{profile.location || 'India'}</strong></span>
                         </div>
+                        {/* Verified Handles Pills */}
+                        {profile.discovered_accounts?.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                            <span className="text-[10px] font-mono text-[#5E6577] uppercase mr-1">Verified:</span>
+                            {profile.discovered_accounts.map((acc, aIdx) => (
+                              <a
+                                key={aIdx}
+                                href={acc.url || '#'}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-2 py-0.5 rounded bg-[#11131A] border border-[#212533] text-[10px] text-[#8E95A5] hover:text-[#E2E5EE] inline-flex items-center gap-1 transition"
+                              >
+                                <span>{acc.platform}: {acc.title}</span>
+                                {acc.url && <ExternalLink className="w-2.5 h-2.5" />}
+                              </a>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -561,43 +700,129 @@ export default function App() {
                             <span className="text-xs text-[#E2E5EE] italic">"{h2h.hook_contrast.winning_hybrid_hook}"</span>
                           </div>
                           <button
+                            type="button"
                             onClick={() => {
                               const cand = h2h.hook_contrast.candidate_hooks || [
-                                { sid: 'S1', text: h2h.hook_contrast.creator_a_hook },
-                                { sid: 'S2', text: h2h.hook_contrast.creator_b_hook },
-                                { sid: 'S3', text: h2h.hook_contrast.winning_hybrid_hook }
+                                { sid: 'S1', text: h2h.hook_contrast.creator_a_hook || 'Stop scrolling — this changes everything.' },
+                                { sid: 'S2', text: h2h.hook_contrast.creator_b_hook || 'Today we are going to look into this problem.' },
+                                { sid: 'S3', text: h2h.hook_contrast.winning_hybrid_hook },
+                                { sid: 'S4', text: `I took ${h2h.benchmark_creator}'s biggest video and remade it using ${profile.name}'s formula.` }
                               ];
                               setHooksText(`Battle: ${profile.name} vs ${h2h.benchmark_creator}\n` + cand.map(h => `${h.sid}: ${h.text}`).join('\n'));
                               setActiveTab('simulator');
                             }}
                             className="px-3 py-1 bg-[#252A38] hover:bg-[#2D3344] border border-[#31374A] text-xs text-[#E2E5EE] rounded transition shrink-0"
                           >
-                            Test in Simulator →
+                            Send 4-Hook Contrast Duel to Simulator →
                           </button>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Proven Uploads Video Deconstruction */}
-                  {intelData?.creator_videos?.length > 0 && (
-                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5">
-                      <h3 className="font-heading font-semibold text-sm text-[#E2E5EE] mb-3">Upload Retention Deconstruction</h3>
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                        <div className="lg:col-span-7">
-                          {renderVideo(intelData.creator_videos[0]?.url, intelData.creator_videos[0]?.title)}
-                        </div>
-                        <div className="lg:col-span-5 space-y-3 text-xs">
-                          <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                            <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Opening 3-Sec Hook</span>
-                            <p className="text-[#E2E5EE] italic">"{intelData.creator_videos[0]?.opening_hook || '—'}"</p>
-                          </div>
-                          <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                            <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Why It Held Attention</span>
-                            <p className="text-[#8E95A5]">{intelData.creator_videos[0]?.why_it_went_viral || '—'}</p>
-                          </div>
-                        </div>
+                  {/* Creator's Proven Uploads (Watch & Deconstruct with selector) */}
+                  {creatorVideos.length > 0 && (
+                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">
+                          Creator Proven Uploads ({creatorVideos.length} Uploads Deconstructed)
+                        </h3>
+                        <span className="text-[11px] font-mono text-[#5E6577]">Click upload to watch &amp; analyze</span>
                       </div>
+
+                      {/* Video selector pills */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {creatorVideos.map((v, vIdx) => (
+                          <button
+                            key={vIdx}
+                            type="button"
+                            onClick={() => setSelectedUploadIdx(vIdx)}
+                            className={`px-2.5 py-1 rounded text-xs transition border text-left truncate max-w-xs ${
+                              selectedUploadIdx === vIdx
+                                ? 'bg-[#252A38] text-[#E2E5EE] border-[#4F6382]'
+                                : 'bg-[#11131A] text-[#8E95A5] hover:text-[#E2E5EE] border-[#212533]'
+                            }`}
+                          >
+                            <span className="font-mono text-[10px] text-[#5E6577] mr-1">[{v.platform || 'Video'}]</span>
+                            {v.title || `Upload #${vIdx + 1}`}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Active video player & metrics */}
+                      {creatorVideos[selectedUploadIdx] && (
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-2">
+                          <div className="lg:col-span-7">
+                            {renderVideo(creatorVideos[selectedUploadIdx].url, creatorVideos[selectedUploadIdx].title)}
+                          </div>
+                          <div className="lg:col-span-5 space-y-3 text-xs">
+                            <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
+                              <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Views Benchmark</span>
+                              <span className="text-sm font-semibold text-[#E2E5EE]">{creatorVideos[selectedUploadIdx].views || 'High Engagement'}</span>
+                            </div>
+                            <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
+                              <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Opening 3-Sec Hook</span>
+                              <p className="text-[#E2E5EE] italic">"{creatorVideos[selectedUploadIdx].opening_hook || '—'}"</p>
+                            </div>
+                            <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
+                              <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Why It Held Attention</span>
+                              <p className="text-[#8E95A5]">{creatorVideos[selectedUploadIdx].why_it_went_viral || '—'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Peer Niche Trending Videos from Other Creators */}
+                  {peerVideos.length > 0 && (
+                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">
+                          Peer Trending Videos in this Niche ({peerVideos.length} Uploads by Others)
+                        </h3>
+                        <span className="text-[11px] font-mono text-[#5E6577]">Category benchmarks</span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5">
+                        {peerVideos.map((pv, pIdx) => (
+                          <button
+                            key={pIdx}
+                            type="button"
+                            onClick={() => setSelectedPeerIdx(pIdx)}
+                            className={`px-2.5 py-1 rounded text-xs transition border text-left truncate max-w-xs ${
+                              selectedPeerIdx === pIdx
+                                ? 'bg-[#252A38] text-[#E2E5EE] border-[#4F6382]'
+                                : 'bg-[#11131A] text-[#8E95A5] hover:text-[#E2E5EE] border-[#212533]'
+                            }`}
+                          >
+                            <span className="font-mono text-[10px] text-[#5E6577] mr-1">[{pv.platform || 'Peer'}]</span>
+                            {pv.title || `Peer #${pIdx + 1}`}
+                          </button>
+                        ))}
+                      </div>
+
+                      {peerVideos[selectedPeerIdx] && (
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-2">
+                          <div className="lg:col-span-7">
+                            {renderVideo(peerVideos[selectedPeerIdx].url, peerVideos[selectedPeerIdx].title)}
+                          </div>
+                          <div className="lg:col-span-5 space-y-3 text-xs">
+                            <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
+                              <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Peer Views</span>
+                              <span className="text-sm font-semibold text-[#E2E5EE]">{peerVideos[selectedPeerIdx].views || 'Trending Wave'}</span>
+                            </div>
+                            <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
+                              <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Their Opening Hook</span>
+                              <p className="text-[#E2E5EE] italic">"{peerVideos[selectedPeerIdx].opening_hook || '—'}"</p>
+                            </div>
+                            <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
+                              <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Adapt-Hook Template</span>
+                              <p className="text-[#8E95A5]">{peerVideos[selectedPeerIdx].adapt_hook_template || '—'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
@@ -613,10 +838,11 @@ export default function App() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
                   <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">5 Content Concepts with 4 Hook Archetypes</h3>
-                  <p className="text-xs text-[#8E95A5]">Engineered for short-form retention pacing.</p>
+                  <p className="text-xs text-[#8E95A5]">Engineered for short-form retention pacing with playable reference benchmarks.</p>
                 </div>
                 {suggestionsList.length > 0 && (
                   <button
+                    type="button"
                     onClick={() => {
                       const lines = suggestionsList.slice(0, 5).map((s, idx) => {
                         const topH = s.candidate_hooks?.[0]?.text || s.title;
@@ -627,7 +853,7 @@ export default function App() {
                     }}
                     className="px-3 py-1.5 bg-[#252A38] hover:bg-[#2D3344] border border-[#31374A] text-xs text-[#E2E5EE] rounded transition"
                   >
-                    Push All 5 to Simulator →
+                    🚀 Push ALL 5 Concepts to Simulator →
                   </button>
                 )}
               </div>
@@ -635,13 +861,13 @@ export default function App() {
               {suggestionsList.length === 0 ? (
                 <div className="text-center py-16 text-[#5E6577] border border-dashed border-[#212533] rounded-xl">
                   <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-xs">Analyze a creator to generate viral concepts.</p>
+                  <p className="text-xs">Analyze a creator in the console above to generate viral concepts.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {suggestionsList.map((item, idx) => (
-                    <div key={idx} className="bg-[#151821] border border-[#212533] rounded-xl p-4">
-                      <div className="flex justify-between items-start gap-4 mb-2">
+                    <div key={idx} className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-3">
+                      <div className="flex justify-between items-start gap-4">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#1D212D] text-[#8E95A5] border border-[#2B3042]">
@@ -658,21 +884,45 @@ export default function App() {
                         </div>
                       </div>
 
+                      {/* Reference Benchmark Video Player (Restored from app.py) */}
+                      {item.reference_video?.url && (
+                        <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-mono text-[10px] text-[#5E6577] uppercase">
+                              Reference Benchmark: {item.reference_video.title} ({item.reference_video.creator || 'Benchmark'})
+                            </span>
+                            <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-[#1D212D] text-[#8E95A5]">
+                              {item.reference_video.platform || 'Video'}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                            <div className="md:col-span-6">
+                              {renderVideo(item.reference_video.url, item.reference_video.title)}
+                            </div>
+                            <div className="md:col-span-6 text-xs text-[#8E95A5]">
+                              <span className="text-[10px] font-mono text-[#5E6577] block uppercase mb-1">Strategic Rationale</span>
+                              <p>{item.reference_video.why_reference || 'Demonstrates category retention pacing and curiosity payoff.'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* 4 Hook Archetypes */}
-                      <div className="mt-3 pt-3 border-t border-[#212533] space-y-1.5">
+                      <div className="pt-3 border-t border-[#212533] space-y-1.5">
                         <span className="text-[10px] font-mono uppercase text-[#5E6577] block">4 Hook Archetypes (3-Sec Retention Pacing):</span>
                         {item.candidate_hooks?.map((hk, hIdx) => {
                           const archetypes = ['INCIDENT', 'CURIOSITY', 'SHOCK', 'CONTRARIAN'];
                           const arch = archetypes[hIdx % archetypes.length];
                           const hookKey = `h-${idx}-${hIdx}`;
                           return (
-                            <div key={hIdx} className="bg-[#11131A] border border-[#212533] rounded p-2 flex items-center justify-between gap-3 text-xs">
+                            <div key={hIdx} className="bg-[#11131A] border border-[#212533] rounded p-2.5 flex items-center justify-between gap-3 text-xs">
                               <div className="flex items-start gap-2">
                                 <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#1D212D] text-[#8E95A5] font-bold">{hk.sid || `S${hIdx + 1}`}</span>
                                 <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-[#1D212D] text-[#5E6577] uppercase">{arch}</span>
                                 <span className="text-[#E2E5EE]">{hk.text}</span>
                               </div>
                               <button
+                                type="button"
                                 onClick={() => copyText(hk.text, hookKey)}
                                 className="text-[#5E6577] hover:text-[#E2E5EE] p-1 rounded"
                                 title="Copy"
@@ -683,6 +933,7 @@ export default function App() {
                           );
                         })}
                         <button
+                          type="button"
                           onClick={() => {
                             const lines = item.candidate_hooks?.map(h => `${h.sid}: ${h.text}`).join('\n') || '';
                             setHooksText(`Concept #${item.id}: ${item.title}\n${lines}`);
@@ -690,7 +941,7 @@ export default function App() {
                           }}
                           className="mt-2 text-xs text-[#8E95A5] hover:text-[#E2E5EE] flex items-center gap-1 font-medium transition"
                         >
-                          Test in Simulator <ArrowRight className="w-3 h-3" />
+                          Test all 4 hooks for Concept #{item.id} in Simulator <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
@@ -708,10 +959,11 @@ export default function App() {
               {!copyData ? (
                 <div className="text-center py-16 text-[#5E6577] border border-dashed border-[#212533] rounded-xl">
                   <Layers className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-xs">Analyze a creator to decode style DNA and generate frame-by-frame scripts.</p>
+                  <p className="text-xs">Analyze a creator to decode style DNA, 5-step roadmap, scripts, and piracy ideas.</p>
                 </div>
               ) : (
                 <>
+                  {/* Style DNA Card */}
                   <div className="bg-[#151821] border border-[#212533] rounded-xl p-5">
                     <h3 className="font-heading font-semibold text-sm text-[#E2E5EE] mb-3">Decoded Style DNA</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
@@ -742,10 +994,34 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Frame-by-Frame Scripts Table */}
+                  {/* 5-Step Implementation Roadmap (Restored from app.py) */}
+                  {cloneRoadmap.length > 0 && (
+                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-3">
+                      <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">5-Step Implementation Roadmap</h3>
+                      <div className="space-y-2">
+                        {cloneRoadmap.map((step, sIdx) => (
+                          <div key={sIdx} className="bg-[#11131A] border border-[#212533] rounded-lg p-3 text-xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-[#E2E5EE]">Step {step.step || sIdx + 1}: {step.action}</span>
+                              <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded border ${
+                                step.difficulty === 'Easy' ? 'bg-[#12281D] border-[#1D4A33] text-[#4ADE80]' :
+                                step.difficulty === 'Hard' ? 'bg-[#2E181B] border-[#5C2329] text-[#F87171]' :
+                                'bg-[#282114] border-[#4D3A1B] text-[#FBBF24]'
+                              }`}>
+                                {step.difficulty || 'Medium'}
+                              </span>
+                            </div>
+                            <p className="text-[#8E95A5] mt-1">{step.why_it_works}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Frame-by-Frame Scripts Table with Equipment */}
                   {blueprints.length > 0 && (
-                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5">
-                      <h3 className="font-heading font-semibold text-sm text-[#E2E5EE] mb-3">Frame-by-Frame Shooting Script</h3>
+                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-3">
+                      <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">Frame-by-Frame Shooting Script</h3>
                       {blueprints[0]?.shooting_script?.length > 0 && (
                         <div className="overflow-x-auto">
                           <table className="w-full text-left text-xs border border-[#212533] rounded overflow-hidden">
@@ -772,6 +1048,74 @@ export default function App() {
                           </table>
                         </div>
                       )}
+
+                      {/* Required Equipment tags (Restored from app.py) */}
+                      {blueprints[0]?.equipment_needed?.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#212533]">
+                          <span className="text-[10px] font-mono text-[#5E6577] uppercase mr-1">Required Equipment:</span>
+                          {blueprints[0].equipment_needed.map((eq, eIdx) => (
+                            <span key={eIdx} className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#11131A] border border-[#212533] text-[#8E95A5]">
+                              {eq}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 5 Niche Piracy Upgrade Concepts (Restored from app.py) */}
+                  {piracyIdeas.length > 0 && (
+                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-3">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">5 Niche Piracy Upgrade Concepts</h3>
+                        <span className="text-xs text-[#8E95A5]">Take competitor baselines and engineer 10x superior versions</span>
+                      </div>
+                      <div className="space-y-3">
+                        {piracyIdeas.map((idea, pIdx) => (
+                          <div key={pIdx} className="bg-[#11131A] border border-[#212533] rounded-lg p-4 text-xs space-y-2">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-semibold text-sm text-[#E2E5EE]">
+                                Upgrade #{idea.id || pIdx + 1}: {idea.your_upgrade_title}
+                              </h4>
+                              <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#1D212D] text-[#8E95A5]">
+                                {idea.estimated_views}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[#8E95A5]">
+                              <div className="bg-[#151821] p-2.5 rounded border border-[#212533]">
+                                <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-0.5">Competitor Baseline:</span>
+                                <p>{idea.competitor_did}</p>
+                              </div>
+                              <div className="bg-[#151821] p-2.5 rounded border border-[#212533]">
+                                <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-0.5">Why Yours Outperforms:</span>
+                                <p>{idea.why_yours_wins}</p>
+                              </div>
+                            </div>
+                            {idea.candidate_hooks?.length > 0 && (
+                              <div className="pt-2 border-t border-[#212533] space-y-1">
+                                <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Upgrade Hooks:</span>
+                                {idea.candidate_hooks.map((phk, phIdx) => (
+                                  <div key={phIdx} className="flex items-center gap-2 text-[11px] text-[#E2E5EE]">
+                                    <span className="font-mono text-[9px] px-1 py-0.5 rounded bg-[#151821] text-[#8E95A5]">{phk.sid || `S${phIdx+1}`}</span>
+                                    <span>{phk.text}</span>
+                                  </div>
+                                ))}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const lines = idea.candidate_hooks.map(h => `${h.sid}: ${h.text}`).join('\n');
+                                    setHooksText(`Piracy Upgrade (${idea.your_upgrade_title}):\n${lines}`);
+                                    setActiveTab('simulator');
+                                  }}
+                                  className="mt-2 text-xs text-[#8E95A5] hover:text-[#E2E5EE] flex items-center gap-1 font-medium transition"
+                                >
+                                  Test 4 Piracy Hooks in Simulator <ArrowRight className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </>
@@ -800,7 +1144,11 @@ export default function App() {
                         <div key={rIdx} className="bg-[#11131A] border border-[#212533] rounded-lg p-3 text-xs">
                           <div className="flex justify-between items-center mb-1.5">
                             <span className="font-semibold text-[#E2E5EE]">{rev.criticism_category}</span>
-                            <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-[#1D212D] text-[#8E95A5] border border-[#2B3042]">
+                            <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded border ${
+                              rev.frequency === 'Common'
+                                ? 'bg-[#2E181B] border-[#5C2329] text-[#F87171]'
+                                : 'bg-[#282114] border-[#4D3A1B] text-[#FBBF24]'
+                            }`}>
                               {rev.frequency}
                             </span>
                           </div>
@@ -826,6 +1174,7 @@ export default function App() {
                               <span className="text-[#E2E5EE] italic font-medium block mt-1">"{imp.hook_upgrade}"</span>
                             </div>
                             <button
+                              type="button"
                               onClick={() => {
                                 const candLines = (imp.candidate_hooks && imp.candidate_hooks.length >= 3)
                                   ? imp.candidate_hooks.map(h => `${h.sid}: ${h.text}`).join('\n')
@@ -838,7 +1187,7 @@ export default function App() {
                                 setHooksText(`Counter-Hook Upgrade (${imp.fix_title}):\n${candLines}`);
                                 setActiveTab('simulator');
                               }}
-                              className="px-2.5 py-1 bg-[#252A38] hover:bg-[#2D3344] text-[#E2E5EE] border border-[#31374A] rounded text-xs whitespace-nowrap transition"
+                              className="px-2.5 py-1 bg-[#252A38] hover:bg-[#2D3344] text-[#E2E5EE] border border-[#31374A] rounded text-xs whitespace-nowrap transition cursor-pointer"
                             >
                               Test in Simulator →
                             </button>
@@ -864,6 +1213,7 @@ export default function App() {
                     <p className="text-xs text-[#8E95A5]">Calibrate candidate hooks across simulated demographic personas.</p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => setHooksText(
                       "Creator: CarryMinati. Niche: Viral Roasts.\n" +
                       "S1: I found the fakest gym influencer on Instagram and confronted him.\n" +
@@ -871,7 +1221,7 @@ export default function App() {
                       "S3: If you watch motivational podcasts, I have terrible news for you.\n" +
                       "S4: This one video got 10 million views for the worst reason ever."
                     )}
-                    className="text-xs px-2.5 py-1 bg-[#1A1D28] hover:bg-[#212533] text-[#8E95A5] hover:text-[#E2E5EE] border border-[#212533] rounded transition"
+                    className="text-xs px-2.5 py-1 bg-[#1A1D28] hover:bg-[#212533] text-[#8E95A5] hover:text-[#E2E5EE] border border-[#212533] rounded transition cursor-pointer"
                   >
                     Load Preset
                   </button>
@@ -900,9 +1250,10 @@ export default function App() {
                   </div>
 
                   <button
+                    type="button"
                     onClick={handleSimulate}
                     disabled={simulating || !hooksText.trim()}
-                    className="w-full sm:w-auto px-4 py-1.5 bg-[#252A38] hover:bg-[#2D3344] disabled:opacity-50 text-xs font-semibold text-[#E2E5EE] border border-[#31374A] rounded-md transition"
+                    className="w-full sm:w-auto px-4 py-1.5 bg-[#252A38] hover:bg-[#2D3344] disabled:opacity-50 text-xs font-semibold text-[#E2E5EE] border border-[#31374A] rounded-md transition cursor-pointer"
                   >
                     {simulating ? 'Calibrating...' : 'Run Simulation'}
                   </button>
@@ -912,6 +1263,20 @@ export default function App() {
               {/* Simulation Output */}
               {simResults && (
                 <div className="space-y-4">
+                  {/* Statistical Confidence Badge (Restored from app.py) */}
+                  {simResults.confidence && (
+                    <div className={`p-3 rounded-lg border text-xs flex items-center gap-2 ${
+                      simResults.confidence[0] === 'LOW'
+                        ? 'bg-[#2E181B] border-[#5C2329] text-[#F87171]'
+                        : simResults.confidence[0] !== 'OK'
+                        ? 'bg-[#282114] border-[#4D3A1B] text-[#FBBF24]'
+                        : 'bg-[#12281D] border-[#1D4A33] text-[#4ADE80]'
+                    }`}>
+                      <Check className="w-4 h-4 shrink-0" />
+                      <span>Statistical Confidence: <strong>{simResults.confidence[0]}</strong> — {simResults.confidence[1]}</span>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                     <div className="bg-[#151821] border border-[#212533] rounded-xl p-4">
                       <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Predicted Earnings ({simResults.predictions.top_hook})</span>
@@ -937,23 +1302,91 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Ranking List */}
-                  <div className="bg-[#151821] border border-[#212533] rounded-xl p-4 text-xs">
-                    <h4 className="font-semibold text-[#E2E5EE] mb-2.5">Stop-Scroll Ranking</h4>
-                    <div className="space-y-1.5">
-                      {simResults.items.map((it, idx) => (
-                        <div key={idx} className="bg-[#11131A] border border-[#212533] rounded p-2.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                          <div className="flex items-start gap-2">
-                            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#1D212D] text-[#8E95A5] font-bold">{it.sid}</span>
-                            <span className="text-[#E2E5EE]">{it.hook_text}</span>
+                  {/* Visual Hook Ranking Distribution Bars (Restored from app.py) */}
+                  <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 text-xs space-y-3">
+                    <h4 className="font-semibold text-sm text-[#E2E5EE]">Hook Stop-Scroll Visual Ranking</h4>
+                    <div className="space-y-3">
+                      {simResults.items.map((it, idx) => {
+                        const scorePct = Math.min(100, Math.max(10, (it.score / 5.0) * 100));
+                        const bestPct = Math.round(it.best * 100);
+                        const worstPct = Math.round(it.worst * 100);
+                        return (
+                          <div key={idx} className="bg-[#11131A] border border-[#212533] rounded-lg p-3 space-y-2">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                              <div className="flex items-start gap-2">
+                                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#1D212D] text-[#8E95A5] font-bold shrink-0">{it.sid}</span>
+                                <span className="text-[#E2E5EE] font-medium">{it.hook_text}</span>
+                              </div>
+                              <div className="font-mono text-xs text-[#E2E5EE] shrink-0">
+                                Rating: <strong className="text-sm">{it.score.toFixed(2)}</strong> / 5.0
+                              </div>
+                            </div>
+
+                            {/* Stop-Scroll Rating Score Bar */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[10px] font-mono text-[#5E6577]">
+                                <span>Retention Score</span>
+                                <span>{scorePct.toFixed(0)}%</span>
+                              </div>
+                              <div className="w-full bg-[#151821] h-1.5 rounded-full overflow-hidden">
+                                <div className="bg-[#4F6382] h-full rounded-full" style={{ width: `${scorePct}%` }} />
+                              </div>
+                            </div>
+
+                            {/* Polarization Split (Best vs Worst) */}
+                            <div className="grid grid-cols-2 gap-2 pt-1">
+                              <div>
+                                <div className="flex justify-between text-[10px] font-mono text-[#5E6577] mb-0.5">
+                                  <span className="text-[#4ADE80]">Favorite Share</span>
+                                  <span>{bestPct}%</span>
+                                </div>
+                                <div className="w-full bg-[#151821] h-1 rounded-full overflow-hidden">
+                                  <div className="bg-[#10B981] h-full rounded-full" style={{ width: `${bestPct}%` }} />
+                                </div>
+                              </div>
+                              <div>
+                                <div className="flex justify-between text-[10px] font-mono text-[#5E6577] mb-0.5">
+                                  <span className="text-[#F87171]">Drop-off Risk</span>
+                                  <span>{worstPct}%</span>
+                                </div>
+                                <div className="w-full bg-[#151821] h-1 rounded-full overflow-hidden">
+                                  <div className="bg-[#F43F5E] h-full rounded-full" style={{ width: `${worstPct}%` }} />
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3 font-mono text-[11px] shrink-0">
-                            <span>Score: <strong className="text-[#E2E5EE]">{it.score.toFixed(2)}</strong></span>
-                            <span className="text-[#5E6577]">Favorite: {(it.best * 100).toFixed(0)}%</span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
+                  </div>
+
+                  {/* Detailed Ranking Data Table (Restored from app.py) */}
+                  <div className="bg-[#151821] border border-[#212533] rounded-xl p-4 text-xs overflow-x-auto">
+                    <h4 className="font-semibold text-[#E2E5EE] mb-2.5">Detailed Calibration Metrics</h4>
+                    <table className="w-full text-left text-xs border border-[#212533] rounded">
+                      <thead className="bg-[#11131A] text-[#5E6577] font-mono text-[10px]">
+                        <tr>
+                          <th className="p-2 border-b border-[#212533]">Hook ID</th>
+                          <th className="p-2 border-b border-[#212533]">Hook Text</th>
+                          <th className="p-2 border-b border-[#212533]">Rating</th>
+                          <th className="p-2 border-b border-[#212533]">Best %</th>
+                          <th className="p-2 border-b border-[#212533]">Worst %</th>
+                          <th className="p-2 border-b border-[#212533]">Clickbait</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#212533] bg-[#151821]">
+                        {simResults.items.map((r, rIdx) => (
+                          <tr key={rIdx} className="hover:bg-[#1A1D28]">
+                            <td className="p-2 font-mono text-[#8E95A5]">{r.sid}</td>
+                            <td className="p-2 text-[#E2E5EE]">{r.hook_text}</td>
+                            <td className="p-2 font-mono font-semibold text-[#E2E5EE]">{r.score.toFixed(2)}</td>
+                            <td className="p-2 font-mono text-[#4ADE80]">{(r.best * 100).toFixed(0)}%</td>
+                            <td className="p-2 font-mono text-[#F87171]">{(r.worst * 100).toFixed(0)}%</td>
+                            <td className="p-2 font-mono text-[#8E95A5]">{(r.clickbait * 100).toFixed(0)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
@@ -968,17 +1401,18 @@ export default function App() {
               {!intelData ? (
                 <div className="text-center py-16 text-[#5E6577] border border-dashed border-[#212533] rounded-xl">
                   <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-xs">Analyze a creator to review reach distribution and rate card metrics.</p>
+                  <p className="text-xs">Analyze a creator in the console above to evaluate channel reach, audience demographics, and rate card benchmarks.</p>
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {/* Platform Reach Metrics */}
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                     <div className="bg-[#151821] border border-[#212533] rounded-lg p-3">
                       <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Combined Reach</span>
                       <div className="text-base font-bold text-[#E2E5EE] mt-0.5">{metrics.total_reach || '45M+'}</div>
                     </div>
                     <div className="bg-[#151821] border border-[#212533] rounded-lg p-3">
-                      <span className="text-[10px] font-mono text-[#5E6577] uppercase block">YouTube Audience</span>
+                      <span className="text-[10px] font-mono text-[#5E6577] uppercase block">YouTube Base</span>
                       <div className="text-base font-bold text-[#E2E5EE] mt-0.5">{metrics.youtube_subscribers || '—'}</div>
                     </div>
                     <div className="bg-[#151821] border border-[#212533] rounded-lg p-3">
@@ -986,25 +1420,93 @@ export default function App() {
                       <div className="text-base font-bold text-[#E2E5EE] mt-0.5">{metrics.instagram_followers || '—'}</div>
                     </div>
                     <div className="bg-[#151821] border border-[#212533] rounded-lg p-3">
-                      <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Engagement Rate</span>
-                      <div className="text-base font-bold text-[#E2E5EE] mt-0.5">{metrics.engagement_rate || '7.2%'}</div>
+                      <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Engagement</span>
+                      <div className="text-base font-bold text-[#E2E5EE] mt-0.5">{metrics.engagement_rate || '—'}</div>
+                    </div>
+                    <div className="bg-[#151821] border border-[#212533] rounded-lg p-3 col-span-2 sm:col-span-1">
+                      <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Cadence</span>
+                      <div className="text-xs font-semibold text-[#E2E5EE] mt-1">{metrics.youtube_cadence || 'Regular'}</div>
                     </div>
                   </div>
 
-                  <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 text-xs">
-                    <h3 className="font-heading font-semibold text-sm text-[#E2E5EE] mb-3">Benchmark Sponsorship Rate Card</h3>
+                  {/* Commercial Rate Card Estimates */}
+                  <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-4">
+                    <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">Commercial Rate Card Estimates</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="bg-[#11131A] border border-[#212533] rounded p-3">
-                        <span className="font-mono text-[10px] text-[#5E6577] uppercase block">YouTube Integration</span>
-                        <div className="text-sm font-semibold text-[#E2E5EE] mt-0.5">{rateCard.est_youtube_rate || '₹35L - ₹75L'}</div>
+                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
+                        <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">YouTube Dedicated Integration</span>
+                        <span className="text-sm font-semibold text-[#E2E5EE]">{rateCard.est_youtube_rate || '₹35L - ₹75L'}</span>
                       </div>
-                      <div className="bg-[#11131A] border border-[#212533] rounded p-3">
-                        <span className="font-mono text-[10px] text-[#5E6577] uppercase block">Instagram Dedicated Reel</span>
-                        <div className="text-sm font-semibold text-[#E2E5EE] mt-0.5">{rateCard.est_instagram_reel_rate || '₹12L - ₹25L'}</div>
+                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
+                        <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Instagram Dedicated Reel</span>
+                        <span className="text-sm font-semibold text-[#E2E5EE]">{rateCard.est_instagram_reel_rate || '₹12L - ₹25L'}</span>
                       </div>
-                      <div className="bg-[#11131A] border border-[#212533] rounded p-3">
-                        <span className="font-mono text-[10px] text-[#5E6577] uppercase block">Instagram Story Series</span>
-                        <div className="text-sm font-semibold text-[#E2E5EE] mt-0.5">{rateCard.est_story_rate || '₹3L - ₹6L'}</div>
+                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
+                        <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Instagram Story Series</span>
+                        <span className="text-sm font-semibold text-[#E2E5EE]">{rateCard.est_story_rate || '₹3L - ₹6L'}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs">
+                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3 space-y-2">
+                        <span className="text-[10px] font-mono text-[#5E6577] uppercase block">High Affinity Sponsor Sectors</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {rateCard.brand_affinity_niches?.map((nch, nIdx) => (
+                            <span key={nIdx} className="px-2 py-0.5 rounded bg-[#151821] border border-[#212533] text-[11px] text-[#8E95A5]">
+                              {nch}
+                            </span>
+                          ))}
+                        </div>
+                        {rateCard.past_or_likely_sponsors?.length > 0 && (
+                          <div className="pt-2 border-t border-[#212533]">
+                            <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Recent Active Advertisers</span>
+                            <span className="text-[#E2E5EE] font-medium">{rateCard.past_or_likely_sponsors.join(', ')}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
+                        <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Strategic Value &amp; Conversion Pitch</span>
+                        <p className="text-[#8E95A5] leading-relaxed">{rateCard.why_brands_partner || 'Delivers high conversion resonance with youth audience.'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Audience Demographics Breakdown (Restored from app.py) */}
+                  <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-4">
+                    <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">Audience Demographics Breakdown</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      {/* Top Countries */}
+                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3 space-y-2">
+                        <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Top Geographic Markets</span>
+                        <div className="space-y-1.5">
+                          {demographics.top_countries?.map((c, cIdx) => (
+                            <div key={cIdx} className="space-y-0.5">
+                              <div className="flex justify-between text-[11px]">
+                                <span className="text-[#E2E5EE]">{c.country}</span>
+                                <span className="font-mono text-[#8E95A5]">{c.share}</span>
+                              </div>
+                              <div className="w-full bg-[#151821] h-1 rounded-full overflow-hidden">
+                                <div
+                                  className="bg-[#4F6382] h-full rounded-full"
+                                  style={{ width: `${c.share || '20%'}` }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Age & Gender Demographics */}
+                      <div className="space-y-3">
+                        <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
+                          <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Primary Age Cohort</span>
+                          <span className="text-sm font-semibold text-[#E2E5EE]">{demographics.primary_age || '18-24 (Gen Z)'}</span>
+                        </div>
+                        <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
+                          <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Gender Skew</span>
+                          <span className="text-sm font-semibold text-[#E2E5EE]">{demographics.gender_skew || '76% Male / 24% Female'}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1015,53 +1517,64 @@ export default function App() {
         </main>
       </div>
 
-      {/* Auth Modal */}
+      {/* ─── AUTHENTICATION MODAL ──────────────────────────────────────────── */}
       {authModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#151821] border border-[#2B3042] rounded-xl max-w-xs w-full p-5 shadow-2xl text-xs">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-semibold text-[#E2E5EE]">
-                {authMode === 'login' ? 'Sign In' : 'Create Account'}
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#151821] border border-[#2B3042] rounded-xl max-w-sm w-full p-5 shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">
+                {authMode === 'login' ? 'Connect Account' : 'Create Account'}
               </h3>
-              <button onClick={() => setAuthModalOpen(false)} className="text-[#5E6577] hover:text-[#E2E5EE]">✕</button>
+              <button
+                onClick={() => setAuthModalOpen(false)}
+                className="text-[#8E95A5] hover:text-[#E2E5EE] text-sm"
+              >
+                ✕
+              </button>
             </div>
 
-            {authError && <div className="text-[11px] text-[#8B4545] mb-2 bg-[#1E1616] p-2 rounded">{authError}</div>}
-
-            <form onSubmit={handleAuth} className="space-y-2.5">
+            <form onSubmit={handleAuth} className="space-y-3 text-xs">
               <div>
-                <label className="block text-[10px] font-mono text-[#5E6577] mb-1">Username</label>
+                <label className="block text-[10px] font-mono text-[#5E6577] uppercase mb-1">Username</label>
                 <input
                   type="text"
                   value={authUsername}
                   onChange={(e) => setAuthUsername(e.target.value)}
-                  className="w-full bg-[#11131A] border border-[#212533] rounded px-2.5 py-1.5 text-xs text-[#E2E5EE] outline-none focus:border-[#4F6382]"
+                  placeholder="e.g. asuja"
+                  className="w-full bg-[#11131A] border border-[#212533] focus:border-[#4F6382] rounded p-2 text-[#E2E5EE] outline-none"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-mono text-[#5E6577] mb-1">PIN</label>
+                <label className="block text-[10px] font-mono text-[#5E6577] uppercase mb-1">PIN</label>
                 <input
                   type="password"
                   value={authPin}
                   onChange={(e) => setAuthPin(e.target.value)}
-                  className="w-full bg-[#11131A] border border-[#212533] rounded px-2.5 py-1.5 text-xs text-[#E2E5EE] outline-none focus:border-[#4F6382]"
+                  placeholder="3-4 digits"
+                  className="w-full bg-[#11131A] border border-[#212533] focus:border-[#4F6382] rounded p-2 text-[#E2E5EE] outline-none"
                 />
               </div>
 
+              {authError && <div className="text-[11px] text-[#F28B82]">{authError}</div>}
+
               <button
                 type="submit"
-                className="w-full py-1.5 bg-[#252A38] hover:bg-[#2D3344] text-[#E2E5EE] font-semibold rounded border border-[#31374A] transition mt-2"
+                className="w-full py-2 bg-[#252A38] hover:bg-[#2D3344] text-[#E2E5EE] font-medium rounded transition"
               >
-                {authMode === 'login' ? 'Sign In' : 'Create'}
+                {authMode === 'login' ? 'Sign In' : 'Create Profile'}
               </button>
             </form>
 
             <div className="mt-3 text-center">
               <button
-                onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                type="button"
+                onClick={() => {
+                  setAuthMode(authMode === 'login' ? 'signup' : 'login');
+                  setAuthError('');
+                }}
                 className="text-[11px] text-[#8E95A5] hover:text-[#E2E5EE]"
               >
-                {authMode === 'login' ? "Need an account? Sign up" : 'Have an account? Sign in'}
+                {authMode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
               </button>
             </div>
           </div>
