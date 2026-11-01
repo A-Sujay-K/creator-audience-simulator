@@ -237,7 +237,7 @@ def get_piracy_ideas(competitor_name: str, niche: str, competitor_videos: list) 
         "Generate 5 direct upgrade ideas that are clearly better than what they made."
     )
     try:
-        result = ask_json(_SYS_PIRACY, user_msg, MODEL_SMART, max_tokens=1100)
+        result = ask_json(_SYS_PIRACY, user_msg, MODEL_SMART, max_tokens=2600)
         if result and result.get("piracy_ideas"):
             return result
         return _fallback_piracy(competitor_name, niche)
@@ -474,7 +474,7 @@ def generate_unified_clone_dossier(creator_name: str, niche: str, creator_vids: 
     parsed = None
     try:
         # Lean token allocation for fast response
-        parsed = ask_json(_SYS_UNIFIED_CLONE, user_msg, MODEL_SMART, max_tokens=1100)
+        parsed = ask_json(_SYS_UNIFIED_CLONE, user_msg, MODEL_SMART, max_tokens=2600)
     except Exception as e:
         print(f"[clone_intel] Fast unified call note: {e}")
 

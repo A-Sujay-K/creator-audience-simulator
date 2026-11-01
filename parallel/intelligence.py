@@ -1405,9 +1405,9 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
     High-speed 3-call intelligence synthesis:
       1. Parallel Avatar fetch via Wikipedia API (<0.3s)
       2. Multi-platform Firecrawl recon across Instagram, YouTube, and the wider web
-      3. Call A: Profile + Platform Metrics + Demographics + Rate Card (~1.5s, max_tokens=850)
-      4. Call B: Creator's real uploads (IG & YT) vs Other creators' niche videos + Competitors (~3.5s, max_tokens=950)
-      5. Call C: Suggestions tailored to detected niche with playable reference videos per idea (~3.5s, max_tokens=950)
+      3. Call A: Profile + Platform Metrics + Demographics + Rate Card (~1.5s, max_tokens=1500)
+      4. Call B: Creator's real uploads (IG & YT) vs Other creators' niche videos + Competitors (~3.5s, max_tokens=2500)
+      5. Call C: Suggestions tailored to detected niche with playable reference videos per idea (~3.5s, max_tokens=2500)
       6. Normalize all outputs ensuring verified links across any platform.
     """
     t0 = time.time()
@@ -1428,22 +1428,22 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
     snippets = [f"- [{r.get('title', '')}]: {r.get('snippet', '')[:120]}" for r in raw_results[:4]]
     research_text = "\n".join(snippets)
 
-    # 3. Call A: Profile, Platform Metrics, Audience Demographics, Rate Card (max_tokens=850, ~1.5s)
+    # 3. Call A: Profile, Platform Metrics, Audience Demographics, Rate Card (max_tokens=1500, ~1.5s)
     prompt_a = (
         f"Creator: {creator_name}\n"
         f"Detected Niche: {detected_niche}\n\n"
         f"Research Snippets:\n{research_text}\n\n"
-        f"/no_think"
+        
     )
     part_a = {}
     try:
-        part_a = ask_json(_SYS_A, prompt_a, MODEL_SMART, temperature=0.3, max_tokens=850)
+        part_a = ask_json(_SYS_A, prompt_a, MODEL_SMART, temperature=0.3, max_tokens=1500)
         if isinstance(part_a, dict) and part_a.get("creator_profile", {}).get("core_niche"):
             detected_niche = part_a["creator_profile"]["core_niche"]
     except Exception as e:
         print(f"[intelligence] Call A notice: {e}")
 
-    # 4. Call B: Creator's Own Videos vs Other Creators' Niche Videos + Competitors (max_tokens=950, ~3.5s)
+    # 4. Call B: Creator's Own Videos vs Other Creators' Niche Videos + Competitors (max_tokens=2500, ~3.5s)
     comp_bench_instruction = ""
     if comparison_creator and comparison_creator.strip():
         comp_bench_instruction = (
@@ -1460,11 +1460,11 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
         f"Creator's Real Videos & Reels Found (Instagram & YouTube):\n{c_text}\n\n"
         f"Other Creators' Trending Videos in this Niche (NOT {creator_name}):\n{n_text}\n\n"
         f"Rules: For creator_videos, analyze the real videos above. For niche_trending_videos, analyze the other creators' videos above. Support both Instagram Reels and YouTube.\n"
-        f"/no_think"
+        
     )
     part_b = {}
     try:
-        part_b = ask_json(_SYS_B, prompt_b, MODEL_SMART, temperature=0.4, max_tokens=950)
+        part_b = ask_json(_SYS_B, prompt_b, MODEL_SMART, temperature=0.4, max_tokens=2500)
     except Exception as e:
         print(f"[intelligence] Call B notice: {e}")
 
@@ -1503,15 +1503,15 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
         f"Peer Trending Videos in this Niche (by OTHER creators):\n{n_text}\n\n"
         f"Generate 5 high-potential viral content ideas specifically tailored to {detected_niche} and this creator's exact tone. "
         f"For EVERY idea, provide a real reference video from this niche (Instagram Reel or YouTube video).\n\n"
-        f"/no_think"
+        
     )
     part_c = {}
     try:
-        part_c = ask_json(_SYS_C, prompt_c, MODEL_SMART, temperature=0.5, max_tokens=1400)
+        part_c = ask_json(_SYS_C, prompt_c, MODEL_SMART, temperature=0.5, max_tokens=3000)
     except Exception as e:
         print(f"[intelligence] Call C notice: {e}")
 
-    # 6. Call D: Negative Review Analysis & Actionable Content Fixes (max_tokens=900, ~2s)
+    # 6. Call D: Negative Review Analysis & Actionable Content Fixes (max_tokens=1600, ~2s)
     neg_context = ""
     if negative_snippets:
         neg_lines = [f"  - [{n.get('title', '')}]: {n.get('snippet', '')[:140]}" for n in negative_snippets[:4]]
@@ -1524,11 +1524,11 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
         f"Niche: {detected_niche}\n\n"
         f"{neg_context}\n\n"
         f"Analyze negative reviews and friction points, and provide 3-4 specific improvement suggestions with upgraded hooks.\n"
-        f"/no_think"
+        
     )
     part_d = {}
     try:
-        part_d = ask_json(_SYS_NEG, prompt_d, MODEL_SMART, temperature=0.4, max_tokens=900)
+        part_d = ask_json(_SYS_NEG, prompt_d, MODEL_SMART, temperature=0.4, max_tokens=1600)
     except Exception as e:
         print(f"[intelligence] Call D notice: {e}")
 

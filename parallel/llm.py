@@ -1,16 +1,7 @@
 """
 llm.py
 ------
-Thin wrapper around Groq API.
-
-Two model tiers (set in .env):
-  MODEL_FAST  – bulk persona simulation  (default: llama-3.1-8b-instant)
-  MODEL_SMART – scenario compilation     (default: llama-3.3-70b-versatile)
-
-Groq free tier: 30 requests/minute.
-The function auto-retries on 429 (Rate Limit) errors with an exponential backoff.
-
-Get your free API key at: https://console.groq.com/keys
+Thin wrapper around Groq API with automatic OTPM clamp and rate limit resilience.
 """
 
 import json
@@ -24,15 +15,15 @@ from groq import Groq
 
 load_dotenv()
 
-MODEL_FAST  = os.getenv("MODEL_FAST",  "qwen/qwen3.8-27b")
-MODEL_SMART = os.getenv("MODEL_SMART", "qwen/qwen3.8-27b")
+MODEL_FAST  = os.getenv("MODEL_FAST",  "openai/gpt-oss-20b")
+MODEL_SMART = os.getenv("MODEL_SMART", "openai/gpt-oss-120b")
 
 _client = Groq(api_key=os.getenv("GROQ_API_KEY", "NOT_SET"))
-MAX_RETRIES = 8
+MAX_RETRIES = 6
 
 _RATE_LOCK = threading.Lock()
 _last_call_ts = 0.0
-_MIN_INTERVAL = 3.0  # Safe pacing to respect Groq free tier TPM & RPM
+_MIN_INTERVAL = 0.8
 
 def _throttle():
     global _last_call_ts
@@ -47,12 +38,18 @@ def ask_json(
     user: str,
     model: str,
     temperature: float = 1.0,
-    max_tokens: int = 250,  # Lowered so Groq TPM limits aren't quickly exhausted
-    no_think: bool = False,  # Reserved for future use; currently a no-op
+    max_tokens: int = 250,
+    no_think: bool = False,
 ) -> dict:
     """
     Call the Groq model and extract the first JSON object from its reply.
+    Configures low reasoning effort for reasoning models to maximize speed and output budget.
     """
+    cur_max_tokens = max_tokens
+    extra_kwargs = {}
+    if any(m in model.lower() for m in ["gpt-oss", "deepseek", "qwq"]):
+        extra_kwargs["reasoning_effort"] = "low"
+
     for attempt in range(1, MAX_RETRIES + 1):
         _throttle()
         try:
@@ -63,12 +60,26 @@ def ask_json(
                     {"role": "user", "content": user}
                 ],
                 temperature=temperature,
-                max_tokens=max_tokens,
+                max_tokens=cur_max_tokens,
+                **extra_kwargs
             )
-            raw = response.choices[0].message.content
-            match = re.search(r"\{.*\}", raw, re.S)
+            raw = response.choices[0].message.content or ""
+            finish_reason = getattr(response.choices[0], "finish_reason", "")
+
+            # If response got truncated due to token limit, increase limit and retry
+            if finish_reason == "length" and attempt < MAX_RETRIES:
+                cur_max_tokens = min(3800, cur_max_tokens + 1000)
+                print(f"[llm] Output truncated (finish_reason=length). Expanded max_tokens to {cur_max_tokens}. Retrying...")
+                time.sleep(0.5)
+                continue
+
+            # Strip markdown code blocks if present
+            cleaned = re.sub(r"^```(?:json)?\s*", "", raw.strip(), flags=re.IGNORECASE)
+            cleaned = re.sub(r"\s*```$", "", cleaned.strip())
+
+            match = re.search(r"\{.*\}", cleaned, re.S)
             if not match:
-                raise ValueError(f"No JSON found in model output: {raw[:200]}")
+                raise ValueError(f"No JSON found in model output (len={len(raw)}): {raw[:200]}")
             raw_json = match.group(0)
             try:
                 return json.loads(raw_json)
@@ -104,19 +115,28 @@ def ask_json(
 
         except Exception as e:
             err_str = str(e)
+            
+            # Auto-handle OTPM output token limit error immediately
+            if "reduce max_tokens" in err_str.lower() or "limit" in err_str.lower() and "otpm" in err_str.lower():
+                m_lim = re.search(r"Limit\s+(\d+)", err_str, re.IGNORECASE)
+                if m_lim:
+                    cur_max_tokens = max(150, int(m_lim.group(1)) - 80)
+                    print(f"[llm] Clamped max_tokens to {cur_max_tokens} due to model OTPM limit. Retrying immediately...")
+                    time.sleep(1.0)
+                    continue
+
             if "429" in err_str or "rate limit" in err_str.lower():
-                # Check if Groq tells us exactly how long to wait (e.g. 'try again in 12.5s' or 'try again in 1m2.5s')
                 m = re.search(r"try again in (?:(\d+)m)?([\d\.]+)s", err_str, re.IGNORECASE)
                 if m:
                     minutes = float(m.group(1)) if m.group(1) else 0.0
                     seconds = float(m.group(2)) if m.group(2) else 5.0
-                    delay = minutes * 60.0 + seconds + 1.0  # add 1.0s buffer
+                    delay = minutes * 60.0 + seconds + 0.5
                 else:
-                    delay = 6.0 * attempt
+                    delay = 3.0 * attempt
                 
-                print(f"[llm] Rate limit hit. Pausing perfectly for {delay:.1f}s to allow tokens to refill...")
+                print(f"[llm] Rate limit hit. Pausing for {delay:.1f}s to refill...")
                 time.sleep(delay)
                 continue
-            raise  # other errors
+            raise
 
     raise RuntimeError(f"Failed after {MAX_RETRIES} retries due to rate limiting.")

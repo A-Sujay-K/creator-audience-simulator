@@ -22,6 +22,9 @@ export default function App() {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [statusText, setStatusText] = useState('');
+  const [statusStep, setStatusStep] = useState(1);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [errorBanner, setErrorBanner] = useState('');
 
   // Data State
   const [intelData, setIntelData] = useState(null);
@@ -112,7 +115,30 @@ export default function App() {
     if (!target) return;
 
     setLoading(true);
-    setStatusText(`Scanning intelligence for ${target}...`);
+    setErrorBanner('');
+    setStatusStep(1);
+    setStatusText(`Reconnaissance: Scanning verified web & video footprint for ${target}...`);
+    setElapsedSeconds(0);
+
+    const startTime = Date.now();
+    const intervalId = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      setElapsedSeconds(elapsed);
+      if (elapsed < 8) {
+        setStatusStep(1);
+        setStatusText(`🌐 Step 1/4: Multi-platform web & video reconnaissance (Firecrawl)... (${elapsed}s)`);
+      } else if (elapsed < 20) {
+        setStatusStep(2);
+        setStatusText(`🧬 Step 2/4: Profiling demographics, engagement & rate cards... (${elapsed}s)`);
+      } else if (elapsed < 32) {
+        setStatusStep(3);
+        setStatusText(`🎬 Step 3/4: Reverse-engineering hook formulas & peer benchmarks... (${elapsed}s)`);
+      } else {
+        setStatusStep(4);
+        setStatusText(`💡 Step 4/4: Synthesizing 5 viral concepts & shooting blueprints... (${elapsed}s)`);
+      }
+    }, 1000);
+
     try {
       const res = await fetch('/api/intel/analyze', {
         method: 'POST',
@@ -136,8 +162,9 @@ export default function App() {
       setPrevFindings(data.prev_findings);
       if (user) loadHistory(user);
     } catch (err) {
-      alert(`Notice: ${err.message}`);
+      setErrorBanner(`Analysis Notice: ${err.message}`);
     } finally {
+      clearInterval(intervalId);
       setLoading(false);
       setStatusText('');
     }
@@ -391,13 +418,26 @@ export default function App() {
 
           {/* Engine indicator */}
           <div className="flex items-center gap-2 font-mono text-[11px] text-[#5E6577] shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#3B7A57]"></span>
-            <span>Llama-3.3-70b Core</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#3B7A57] animate-pulse"></span>
+            <span>Groq LPU (GPT-OSS-120B)</span>
           </div>
         </header>
 
         {/* Workspace Body Canvas */}
         <main className="p-6 max-w-6xl w-full mx-auto space-y-6">
+          {/* Dismissible Error Banner */}
+          {errorBanner && (
+            <div className="p-3 bg-[#24171A] border border-[#52252C] rounded-lg flex items-center justify-between text-xs text-[#F28B82]">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-[#F28B82] shrink-0" />
+                <span>{errorBanner}</span>
+              </div>
+              <button onClick={() => setErrorBanner('')} className="text-[#8E95A5] hover:text-[#E2E5EE] text-xs px-2 py-0.5 rounded">
+                Dismiss
+              </button>
+            </div>
+          )}
+
           {/* Quick preset chips */}
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <span className="text-[11px] text-[#5E6577] mr-1">Suggested Targets:</span>
@@ -416,11 +456,33 @@ export default function App() {
             ))}
           </div>
 
-          {/* Loading status bar */}
+          {/* Multi-step loading widget */}
           {loading && (
-            <div className="p-3 bg-[#151821] border border-[#2B3042] rounded-md flex items-center gap-2.5 text-xs text-[#8E95A5]">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#8E95A5]" />
-              <span>{statusText || 'Deconstructing digital footprint and audience retention...'}</span>
+            <div className="p-4 bg-[#151821] border border-[#2B3042] rounded-xl space-y-3 shadow-sm">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 text-[#E2E5EE] font-medium">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#8E95A5]" />
+                  <span>{statusText || 'Deconstructing digital footprint and audience retention...'}</span>
+                </div>
+                <span className="font-mono text-[11px] text-[#5E6577]">
+                  {elapsedSeconds}s elapsed · avg ~35s
+                </span>
+              </div>
+              {/* Stage Progress Bar */}
+              <div className="w-full bg-[#11131A] h-1.5 rounded-full overflow-hidden border border-[#212533]">
+                <div
+                  className="bg-[#4F6382] h-full rounded-full transition-all duration-700 ease-out"
+                  style={{
+                    width: `${Math.min(95, Math.max(12, statusStep * 24 + Math.min(15, elapsedSeconds)))}%`
+                  }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] font-mono text-[#5E6577]">
+                <span className={statusStep >= 1 ? 'text-[#8E95A5]' : ''}>1. Recon</span>
+                <span className={statusStep >= 2 ? 'text-[#8E95A5]' : ''}>2. Demographics</span>
+                <span className={statusStep >= 3 ? 'text-[#8E95A5]' : ''}>3. Hook Formulas</span>
+                <span className={statusStep >= 4 ? 'text-[#8E95A5]' : ''}>4. Concepts &amp; Blueprints</span>
+              </div>
             </div>
           )}
 
@@ -765,7 +827,15 @@ export default function App() {
                             </div>
                             <button
                               onClick={() => {
-                                setHooksText(`Counter-Hook Upgrade:\nS1: ${imp.hook_upgrade}`);
+                                const candLines = (imp.candidate_hooks && imp.candidate_hooks.length >= 3)
+                                  ? imp.candidate_hooks.map(h => `${h.sid}: ${h.text}`).join('\n')
+                                  : [
+                                      `S1: ${imp.hook_upgrade}`,
+                                      `S2: Stop making this fatal mistake with ${imp.fix_title}.`,
+                                      `S3: I tested ${imp.fix_title} so you don't have to ruin your channel.`,
+                                      `S4: The brutal truth about ${imp.problem} that nobody admits.`
+                                    ].join('\n');
+                                setHooksText(`Counter-Hook Upgrade (${imp.fix_title}):\n${candLines}`);
                                 setActiveTab('simulator');
                               }}
                               className="px-2.5 py-1 bg-[#252A38] hover:bg-[#2D3344] text-[#E2E5EE] border border-[#31374A] rounded text-xs whitespace-nowrap transition"
