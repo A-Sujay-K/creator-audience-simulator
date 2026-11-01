@@ -36,7 +36,10 @@ Given a creator name, their niche, and intel about their top content, return ONL
       "step": 1,
       "action": "string (specific actionable step to replicate their style, max 20 words)",
       "why_it_works": "string (max 10 words)",
-      "difficulty": "Easy | Medium | Hard"
+      "difficulty": "Easy | Medium | Hard",
+      "expected_result": "string (concrete deliverable after completing this step, max 20 words)",
+      "time_estimate": "string (realistic time, e.g. 2 hours, 1 week)",
+      "success_signals": ["string (observable proof step is done right)", "string", "string"]
     }
   ],
   "differentiation_angle": "string (how to clone their style but stand out, max 20 words)"
@@ -44,6 +47,8 @@ Given a creator name, their niche, and intel about their top content, return ONL
 Rules:
 - Be specific, not generic. 'High energy' is useless. 'Opens with a bet or dare in first 2 seconds' is good.
 - clone_roadmap must have exactly 5 steps.
+- expected_result must be concrete (e.g. "A list of 10 hooks with timestamps"), not vague.
+- success_signals must have exactly 3 observable, measurable items.
 - Return ONLY valid JSON."""
 
 
@@ -85,11 +90,11 @@ def _fallback_style_dna(creator_name: str, niche: str) -> dict:
             "audience_contract": f"Entertaining, value-packed {niche} content every time"
         },
         "clone_roadmap": [
-            {"step": 1, "action": "Study their last 10 videos and write down the first 5 words of each.", "why_it_works": "Reveals their hook formula pattern", "difficulty": "Easy"},
-            {"step": 2, "action": "Clone their thumbnail layout with your own face and colors.", "why_it_works": "Captures click psychology without copying", "difficulty": "Easy"},
-            {"step": 3, "action": "Match their average video length and edit pace for 4 weeks.", "why_it_works": "Trains your audience to the same attention rhythm", "difficulty": "Medium"},
-            {"step": 4, "action": "Cover the same topics 48 hours before or after they do.", "why_it_works": "Captures search traffic while differentiated", "difficulty": "Medium"},
-            {"step": 5, "action": "Introduce one unique segment they never do — make it your signature.", "why_it_works": "Clone base + original angle = viral differentiation", "difficulty": "Hard"},
+            {"step": 1, "action": "Study their last 10 videos and write down the first 5 words of each.", "why_it_works": "Reveals their hook formula pattern", "difficulty": "Easy", "expected_result": "A spreadsheet of 10 opening hooks with timestamp and view count noted", "time_estimate": "2 hours", "success_signals": ["You can predict their next video opening within 80% accuracy", "A clear pattern in first-sentence structure is visible", "You have identified at least 3 recurring hook types"]},
+            {"step": 2, "action": "Clone their thumbnail layout with your own face and colors.", "why_it_works": "Captures click psychology without copying", "difficulty": "Easy", "expected_result": "5 new thumbnails using their layout formula with your branding applied", "time_estimate": "3 hours", "success_signals": ["Thumbnail passes the squint test at 120px size", "Same composition zones: face left, text right, emotion visible", "CTR on next video beats your previous 30-day average"]},
+            {"step": 3, "action": "Match their average video length and edit pace for 4 weeks.", "why_it_works": "Trains your audience to the same attention rhythm", "difficulty": "Medium", "expected_result": "4 published videos within ±15 seconds of their average runtime and same cut frequency", "time_estimate": "4 weeks", "success_signals": ["Average watch percentage increases by 5%+ vs. baseline", "Comments mention pacing or editing energy positively", "Session time per viewer increases in analytics"]},
+            {"step": 4, "action": "Cover the same topics 48 hours before or after they do.", "why_it_works": "Captures search traffic while differentiated", "difficulty": "Medium", "expected_result": "3 videos published on trending topics within 48h window of the creator", "time_estimate": "2 weeks", "success_signals": ["At least 1 video appears in recommended alongside theirs", "Search impressions on that topic increase measurably", "Subscriber velocity increases during that topic cycle"]},
+            {"step": 5, "action": "Introduce one unique segment they never do — make it your signature.", "why_it_works": "Clone base + original angle = viral differentiation", "difficulty": "Hard", "expected_result": "A recurring branded segment that appears in every video and earns audience comments", "time_estimate": "6 weeks", "success_signals": ["Viewers ask for the segment when it is missing from a video", "The segment is referenced in at least 5 comments per video", "Returning viewer rate increases vs. pre-segment period"]},
         ],
         "differentiation_angle": f"Clone their {niche} formula but add a personal story angle they never use."
     }
@@ -337,11 +342,11 @@ Given a creator name, niche, and top uploads, return a single valid JSON object:
     "audience_contract": "string (what viewers expect, max 15 words)"
   },
   "clone_roadmap": [
-    {"step": 1, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard"},
-    {"step": 2, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard"},
-    {"step": 3, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard"},
-    {"step": 4, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard"},
-    {"step": 5, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard"}
+    {"step": 1, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard", "expected_result": "string (concrete deliverable, max 18 words)", "time_estimate": "string", "success_signals": ["string", "string", "string"]},
+    {"step": 2, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard", "expected_result": "string (concrete deliverable, max 18 words)", "time_estimate": "string", "success_signals": ["string", "string", "string"]},
+    {"step": 3, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard", "expected_result": "string (concrete deliverable, max 18 words)", "time_estimate": "string", "success_signals": ["string", "string", "string"]},
+    {"step": 4, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard", "expected_result": "string (concrete deliverable, max 18 words)", "time_estimate": "string", "success_signals": ["string", "string", "string"]},
+    {"step": 5, "action": "string (max 18 words)", "why_it_works": "string (max 10 words)", "difficulty": "Easy|Medium|Hard", "expected_result": "string (concrete deliverable, max 18 words)", "time_estimate": "string", "success_signals": ["string", "string", "string"]}
   ],
   "differentiation_angle": "string (how to stand out from them, max 20 words)",
   "blueprint": {

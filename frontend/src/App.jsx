@@ -16,6 +16,7 @@ const PRESET_CREATORS = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dossier');
+  const [expandedRoadmapStep, setExpandedRoadmapStep] = useState(null);
   const [creatorName, setCreatorName] = useState('');
   const [comparisonCreator, setComparisonCreator] = useState('');
   const [niche, setNiche] = useState('');
@@ -165,6 +166,7 @@ export default function App() {
     setElapsedSeconds(0);
     setSelectedUploadIdx(0);
     setSelectedPeerIdx(0);
+    setExpandedRoadmapStep(null);
 
     const startTime = Date.now();
     const intervalId = setInterval(() => {
@@ -994,26 +996,130 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* 5-Step Implementation Roadmap (Restored from app.py) */}
+                  {/* 5-Step Implementation Roadmap — Interactive Accordion with inline Results */}
                   {cloneRoadmap.length > 0 && (
                     <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-3">
-                      <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">5-Step Implementation Roadmap</h3>
-                      <div className="space-y-2">
-                        {cloneRoadmap.map((step, sIdx) => (
-                          <div key={sIdx} className="bg-[#11131A] border border-[#212533] rounded-lg p-3 text-xs">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-semibold text-[#E2E5EE]">Step {step.step || sIdx + 1}: {step.action}</span>
-                              <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded border ${
-                                step.difficulty === 'Easy' ? 'bg-[#12281D] border-[#1D4A33] text-[#4ADE80]' :
-                                step.difficulty === 'Hard' ? 'bg-[#2E181B] border-[#5C2329] text-[#F87171]' :
-                                'bg-[#282114] border-[#4D3A1B] text-[#FBBF24]'
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">5-Step Implementation Roadmap</h3>
+                          <p className="text-[10px] text-[#5E6577] mt-0.5">Click any step to reveal the expected result & success signals</p>
+                        </div>
+                        <span className="text-[10px] font-mono text-[#5E6577]">{cloneRoadmap.length} steps</span>
+                      </div>
+
+                      {/* Connector timeline */}
+                      <div className="relative space-y-0">
+                        {cloneRoadmap.map((step, sIdx) => {
+                          const isOpen = expandedRoadmapStep === sIdx;
+                          const diffColor =
+                            step.difficulty === 'Easy' ? { bg: 'bg-[#12281D]', border: 'border-[#1D4A33]', text: 'text-[#4ADE80]', dot: 'bg-[#4ADE80]' } :
+                            step.difficulty === 'Hard' ? { bg: 'bg-[#2E181B]', border: 'border-[#5C2329]', text: 'text-[#F87171]', dot: 'bg-[#F87171]' } :
+                            { bg: 'bg-[#282114]', border: 'border-[#4D3A1B]', text: 'text-[#FBBF24]', dot: 'bg-[#FBBF24]' };
+
+                          return (
+                            <div key={sIdx} className="relative pl-8">
+                              {/* Vertical line connector (not on last) */}
+                              {sIdx < cloneRoadmap.length - 1 && (
+                                <div className="absolute left-[13px] top-8 bottom-0 w-px bg-[#212533]" />
+                              )}
+
+                              {/* Step number dot */}
+                              <div className={`absolute left-0 top-3.5 w-7 h-7 rounded-full border flex items-center justify-center text-[10px] font-bold font-mono transition-all duration-200 ${
+                                isOpen
+                                  ? `${diffColor.bg} ${diffColor.border} ${diffColor.text}`
+                                  : 'bg-[#11131A] border-[#2B3042] text-[#5E6577]'
                               }`}>
-                                {step.difficulty || 'Medium'}
-                              </span>
+                                {step.step || sIdx + 1}
+                              </div>
+
+                              {/* Step card */}
+                              <div className={`mb-2 rounded-lg border transition-all duration-200 overflow-hidden ${
+                                isOpen
+                                  ? 'border-[#2B3042] bg-[#11131A]'
+                                  : 'border-[#1C2030] bg-[#0F1118] hover:border-[#212533] hover:bg-[#11131A]'
+                              }`}>
+                                {/* Header row — always visible, click to toggle */}
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedRoadmapStep(isOpen ? null : sIdx)}
+                                  className="w-full text-left px-4 py-3 flex items-center justify-between gap-3 group"
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                                      <span className="text-[10px] font-mono text-[#5E6577] uppercase shrink-0">Step {step.step || sIdx + 1}</span>
+                                      <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded border shrink-0 ${diffColor.bg} ${diffColor.border} ${diffColor.text}`}>
+                                        {step.difficulty || 'Medium'}
+                                      </span>
+                                      {step.time_estimate && (
+                                        <span className="text-[9px] font-mono text-[#5E6577] shrink-0">
+                                          ⏱ {step.time_estimate}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-xs font-semibold text-[#E2E5EE] leading-snug block">
+                                      {step.action}
+                                    </span>
+                                    <span className="text-[11px] text-[#5E6577] italic mt-0.5 block">{step.why_it_works}</span>
+                                  </div>
+                                  <div className={`shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-all duration-200 ${
+                                    isOpen ? 'bg-[#252A38] border-[#31374A] text-[#E2E5EE]' : 'border-[#212533] text-[#5E6577] group-hover:border-[#2B3042] group-hover:text-[#8E95A5]'
+                                  }`}>
+                                    <svg className={`w-2.5 h-2.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  </div>
+                                </button>
+
+                                {/* Expanded result panel */}
+                                {isOpen && (
+                                  <div className="px-4 pb-4 border-t border-[#1A1D28] space-y-3 pt-3">
+                                    {/* Expected Result */}
+                                    {step.expected_result && (
+                                      <div className="bg-[#0D0F14] border border-[#1E2230] rounded-lg p-3">
+                                        <div className="flex items-center gap-1.5 mb-1.5">
+                                          <div className={`w-1.5 h-1.5 rounded-full ${diffColor.dot}`} />
+                                          <span className="text-[10px] font-mono uppercase text-[#5E6577] tracking-wider">Expected Result</span>
+                                        </div>
+                                        <p className="text-xs text-[#E2E5EE] font-medium leading-relaxed">
+                                          {step.expected_result}
+                                        </p>
+                                      </div>
+                                    )}
+
+                                    {/* Success Signals checklist */}
+                                    {step.success_signals?.length > 0 && (
+                                      <div className="bg-[#0D0F14] border border-[#1E2230] rounded-lg p-3">
+                                        <span className="text-[10px] font-mono uppercase text-[#5E6577] tracking-wider block mb-2">
+                                          ✓ Success Signals — you are done when:
+                                        </span>
+                                        <div className="space-y-1.5">
+                                          {step.success_signals.map((signal, sgIdx) => (
+                                            <div key={sgIdx} className="flex items-start gap-2 text-xs">
+                                              <div className={`mt-0.5 w-4 h-4 rounded border shrink-0 flex items-center justify-center ${diffColor.bg} ${diffColor.border}`}>
+                                                <svg className={`w-2.5 h-2.5 ${diffColor.text}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                              </div>
+                                              <span className="text-[#8E95A5] leading-relaxed">{signal}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Fallback if no enriched fields */}
+                                    {!step.expected_result && !step.success_signals?.length && (
+                                      <div className="bg-[#0D0F14] border border-[#1E2230] rounded-lg p-3">
+                                        <span className="text-[10px] font-mono uppercase text-[#5E6577] tracking-wider block mb-1">Why This Works</span>
+                                        <p className="text-xs text-[#8E95A5]">{step.why_it_works}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <p className="text-[#8E95A5] mt-1">{step.why_it_works}</p>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
