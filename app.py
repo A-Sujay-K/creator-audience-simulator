@@ -45,12 +45,17 @@ with st.sidebar:
                     else:
                         st.markdown("👤")
                 with cols[1]:
-                    btn_label = f"**{h['creator_name']}**"
+                    comp_label = f" vs {h['comparison_creator']}" if h.get("comparison_creator") else ""
+                    btn_label = f"**{h['creator_name']}**{comp_label}"
                     if st.button(btn_label, key=f"hist_{h['id']}", use_container_width=True):
                         cached = get_cached_intel(user, h["creator_name"])
                         if cached:
                             st.session_state.intel = cached
                             st.session_state.intel_name = h["creator_name"]
+                            st.session_state.comparison_creator_name = h.get("comparison_creator", "")
+                            st.session_state["input_creator_name"] = h["creator_name"]
+                            if h.get("comparison_creator"):
+                                st.session_state["input_comparison_creator"] = h["comparison_creator"]
                             st.session_state.intel_from_cache = True
                             st.session_state.prev_findings = get_user_previous_findings(user, h["creator_name"])
                             cached_clone = get_cached_clone(user, h["creator_name"])
@@ -188,17 +193,24 @@ with tab_home:
     st.markdown("### 🏠 Creator Intelligence & Clone Studio")
     st.caption("All-in-one Creator Command Center: Analyze any creator, benchmark their competition, reverse-engineer their style DNA, and generate ready-to-film blueprints and upgrade concepts.")
 
-    col_a, col_b = st.columns([2, 1])
+    col_a, col_b, col_c = st.columns([1.5, 1.5, 1.0])
     with col_a:
         creator_name = st.text_input(
-            "Creator Name",
-            placeholder="e.g. CarryMinati, MrBeast, Ashish Chanchlani, Aakash Dhawan",
+            "Target Creator to Copy (Creator A)",
+            placeholder="e.g. CarryMinati, MrBeast, Aakash Dhawan",
             key="input_creator_name"
         )
     with col_b:
+        comparison_creator = st.text_input(
+            "Benchmark Creator (Creator B, Optional)",
+            placeholder="e.g. Ashish Chanchlani, Ryan Trahan, your channel",
+            key="input_comparison_creator",
+            help="Add a rival or benchmark creator to run an accurate head-to-head comparison and pinpoint the exact gap to win."
+        )
+    with col_c:
         creator_niche = st.text_input(
             "Niche / Category (optional)",
-            placeholder="e.g. Comedy Roast Shorts, Tech, Gaming, Motovlog",
+            placeholder="e.g. Comedy, Motovlog, Tech",
             key="input_creator_niche"
         )
 
@@ -250,6 +262,26 @@ with tab_home:
                             on_click=_make_ai_picker(a_sug["name"], a_sug["niche"])
                         )
 
+    # ── Spelling & Similar Creator Suggestions for Creator B (Benchmark) ─────
+    if comparison_creator and len(comparison_creator.strip()) >= 2:
+        comp_suggestions = find_similar_creators(comparison_creator.strip(), min_score=0.45, limit=3)
+        comp_is_exact = any(s["name"].lower() == comparison_creator.strip().lower() for s in comp_suggestions)
+        if comp_suggestions and not comp_is_exact:
+            st.markdown("💡 **Benchmark Creator Options (Click to Select):**")
+            csug_cols = st.columns(min(len(comp_suggestions), 3))
+            for cs_idx, csug in enumerate(comp_suggestions[:3]):
+                with csug_cols[cs_idx]:
+                    def _make_comp_picker(target_n=csug["name"]):
+                        def _callback():
+                            st.session_state["input_comparison_creator"] = target_n
+                        return _callback
+                    st.button(
+                        f"👉 **{csug['name']}**\n\n`{csug['niche'][:24]}`",
+                        key=f"comp_sug_btn_{cs_idx}_{csug['name'][:8]}",
+                        use_container_width=True,
+                        on_click=_make_comp_picker(csug["name"])
+                    )
+
     run_intel = st.button("🚀 Analyze & Reverse-Engineer", type="primary", key="intel_btn")
 
     if run_intel and creator_name.strip():
@@ -265,7 +297,9 @@ with tab_home:
                     status.write(f"📚 Incorporating {prev_findings['total_past_runs']} previous session(s) — synthesizing fresh angles without repeating past ones...")
                 status.write("🔍 Scanning web footprint, social handles & verified uploads...")
                 from parallel.intelligence import generate_creator_intelligence
-                intel = generate_creator_intelligence(creator_name.strip(), creator_niche.strip(), previous_findings=prev_findings)
+                comp_c_clean = comparison_creator.strip() if comparison_creator else ""
+                intel = generate_creator_intelligence(creator_name.strip(), creator_niche.strip(), previous_findings=prev_findings, comparison_creator=comp_c_clean)
+                st.session_state.comparison_creator_name = comp_c_clean
                 st.session_state.intel = intel
                 st.session_state.intel_name = creator_name.strip()
                 st.session_state.intel_from_cache = False
@@ -278,14 +312,16 @@ with tab_home:
                 status.write("🧬 Deconstructing Style DNA, editing rhythm & blueprints...")
                 status.write("📋 Generating frame-by-frame shooting script & 5 upgrade piracy concepts...")
 
-                dossier = generate_unified_clone_dossier(creator_name.strip(), t_niche, t_creator_vids, t_niche_vids)
+                dossier = generate_unified_clone_dossier(creator_name.strip(), t_niche, t_creator_vids, t_niche_vids, comparison_creator=comp_c_clean)
                 copy_result = {
                     "target_creator": creator_name.strip(),
+                    "comparison_creator": comp_c_clean,
                     "target_niche": t_niche,
                     "target_profile": t_profile,
                     "style_card": dossier["style_card"],
                     "blueprints": dossier["blueprints"],
                     "piracy_ideas": dossier["piracy_ideas"],
+                    "head_to_head": dossier.get("head_to_head"),
                     "target_intel": intel,
                 }
                 st.session_state.copy_data = copy_result
@@ -293,7 +329,7 @@ with tab_home:
                 # Auto-save to profile & isolated Bridge store if logged in
                 if st.session_state.get("logged_in_user"):
                     user_now = st.session_state.logged_in_user
-                    save_intel(user_now, creator_name.strip(), t_niche, intel)
+                    save_intel(user_now, creator_name.strip(), t_niche, intel, comparison_creator=comp_c_clean)
                     push_summary_to_bridge(user_now, creator_name.strip(), intel)
                     save_clone_run(
                         user_now,
@@ -306,7 +342,8 @@ with tab_home:
                         user_now,
                         creator_name.strip(),
                         intel,
-                        copy_result
+                        copy_result,
+                        comparison_creator=comp_c_clean
                     )
 
                 status.update(label="✅ Analysis & Clone Dossier Complete!", state="complete")
@@ -334,7 +371,8 @@ with tab_home:
                         try:
                             from parallel.intelligence import generate_creator_intelligence
                             prev_f = get_user_previous_findings(st.session_state.logged_in_user, creator_name_display) if st.session_state.get("logged_in_user") else {}
-                            fresh_intel = generate_creator_intelligence(creator_name_display, previous_findings=prev_f)
+                            comp_name = st.session_state.get("comparison_creator_name", "")
+                            fresh_intel = generate_creator_intelligence(creator_name_display, previous_findings=prev_f, comparison_creator=comp_name)
                             st.session_state.intel = fresh_intel
                             st.session_state.intel_name = creator_name_display
 
@@ -343,7 +381,8 @@ with tab_home:
                             fresh_dossier = generate_unified_clone_dossier(
                                 creator_name_display, t_nic,
                                 fresh_intel.get("creator_videos", []),
-                                fresh_intel.get("niche_trending_videos", [])
+                                fresh_intel.get("niche_trending_videos", []),
+                                comparison_creator=comp_name
                             )
                             st.session_state.copy_data = {
                                 "target_creator": creator_name_display,
@@ -628,28 +667,81 @@ with tab_home:
         # ─────────────────────────────────────────────────────────────────────
         with subtab_clone:
             copy_data = st.session_state.get("copy_data")
+            comp_name_current = st.session_state.get("comparison_creator_name", "")
             if not copy_data:
-                # If copy_data was not yet created for this creator, generate it on demand
                 with st.spinner("Generating Clone Dossier for this creator..."):
                     t_nic = profile.get("core_niche", "Digital Content")
                     fresh_dossier = generate_unified_clone_dossier(
                         creator_name_display, t_nic,
                         intel.get("creator_videos", []),
-                        intel.get("niche_trending_videos", [])
+                        intel.get("niche_trending_videos", []),
+                        comparison_creator=comp_name_current
                     )
                     copy_data = {
                         "target_creator": creator_name_display,
+                        "comparison_creator": comp_name_current,
                         "target_niche": t_nic,
                         "target_profile": profile,
                         "style_card": fresh_dossier["style_card"],
                         "blueprints": fresh_dossier["blueprints"],
                         "piracy_ideas": fresh_dossier["piracy_ideas"],
+                        "head_to_head": fresh_dossier.get("head_to_head"),
                         "target_intel": intel,
                     }
                     st.session_state.copy_data = copy_data
 
             tc_name = copy_data.get("target_creator", creator_name_display)
             tc_niche = copy_data.get("target_niche", profile.get("core_niche", "Digital Content"))
+
+            # ── HEAD-TO-HEAD CREATOR COMPARISON (IF 2 CREATORS PROVIDED) ──────
+            h2h = copy_data.get("head_to_head")
+            if h2h:
+                bench_n = h2h.get("benchmark_creator", "Benchmark Creator")
+                st.markdown(f"### 🥊 Head-to-Head Battle: {tc_name} vs {bench_n}")
+                st.caption(f"Comparative intelligence: Deconstructing why **{tc_name}** wins on retention, where **{bench_n}** bleeds viewers, and how to clone the winning formula.")
+
+                h_col1, h_col2 = st.columns(2)
+                with h_col1:
+                    with st.container(border=True):
+                        st.markdown(f"#### 🏆 {tc_name} (Target to Clone)")
+                        t_avatar = profile.get("avatar_url", "")
+                        if t_avatar:
+                            st.image(t_avatar, width=65)
+                        st.markdown(f"**Dominant Retention Edge:**\n{h2h.get('target_style_edge', 'Fast hook pacing and visual pattern interrupt.')}")
+                with h_col2:
+                    with st.container(border=True):
+                        st.markdown(f"#### 🎯 {bench_n} (Benchmark / Rival)")
+                        comp_avatar = intel.get("comparison_creator", {}).get("avatar_url", "")
+                        if comp_avatar:
+                            st.image(comp_avatar, width=65)
+                        st.markdown(f"**Critical Retention Vulnerability:**\n{h2h.get('benchmark_weakness', 'Pacing drag and slow conversational setup.')}")
+
+                with st.container(border=True):
+                    st.markdown(f"##### 🔑 The Winning Clone Formula")
+                    st.success(f"**How to Clone {tc_name} to Beat {bench_n}:**\n{h2h.get('cloning_conversion_rule', 'Adopt fast opening tempo while targeting their core topic.')}")
+
+                    hk_contrast = h2h.get("hook_contrast", {})
+                    if hk_contrast:
+                        st.markdown("###### ⚡ Side-by-Side Hook Contrast Duel:")
+                        hc1, hc2 = st.columns(2)
+                        with hc1:
+                            st.markdown(f"**How {tc_name} Opens:**")
+                            st.write(f"> *\"{hk_contrast.get('creator_a_hook', '—')}\"*")
+                        with hc2:
+                            st.markdown(f"**How {bench_n} Opens:**")
+                            st.write(f"> *\"{hk_contrast.get('creator_b_hook', '—')}\"*")
+
+                        win_hook = hk_contrast.get("winning_hybrid_hook", "")
+                        if win_hook:
+                            st.info(f"🔥 **Your Winning Hybrid Hook:**\n*\"{win_hook}\"*")
+                            if st.button("▶ Test Winning Hybrid Hook in Simulator", key="btn_test_hybrid_hook"):
+                                st.session_state.prefill_hooks = (
+                                    f"Battle: {tc_name} vs {bench_n}. Winning Hybrid Hook:\n"
+                                    f"S1: {win_hook}"
+                                )
+                                st.success("✅ Hybrid hook sent to Hook Testing tab!")
+
+                st.markdown("---")
 
             # B1. STYLE REPLICATOR (DNA Card)
             st.markdown(f"### 🧬 {tc_name}'s Style DNA")

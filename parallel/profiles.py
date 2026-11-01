@@ -104,7 +104,7 @@ def get_all_usernames() -> list[str]:
 
 # ─── Search History ───────────────────────────────────────────────────────────
 
-def save_intel(username: str, creator_name: str, niche: str, intel: dict) -> str:
+def save_intel(username: str, creator_name: str, niche: str, intel: dict, comparison_creator: str = "") -> str:
     """
     Save a creator intelligence result to the user's profile.
     Returns the search ID for reference.
@@ -122,6 +122,7 @@ def save_intel(username: str, creator_name: str, niche: str, intel: dict) -> str
     entry = {
         "id": search_id,
         "creator_name": creator_name,
+        "comparison_creator": comparison_creator,
         "niche": niche,
         "searched_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "intel": intel
@@ -154,6 +155,7 @@ def get_history(username: str) -> list[dict]:
             "id": s["id"],
             "creator_name": s["creator_name"],
             "niche": s.get("niche", ""),
+            "comparison_creator": s.get("comparison_creator", ""),
             "searched_at": s["searched_at"],
             "avatar_url": s["intel"].get("creator_profile", {}).get("avatar_url", ""),
         }
@@ -249,7 +251,7 @@ def get_user_previous_findings(username: str, creator_name: str) -> dict:
     return result
 
 
-def save_to_bridge_user_store(username: str, creator_name: str, intel: dict, clone_data: dict = None, notes: str = "") -> bool:
+def save_to_bridge_user_store(username: str, creator_name: str, intel: dict, clone_data: dict = None, notes: str = "", comparison_creator: str = "") -> bool:
     """
     Saves full analysis data (intel + clone dossier + negative reviews) into the user's profile Bridge store.
     Each user's data is completely isolated under their username namespace.
@@ -266,6 +268,7 @@ def save_to_bridge_user_store(username: str, creator_name: str, intel: dict, clo
             "session_id": str(uuid.uuid4())[:8],
             "stored_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "creator_name": creator_name,
+            "comparison_creator": comparison_creator,
             "niche": intel.get("creator_profile", {}).get("core_niche", ""),
             "content_ideas_count": len(intel.get("content_suggestions", [])),
             "hooks_generated": sum(

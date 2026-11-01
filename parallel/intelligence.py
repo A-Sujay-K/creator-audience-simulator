@@ -1317,7 +1317,7 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
 #  MAIN INTELLIGENCE FUNCTION
 # ─────────────────────────────────────────────────
 
-def generate_creator_intelligence(creator_name: str, niche: str = "", previous_findings: dict = None) -> dict:
+def generate_creator_intelligence(creator_name: str, niche: str = "", previous_findings: dict = None, comparison_creator: str = "") -> dict:
     """
     High-speed 3-call intelligence synthesis:
       1. Parallel Avatar fetch via Wikipedia API (<0.3s)
@@ -1331,6 +1331,7 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
 
     # 1. Fetch verified real creator avatar from Wikipedia
     avatar_url = get_creator_avatar(creator_name)
+    comp_avatar_url = get_creator_avatar(comparison_creator) if comparison_creator and comparison_creator.strip() else ""
 
     # 2. Multi-Platform Firecrawl Recon (Instagram & YouTube)
     raw_results, creator_vids, niche_vids, detected_niche, negative_snippets = search_creator_footprint(creator_name, niche)
@@ -1360,9 +1361,19 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
         print(f"[intelligence] Call A notice: {e}")
 
     # 4. Call B: Creator's Own Videos vs Other Creators' Niche Videos + Competitors (max_tokens=950, ~3.5s)
+    comp_bench_instruction = ""
+    if comparison_creator and comparison_creator.strip():
+        comp_bench_instruction = (
+            f"\n\nDIRECT COMPARISON REQUIREMENT:\n"
+            f"The user wants to compare {creator_name} against '{comparison_creator.strip()}'.\n"
+            f"One of the competitor_benchmarking entries MUST be specifically for '{comparison_creator.strip()}' "
+            f"with an accurate analysis of their content focus, main strength, critical gap, and how {creator_name} beats them.\n"
+        )
+
     prompt_b = (
         f"Creator: {creator_name}\n"
         f"Niche: {detected_niche}\n\n"
+        f"{comp_bench_instruction}"
         f"Creator's Real Videos & Reels Found (Instagram & YouTube):\n{c_text}\n\n"
         f"Other Creators' Trending Videos in this Niche (NOT {creator_name}):\n{n_text}\n\n"
         f"Rules: For creator_videos, analyze the real videos above. For niche_trending_videos, analyze the other creators' videos above. Support both Instagram Reels and YouTube.\n"
@@ -1452,4 +1463,10 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
     print(f"[intelligence] Fast 3-call synthesis for '{creator_name}' finished in {time.time()-t0:.2f}s.")
 
     # Defensive normalization ensuring zero '—' and guaranteed playable reference videos
+    if comparison_creator and comparison_creator.strip():
+        result["comparison_creator"] = {
+            "name": comparison_creator.strip(),
+            "avatar_url": comp_avatar_url
+        }
+
     return _normalize_intel(result, creator_name, avatar_url, creator_vids, niche_vids, detected_niche)

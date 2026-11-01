@@ -396,12 +396,41 @@ Given a creator name, niche, and top uploads, return a single valid JSON object:
       ],
       "estimated_views": "🔥 1.5M - 4M"
     }
-  ]
+  ],
+  "head_to_head": {
+    "target_creator": "string (Creator A to copy)",
+    "benchmark_creator": "string (Creator B to compare against)",
+    "target_style_edge": "string (why Creator A holds audience retention better, max 15 words)",
+    "benchmark_weakness": "string (where Creator B loses viewers or drops pacing, max 15 words)",
+    "cloning_conversion_rule": "string (the exact rule to clone Creator A's mechanics to surpass Creator B, max 20 words)",
+    "hook_contrast": {
+      "creator_a_hook": "string (how Creator A opens this topic, max 12 words)",
+      "creator_b_hook": "string (how Creator B opens this topic, max 12 words)",
+      "winning_hybrid_hook": "string (the ultimate hook combining Creator A retention with Creator B topic, max 12 words)"
+    }
+  }
 }
 Return ONLY valid JSON."""
 
 
-def generate_unified_clone_dossier(creator_name: str, niche: str, creator_vids: list = None, niche_vids: list = None) -> dict:
+
+def _fallback_head_to_head(creator_a: str, creator_b: str, niche: str) -> dict:
+    """Provides high-quality comparative cloning benchmarks when comparison creator is given."""
+    return {
+        "target_creator": creator_a,
+        "benchmark_creator": creator_b,
+        "target_style_edge": f"{creator_a} uses instant pattern interrupts and aggressive 0.8s micro-cuts that eliminate early drop-off.",
+        "benchmark_weakness": f"{creator_b} tends to have a 5-10s conversational setup before delivering the core payoff.",
+        "cloning_conversion_rule": f"Take {creator_b}'s relatable audience topics, but film and edit them using {creator_a}'s relentless high-velocity hook pacing.",
+        "hook_contrast": {
+            "creator_a_hook": f"Stop scrolling — what happens in the next 10 seconds will change how you view {niche}.",
+            "creator_b_hook": f"Hey guys, today we are going to look into an interesting problem in {niche}.",
+            "winning_hybrid_hook": f"Everyone watching {creator_b} gets this wrong. Here is {creator_a}'s formula tested."
+        }
+    }
+
+
+def generate_unified_clone_dossier(creator_name: str, niche: str, creator_vids: list = None, niche_vids: list = None, comparison_creator: str = "") -> dict:
     """
     Produces complete Style DNA, Video Blueprint, and Piracy Ideas in a single lean fast call.
     Guarantees non-empty robust results via automatic fallback merge.
@@ -411,10 +440,22 @@ def generate_unified_clone_dossier(creator_name: str, niche: str, creator_vids: 
         for v in (creator_vids or [])[:4]
     )
 
+    comp_prompt = ""
+    if comparison_creator and comparison_creator.strip():
+        comp_prompt = (
+            f"\n\nHEAD-TO-HEAD COMPARISON TASK:\n"
+            f"Target Creator to Clone (Creator A): {creator_name}\n"
+            f"Benchmark / Comparison Creator (Creator B): {comparison_creator.strip()}\n"
+            f"Compare {creator_name} directly against {comparison_creator.strip()}. Detail why Creator A wins on retention, "
+            f"where Creator B loses audience, and produce a side-by-side hook contrast and winning hybrid hook.\n"
+            f"You MUST include the 'head_to_head' object in your JSON response."
+        )
+
     user_msg = (
         f"Creator Name: {creator_name}\n"
         f"Niche / Category: {niche}\n"
         f"Top Content Sample:\n{vids_text or 'Popular viral uploads in this niche.'}\n"
+        f"{comp_prompt}\n"
         "Generate the complete cloning dossier now."
     )
 
@@ -486,9 +527,18 @@ def generate_unified_clone_dossier(creator_name: str, niche: str, creator_vids: 
     if not piracy_ideas or len(piracy_ideas) < 2:
         piracy_ideas = fb_piracy.get("piracy_ideas", [])
 
+    # Head to head comparison extraction
+    h2h_data = None
+    if comparison_creator and comparison_creator.strip():
+        if parsed and isinstance(parsed, dict) and parsed.get("head_to_head"):
+            h2h_data = parsed["head_to_head"]
+        else:
+            h2h_data = _fallback_head_to_head(creator_name, comparison_creator.strip(), niche)
+
     return {
         "style_card": style_card,
         "blueprints": [blueprint_item],
-        "piracy_ideas": piracy_ideas
+        "piracy_ideas": piracy_ideas,
+        "head_to_head": h2h_data
     }
 
