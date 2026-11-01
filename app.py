@@ -603,20 +603,43 @@ with tab_home:
                                     st.markdown("**🎯 Upgraded Counter-Hook:**")
                                     up_hook = imp.get('hook_upgrade', '')
                                     st.info(f"*\"{up_hook}\"*")
-                                    if st.button(f"▶ Test in Hook Simulator", key=f"btn_test_fix_{imp_idx}"):
+                                    if st.button(f"▶ Test 4 Upgrade Hooks in Simulator", key=f"btn_test_fix_{imp_idx}"):
+                                        cand_imp_hooks = imp.get("candidate_hooks", [])
+                                        if not cand_imp_hooks or len(cand_imp_hooks) < 3:
+                                            cand_imp_hooks = [
+                                                {"sid": "S1", "text": up_hook},
+                                                {"sid": "S2", "text": f"Why viewers disliked my last video on {imp.get('problem', 'this')} — and how I fixed it."},
+                                                {"sid": "S3", "text": f"I asked 50 honest commenters what went wrong. Here is the real fix."},
+                                                {"sid": "S4", "text": f"No clickbait, zero fluff: the 100% transparent truth about {imp.get('fix_title', 'this topic')}."}
+                                            ]
+                                        hook_lines = "\n".join(f"{h['sid']}: {h['text']}" for h in cand_imp_hooks)
                                         st.session_state.prefill_hooks = (
                                             f"Creator: {creator_name_display}. Upgrade Concept: {imp.get('fix_title', '')}\n"
-                                            f"S1: {up_hook}"
+                                            f"{hook_lines}"
                                         )
-                                        st.success("✅ Upgraded hook sent to Hook Testing tab!")
+                                        st.success("✅ 4 upgraded candidate hooks sent to Hook Testing tab!")
 
                 st.markdown("---")
 
             # A4. HIGH-POTENTIAL CONTENT SUGGESTIONS (WITH REFERENCE VIDEO PER IDEA)
             suggestions = intel.get("content_suggestions", [])
             if suggestions:
-                st.markdown("### 💡 High-Potential Content Suggestions (Ready to Test)")
-                st.caption("AI-engineered ideas based on current trending topics. Every suggestion includes a playable reference video benchmarking the format.")
+                c_sug_col1, c_sug_col2 = st.columns([2, 1.2])
+                with c_sug_col1:
+                    st.markdown(f"### 💡 High-Potential Content Suggestions ({len(suggestions)} Ideas Ready to Test)")
+                    st.caption("AI-engineered concepts based on live trending topics. Every suggestion includes 4 distinct candidate hooks and a playable reference video.")
+                with c_sug_col2:
+                    if st.button("🚀 Test ALL 5 Ideas in Hook Testing", key="btn_test_all_ideas_top", use_container_width=True):
+                        all_idea_hooks = []
+                        for s_i, s_item in enumerate(suggestions[:5], start=1):
+                            s_hks = s_item.get("candidate_hooks", [])
+                            top_t = s_hks[0].get("text", "") if s_hks else s_item.get("title", "")
+                            all_idea_hooks.append(f"S{s_i}: {top_t}")
+                        st.session_state.prefill_hooks = (
+                            f"Creator: {creator_name_display}. 5-Concept Showdown across {profile.get('core_niche', 'Niche')}:\n" +
+                            "\n".join(all_idea_hooks)
+                        )
+                        st.success("✅ Top hooks for ALL 5 ideas pre-filled! Switch to the 🎯 Hook Testing tab above.")
                 for s in suggestions:
                     with st.container(border=True):
                         h1, h2 = st.columns([3, 1])
@@ -651,7 +674,7 @@ with tab_home:
                                 st.markdown(f"- **{hk.get('sid', '?')}**: {hk.get('text', '')}")
 
                         # Bridge to Tab 2
-                        if st.button(f"▶ Test these hooks in Hook Testing tab", key=f"test_idea_{s.get('id')}"):
+                        if st.button(f"▶ Test all 4 candidate hooks for Idea #{s.get('id')} in Hook Simulator", key=f"test_idea_{s.get('id')}"):
                             hook_lines = "\n".join(
                                 [f"{hk['sid']}: {hk['text']}" for hk in hooks if 'sid' in hk and 'text' in hk]
                             )
@@ -734,12 +757,21 @@ with tab_home:
                         win_hook = hk_contrast.get("winning_hybrid_hook", "")
                         if win_hook:
                             st.info(f"🔥 **Your Winning Hybrid Hook:**\n*\"{win_hook}\"*")
-                            if st.button("▶ Test Winning Hybrid Hook in Simulator", key="btn_test_hybrid_hook"):
+                            if st.button("▶ Test 4-Hook Contrast Duel in Simulator", key="btn_test_hybrid_hook"):
+                                h2h_cand_hooks = hk_contrast.get("candidate_hooks")
+                                if not h2h_cand_hooks or len(h2h_cand_hooks) < 3:
+                                    h2h_cand_hooks = [
+                                        {"sid": "S1", "text": hk_contrast.get("creator_a_hook", f"Stop scrolling — this changes everything about {tc_name}'s formula.")},
+                                        {"sid": "S2", "text": hk_contrast.get("creator_b_hook", f"Today we are going to look into an interesting problem.")},
+                                        {"sid": "S3", "text": win_hook},
+                                        {"sid": "S4", "text": f"I took {bench_n}'s biggest video and remade it using {tc_name}'s secret viral formula."}
+                                    ]
+                                hook_lines = "\n".join(f"{h['sid']}: {h['text']}" for h in h2h_cand_hooks)
                                 st.session_state.prefill_hooks = (
-                                    f"Battle: {tc_name} vs {bench_n}. Winning Hybrid Hook:\n"
-                                    f"S1: {win_hook}"
+                                    f"Battle: {tc_name} vs {bench_n}. 4-Hook Comparative Duel:\n"
+                                    f"{hook_lines}"
                                 )
-                                st.success("✅ Hybrid hook sent to Hook Testing tab!")
+                                st.success("✅ 4 comparative duel hooks sent to Hook Testing tab!")
 
                 st.markdown("---")
 
@@ -876,7 +908,7 @@ with tab_home:
                                 st.markdown(f"- **{h.get('sid', '')}**: *{h.get('text', '')}*")
 
                             # Bridge to Tab 2
-                            if st.button(f"▶ Test these piracy hooks in Hook Testing tab", key=f"test_piracy_{idea.get('id')}"):
+                            if st.button(f"▶ Test all 4 piracy upgrade hooks for Upgrade #{idea.get('id')} in Simulator", key=f"test_piracy_{idea.get('id')}"):
                                 hook_lines = "\n".join(
                                     [f"{h['sid']}: {h['text']}" for h in hooks if 'sid' in h and 'text' in h]
                                 )

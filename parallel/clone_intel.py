@@ -367,8 +367,10 @@ Given a creator name, niche, and top uploads, return a single valid JSON object:
       "why_yours_wins": "string",
       "upgrade_angle": "More cinematic | More emotional | Faster paced | More relatable | Bigger stakes",
       "candidate_hooks": [
-        {"sid": "S1", "text": "string"},
-        {"sid": "S2", "text": "string"}
+        {"sid": "S1", "text": "string (Incident/Action hook)"},
+        {"sid": "S2", "text": "string (Curiosity/Secret hook)"},
+        {"sid": "S3", "text": "string (Shock/Contrarian hook)"},
+        {"sid": "S4", "text": "string (Direct Viewer Challenge hook)"}
       ],
       "estimated_views": "🔥 2M - 5M"
     },
@@ -379,8 +381,10 @@ Given a creator name, niche, and top uploads, return a single valid JSON object:
       "why_yours_wins": "string",
       "upgrade_angle": "More relatable",
       "candidate_hooks": [
-        {"sid": "S1", "text": "string"},
-        {"sid": "S2", "text": "string"}
+        {"sid": "S1", "text": "string (Incident/Action hook)"},
+        {"sid": "S2", "text": "string (Curiosity/Secret hook)"},
+        {"sid": "S3", "text": "string (Shock/Contrarian hook)"},
+        {"sid": "S4", "text": "string (Direct Viewer Challenge hook)"}
       ],
       "estimated_views": "🔥 3M - 8M"
     },
@@ -391,8 +395,10 @@ Given a creator name, niche, and top uploads, return a single valid JSON object:
       "why_yours_wins": "string",
       "upgrade_angle": "Bigger stakes",
       "candidate_hooks": [
-        {"sid": "S1", "text": "string"},
-        {"sid": "S2", "text": "string"}
+        {"sid": "S1", "text": "string (Incident/Action hook)"},
+        {"sid": "S2", "text": "string (Curiosity/Secret hook)"},
+        {"sid": "S3", "text": "string (Shock/Contrarian hook)"},
+        {"sid": "S4", "text": "string (Direct Viewer Challenge hook)"}
       ],
       "estimated_views": "🔥 1.5M - 4M"
     }
@@ -425,7 +431,13 @@ def _fallback_head_to_head(creator_a: str, creator_b: str, niche: str) -> dict:
         "hook_contrast": {
             "creator_a_hook": f"Stop scrolling — what happens in the next 10 seconds will change how you view {niche}.",
             "creator_b_hook": f"Hey guys, today we are going to look into an interesting problem in {niche}.",
-            "winning_hybrid_hook": f"Everyone watching {creator_b} gets this wrong. Here is {creator_a}'s formula tested."
+            "winning_hybrid_hook": f"Everyone watching {creator_b} gets this wrong. Here is {creator_a}'s formula tested.",
+            "candidate_hooks": [
+                {"sid": "S1", "text": f"Stop scrolling — what happens in the next 10 seconds will change how you view {niche}."},
+                {"sid": "S2", "text": f"Hey guys, today we are going to look into an interesting problem in {niche}."},
+                {"sid": "S3", "text": f"Everyone watching {creator_b} gets this wrong. Here is {creator_a}'s formula tested."},
+                {"sid": "S4", "text": f"I took {creator_b}'s biggest video and remade it using {creator_a}'s secret formula."}
+            ]
         }
     }
 
@@ -526,6 +538,24 @@ def generate_unified_clone_dossier(creator_name: str, niche: str, creator_vids: 
     piracy_ideas = parsed.get("piracy_ideas")
     if not piracy_ideas or len(piracy_ideas) < 2:
         piracy_ideas = fb_piracy.get("piracy_ideas", [])
+
+    # Ensure every piracy idea has at least 4 candidate hooks
+    for p_idx, p_idea in enumerate(piracy_ideas, start=1):
+        p_hooks = p_idea.get("candidate_hooks") or []
+        valid_p_hooks = [h for h in p_hooks if isinstance(h, dict) and h.get("text")]
+        p_title = p_idea.get("your_upgrade_title", f"Upgrade #{p_idx}")
+        p_fallbacks = [
+            f"I tested {p_title} for 30 days and broke every rule.",
+            f"Why nobody tells you the truth about {p_title}.",
+            f"The exact mistake everyone makes with {p_title} — exposed.",
+            f"Day 1 vs Day 30: the real transformation with {p_title}."
+        ]
+        while len(valid_p_hooks) < 4:
+            v_i = len(valid_p_hooks)
+            valid_p_hooks.append({"sid": f"S{v_i+1}", "text": p_fallbacks[v_i % len(p_fallbacks)]})
+        for h_i, h in enumerate(valid_p_hooks, start=1):
+            h["sid"] = f"S{h_i}"
+        p_idea["candidate_hooks"] = valid_p_hooks[:4]
 
     # Head to head comparison extraction
     h2h_data = None

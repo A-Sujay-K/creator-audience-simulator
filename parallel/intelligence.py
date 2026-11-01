@@ -312,7 +312,7 @@ Hook Engineering Rules (CRITICAL — every rule is enforced):
 2. Write in the creator's proven tone. Mirror the style of their sample hooks provided in the prompt.
 3. Each of the 4 hooks (S1–S4) must use a DIFFERENT archetype as labelled above — no two hooks can use the same structure.
 4. Use real specifics: brand names, city names, community slang, rupee amounts, gear names, platform names.
-5. Provide 3 content suggestions total.
+5. Provide exactly 5 high-potential content suggestions total.
 6. EVERY suggestion MUST have a valid, playable reference_video url.
 7. Return ONLY valid JSON."""
 
@@ -1177,8 +1177,78 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
 
     # Verify each suggestion's reference video individually across YouTube & Instagram.
     # If a reference video is dead/unavailable, assign one of the real verified peer videos from niche_vids!
+    # Guarantee at least 5 suggestions
+    while len(suggestions) < 5:
+        ext_idx = len(suggestions) + 1
+        nic = profile.get("core_niche", "Viral Content")
+        if ext_idx == 4:
+            suggestions.append({
+                "id": 4,
+                "title": f"Extreme 24-Hour {nic} Challenge vs Budget Setup",
+                "trending_topic": f"High stakes budget contrast in {nic}",
+                "why_it_works": "Visual contrast between zero resources and professional execution.",
+                "estimated_views": "🔥 6M - 12M",
+                "reference_video": {
+                    "title": f"Viral {nic} Challenge Benchmark",
+                    "url": "https://www.youtube.com/watch?v=0e3GPea1Tyg",
+                    "platform": "YouTube",
+                    "creator": "Top Niche Creator",
+                    "why_reference": "Benchmarks high retention challenge pacing."
+                },
+                "candidate_hooks": [
+                    {"sid": "S1", "text": f"I spent ₹500 vs ₹50,000 on {nic}. The winner makes zero sense."},
+                    {"sid": "S2", "text": f"Can you actually succeed in {nic} with just your phone?"},
+                    {"sid": "S3", "text": f"I asked 100 people to guess which {nic} clip cost ₹50,000."},
+                    {"sid": "S4", "text": f"The biggest lie in {nic} is that equipment matters."}
+                ]
+            })
+        elif ext_idx == 5:
+            suggestions.append({
+                "id": 5,
+                "title": f"Exposing The Most Dangerous Myth In {nic}",
+                "trending_topic": f"Debunking common misconceptions in {nic}",
+                "why_it_works": "Contrarian truth triggers curiosity and comment debates.",
+                "estimated_views": "🔥 8M - 16M",
+                "reference_video": {
+                    "title": f"Mythbusting {nic} Benchmark",
+                    "url": "https://www.youtube.com/watch?v=S7UM5lSgAg8",
+                    "platform": "YouTube",
+                    "creator": "Science / Spectacle Benchmark",
+                    "why_reference": "Benchmarks contrarian curiosity loops with hard evidence."
+                },
+                "candidate_hooks": [
+                    {"sid": "S1", "text": f"Stop doing this in {nic} — you are destroying your results."},
+                    {"sid": "S2", "text": f"Every major {nic} creator hides this one brutal truth."},
+                    {"sid": "S3", "text": f"I spent 30 days testing the worst advice in {nic}."},
+                    {"sid": "S4", "text": f"Why 99% of people fail in {nic} within the first week."}
+                ]
+            })
+
+    # Ensure every single suggestion has at least 4 robust candidate hooks
     for idx, s in enumerate(suggestions, start=1):
         s["id"] = idx
+        raw_hooks = s.get("candidate_hooks") or []
+        valid_hooks = [h for h in raw_hooks if isinstance(h, dict) and h.get("text")]
+        
+        # If fewer than 4 hooks returned, auto-generate distinct hook archetypes
+        title_hint = s.get("title", f"Idea #{idx}")
+        topic_hint = s.get("trending_topic", profile.get("core_niche", "content"))
+        default_archetypes = [
+            f"Nobody in {topic_hint} wanted me to test this, but here is what happened.",
+            f"If you watch {topic_hint} content, stop making this one mistake right now.",
+            f"I spent 7 days doing the exact opposite of what every {topic_hint} expert says.",
+            f"The real reason why everyone is secretly obsessed with {topic_hint}."
+        ]
+        while len(valid_hooks) < 4:
+            missing_i = len(valid_hooks)
+            valid_hooks.append({
+                "sid": f"S{missing_i+1}",
+                "text": default_archetypes[missing_i % len(default_archetypes)]
+            })
+        for h_idx, h in enumerate(valid_hooks, start=1):
+            h["sid"] = f"S{h_idx}"
+        s["candidate_hooks"] = valid_hooks[:5]
+
         ref = s.get("reference_video") or {}
         ref_url = ref.get("url", "")
 
@@ -1308,6 +1378,19 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                 "expected_impact": "Significantly lifts comment interaction and shares."
             }
         ]
+    # Guarantee 4 candidate hooks for every improvement suggestion
+    for imp_i, imp in enumerate(imp_suggs, 1):
+        up_h = imp.get("hook_upgrade", "I cut this video down to only what matters.")
+        fix_t = imp.get("fix_title", "Upgraded Approach")
+        prob = imp.get("problem", "Viewer Fatigue")
+        if not imp.get("candidate_hooks") or len(imp.get("candidate_hooks", [])) < 3:
+            imp["candidate_hooks"] = [
+                {"sid": "S1", "text": up_h},
+                {"sid": "S2", "text": f"Why everyone hated my last video about {prob} — and how I fixed it."},
+                {"sid": "S3", "text": f"I asked 50 angry commenters what to fix. Here is the result."},
+                {"sid": "S4", "text": f"No clickbait, no fluff: this is the 100% honest truth about {fix_t}."}
+            ]
+
     intel["improvement_suggestions"] = imp_suggs
 
     return intel
@@ -1418,7 +1501,7 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
         f"{prev_context}"
         f"{creator_hook_examples}"
         f"Peer Trending Videos in this Niche (by OTHER creators):\n{n_text}\n\n"
-        f"Generate 3 viral content ideas specifically tailored to {detected_niche} and this creator's exact tone. "
+        f"Generate 5 high-potential viral content ideas specifically tailored to {detected_niche} and this creator's exact tone. "
         f"For EVERY idea, provide a real reference video from this niche (Instagram Reel or YouTube video).\n\n"
         f"/no_think"
     )
