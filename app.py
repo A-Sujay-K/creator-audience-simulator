@@ -18,23 +18,409 @@ from parallel.clone_intel import (
 )
 from parallel.suggestions import find_similar_creators, resolve_misspelled_creator_with_llm
 
-st.set_page_config(page_title="Parallel for Creators", page_icon="⚡", layout="wide")
+st.set_page_config(
+    page_title="Parallel | Creator Intelligence & Clone OS",
+    page_icon="⚡",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  PREMIUM DESIGN SYSTEM & GLOBAL CSS INJECTION (Dark Glassmorphism SaaS)
+# ═══════════════════════════════════════════════════════════════════════════════
+st.markdown("""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ─── DESIGN TOKENS ────────────────────────────────────────────────────────── */
+:root {
+  --bg-main: #07080F;
+  --bg-card: rgba(14, 16, 32, 0.75);
+  --bg-card-hover: rgba(22, 25, 50, 0.85);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(124, 58, 237, 0.45);
+  --border-cyan: rgba(6, 182, 212, 0.4);
+  --accent-purple: #7C3AED;
+  --accent-purple-light: #9F67FF;
+  --accent-cyan: #06B6D4;
+  --accent-cyan-light: #22D3EE;
+  --accent-emerald: #10B981;
+  --accent-rose: #EF4444;
+  --accent-amber: #F59E0B;
+  --text-main: #F8FAFC;
+  --text-muted: #94A3B8;
+  --text-dim: #64748B;
+  --font-heading: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-glow: 0 0 35px rgba(124, 58, 237, 0.25);
+  --shadow-cyan: 0 0 35px rgba(6, 182, 212, 0.2);
+}
+
+/* ─── BASE CONTAINER & BACKGROUND ─────────────────────────────────────────── */
+html, body, [data-testid="stAppViewContainer"] {
+  background-color: var(--bg-main) !important;
+  background-image: 
+    radial-gradient(circle at 12% 10%, rgba(124, 58, 237, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 88% 15%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 50%) !important;
+  background-attachment: fixed !important;
+  font-family: var(--font-body) !important;
+  color: var(--text-main) !important;
+}
+
+/* Hide default streamlit chrome */
+#MainMenu, footer, header { visibility: hidden !important; }
+[data-testid="stDecoration"] { display: none !important; }
+.stDeployButton { display: none !important; }
+
+/* Main content spacing */
+[data-testid="stMainBlockContainer"] {
+  padding: 1.5rem 2.2rem 4rem !important;
+  max-width: 1450px !important;
+}
+
+/* ─── TYPOGRAPHY ─────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6,
+[data-testid="stMarkdownContainer"] h1,
+[data-testid="stMarkdownContainer"] h2,
+[data-testid="stMarkdownContainer"] h3 {
+  font-family: var(--font-heading) !important;
+  color: var(--text-main) !important;
+  letter-spacing: -0.02em !important;
+  font-weight: 700 !important;
+}
+
+/* ─── SIDEBAR ────────────────────────────────────────────────────────────── */
+[data-testid="stSidebar"] {
+  background: linear-gradient(180deg, #090B16 0%, #06070E 100%) !important;
+  border-right: 1px solid var(--border-subtle) !important;
+}
+
+[data-testid="stSidebar"] .stButton > button {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text-muted) !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+  text-align: left !important;
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+  background: rgba(124, 58, 237, 0.15) !important;
+  border-color: var(--border-glow) !important;
+  color: #FFFFFF !important;
+  transform: translateX(2px) !important;
+}
+
+/* ─── TABS ───────────────────────────────────────────────────────────────── */
+[data-testid="stTabs"] [role="tablist"] {
+  background: rgba(14, 16, 32, 0.6) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 14px !important;
+  padding: 4px !important;
+  gap: 4px !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+[data-testid="stTabs"] [role="tab"] {
+  background: transparent !important;
+  border-radius: 10px !important;
+  color: var(--text-muted) !important;
+  font-family: var(--font-heading) !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
+  padding: 0.55rem 1.25rem !important;
+  border: none !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-testid="stTabs"] [role="tab"]:hover {
+  color: var(--text-main) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.4) 0%, rgba(6, 182, 212, 0.25) 100%) !important;
+  border: 1px solid rgba(124, 58, 237, 0.5) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 14px rgba(124, 58, 237, 0.3) !important;
+}
+
+[data-testid="stTabs"] [role="tabpanel"] {
+  padding-top: 1.5rem !important;
+}
+
+/* ─── BUTTONS ────────────────────────────────────────────────────────────── */
+.stButton > button {
+  font-family: var(--font-heading) !important;
+  font-weight: 600 !important;
+  border-radius: 11px !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  letter-spacing: 0.01em !important;
+}
+
+.stButton > button[kind="primary"],
+.stButton > button[data-testid="baseButton-primary"] {
+  background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #FFFFFF !important;
+  padding: 0.6rem 1.6rem !important;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.35) !important;
+}
+
+.stButton > button[kind="primary"]:hover,
+.stButton > button[data-testid="baseButton-primary"]:hover {
+  background: linear-gradient(135deg, #9F67FF 0%, #7C3AED 100%) !important;
+  box-shadow: 0 8px 30px rgba(124, 58, 237, 0.55) !important;
+  transform: translateY(-2px) !important;
+}
+
+.stButton > button:not([kind="primary"]):not([data-testid="baseButton-primary"]) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid var(--border-subtle) !important;
+  color: var(--text-main) !important;
+}
+
+.stButton > button:not([kind="primary"]):not([data-testid="baseButton-primary"]):hover {
+  background: rgba(124, 58, 237, 0.12) !important;
+  border-color: var(--border-glow) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ─── INPUT FIELDS & CONTROLS ────────────────────────────────────────────── */
+.stTextInput input, .stTextArea textarea, .stSelectbox select {
+  background: rgba(10, 12, 24, 0.85) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text-main) !important;
+  font-family: var(--font-body) !important;
+  font-size: 0.9rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.stTextInput input:focus, .stTextArea textarea:focus {
+  border-color: var(--accent-purple) !important;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25) !important;
+  background: rgba(14, 17, 34, 0.95) !important;
+}
+
+.stTextInput label, .stTextArea label, .stSelectbox label {
+  font-family: var(--font-heading) !important;
+  font-weight: 600 !important;
+  font-size: 0.76rem !important;
+  color: var(--text-muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* ─── CARDS & GLASS CONTAINERS ───────────────────────────────────────────── */
+[data-testid="stVerticalBlockBorderWrapper"] {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+  backdrop-filter: blur(14px) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+[data-testid="stVerticalBlockBorderWrapper"]:hover {
+  border-color: rgba(124, 58, 237, 0.35) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ─── METRIC CARDS ───────────────────────────────────────────────────────── */
+[data-testid="stMetric"] {
+  background: rgba(14, 16, 32, 0.7) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 1rem 1.15rem !important;
+  backdrop-filter: blur(10px) !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-testid="stMetric"]:hover {
+  border-color: var(--border-cyan) !important;
+  box-shadow: var(--shadow-cyan) !important;
+}
+
+[data-testid="stMetricLabel"] {
+  font-family: var(--font-heading) !important;
+  font-weight: 600 !important;
+  font-size: 0.72rem !important;
+  color: var(--text-dim) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+}
+
+[data-testid="stMetricValue"] {
+  font-family: var(--font-heading) !important;
+  font-weight: 800 !important;
+  font-size: 1.35rem !important;
+  background: linear-gradient(135deg, #FFFFFF 0%, #22D3EE 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* ─── EXPANDERS ──────────────────────────────────────────────────────────── */
+[data-testid="stExpander"] {
+  background: rgba(14, 16, 32, 0.5) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+  margin-bottom: 0.6rem !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+[data-testid="stExpander"] summary {
+  font-family: var(--font-heading) !important;
+  font-weight: 600 !important;
+  color: var(--text-muted) !important;
+  padding: 0.8rem 1.1rem !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-testid="stExpander"] summary:hover {
+  color: #FFFFFF !important;
+  background: rgba(124, 58, 237, 0.08) !important;
+}
+
+/* ─── ALERTS & NOTIFICATIONS ─────────────────────────────────────────────── */
+div[data-testid="stNotification"], .stAlert {
+  border-radius: var(--radius-md) !important;
+  background: rgba(14, 16, 32, 0.85) !important;
+  border: 1px solid var(--border-subtle) !important;
+}
+
+/* ─── ANIMATIONS ─────────────────────────────────────────────────────────── */
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-main); }
+::-webkit-scrollbar-thumb { background: rgba(124, 58, 237, 0.35); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-purple); }
+</style>
+""", unsafe_allow_html=True)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  TOP BRAND NAVBAR (Modern SaaS Header)
+# ═══════════════════════════════════════════════════════════════════════════════
+st.markdown("""
+<div style="
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1.4rem;
+  background: rgba(14, 16, 32, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  margin-bottom: 1.8rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+">
+  <div style="display: flex; align-items: center; gap: 14px;">
+    <div style="
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #7C3AED, #06B6D4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.15rem;
+      box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);
+    ">⚡</div>
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: -0.02em; color: #FFFFFF;">
+          PARALLEL
+        </span>
+        <span style="
+          background: rgba(124, 58, 237, 0.15);
+          border: 1px solid rgba(124, 58, 237, 0.35);
+          color: #9F67FF;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.65rem;
+          padding: 2px 7px;
+          border-radius: 6px;
+          font-weight: 600;
+        ">CREATOR OS</span>
+      </div>
+      <div style="font-family: 'Inter', sans-serif; font-size: 0.74rem; color: #94A3B8;">
+        Reverse-engineer viral creators · Decouple hook formulas · Predict video ROI
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <div style="
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 4px 11px;
+      border-radius: 99px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: #34D399;
+      font-weight: 500;
+    ">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #10B981; display: inline-block; animation: pulseDot 1.8s infinite;"></span>
+      LIVE ENGINE ACTIVE
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SIDEBAR — USER PROFILE SYSTEM
 # ═══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("## 👤 Your Profile")
+    st.markdown("""
+    <div style="padding: 0.4rem 0 0.8rem;">
+      <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 0.95rem; color: #FFFFFF; letter-spacing: -0.01em;">
+        👤 User Workspace
+      </div>
+      <div style="font-family: 'Inter', sans-serif; font-size: 0.72rem; color: #64748B;">
+        Secure Private Bridge Store
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     if "logged_in_user" not in st.session_state:
         st.session_state.logged_in_user = None
 
     if st.session_state.logged_in_user:
         user = st.session_state.logged_in_user
-        st.success(f"Signed in as **{user}**")
+        st.markdown(f"""
+        <div style="
+          background: rgba(124, 58, 237, 0.1);
+          border: 1px solid rgba(124, 58, 237, 0.3);
+          border-radius: 12px;
+          padding: 10px 14px;
+          margin-bottom: 1rem;
+        ">
+          <div style="font-size: 0.68rem; font-family: 'JetBrains Mono', monospace; color: #9F67FF; text-transform: uppercase;">Active Session</div>
+          <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.95rem; color: #FFFFFF;">@{user}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
         # ── Search History ────────────────────────────────────────────────
-        st.markdown("### 📜 Search History")
+        st.markdown("##### 📜 Search History")
         history = get_history(user)
         if history:
             for h in history[:10]:
@@ -116,9 +502,6 @@ with st.sidebar:
                     except UsernameTaken:
                         st.error("This username is already taken.")
 
-st.title("⚡ Parallel for Creators")
-st.caption("Content Intelligence, Viral Hook Calibration & Monetization Studio")
-
 
 # ─── UNIVERSAL VIDEO PLAYER (YouTube, Instagram, TikTok & Web Media) ──────────
 def render_playable_video(v_url: str, title: str = "", platform: str = ""):
@@ -127,7 +510,6 @@ def render_playable_video(v_url: str, title: str = "", platform: str = ""):
         return
 
     clean_url = v_url.strip()
-    # Normalize YouTube shorts URL to watch URL for guaranteed st.video compatibility
     if "youtube.com/shorts/" in clean_url:
         m_short = re.search(r"/shorts/([A-Za-z0-9_-]+)", clean_url)
         if m_short:
@@ -178,7 +560,7 @@ def render_playable_video(v_url: str, title: str = "", platform: str = ""):
             st.link_button("▶️ Open Media Link", clean_url, type="secondary")
 
 
-# ─── TOP-LEVEL TABS (Clean 3-Tab Architecture) ──────────────────────────────
+# ─── TOP-LEVEL TABS (Modern Clean 3-Tab Architecture) ─────────────────────────
 tab_home, tab_hooks, tab_analytics = st.tabs([
     "🏠 Creator Intelligence & Clone Studio", 
     "🎯 Hook Testing & Predictions", 
@@ -190,102 +572,115 @@ tab_home, tab_hooks, tab_analytics = st.tabs([
 #  HOME PAGE — CREATOR INTELLIGENCE, COMPETITORS & CLONE STUDIO
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab_home:
-    st.markdown("### 🏠 Creator Intelligence & Clone Studio")
-    st.caption("All-in-one Creator Command Center: Analyze any creator, benchmark their competition, reverse-engineer their style DNA, and generate ready-to-film blueprints and upgrade concepts.")
+    st.markdown("""
+    <div style="margin-bottom: 1.2rem;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.25rem;">⚡</span>
+        <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.35rem; font-weight: 800; margin: 0; color: #FFFFFF;">
+          Creator Reconnaissance &amp; Clone Studio
+        </h2>
+      </div>
+      <p style="font-family: 'Inter', sans-serif; font-size: 0.84rem; color: #94A3B8; margin: 4px 0 0 32px;">
+        Analyze any creator, benchmark against rivals, deconstruct style DNA, and generate frame-by-frame blueprints.
+      </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    col_a, col_b, col_c = st.columns([1.5, 1.5, 1.0])
-    with col_a:
-        creator_name = st.text_input(
-            "Target Creator to Copy (Creator A)",
-            placeholder="e.g. CarryMinati, MrBeast, Aakash Dhawan",
-            key="input_creator_name"
-        )
-    with col_b:
-        comparison_creator = st.text_input(
-            "Benchmark Creator (Creator B, Optional)",
-            placeholder="e.g. Ashish Chanchlani, Ryan Trahan, your channel",
-            key="input_comparison_creator",
-            help="Add a rival or benchmark creator to run an accurate head-to-head comparison and pinpoint the exact gap to win."
-        )
-    with col_c:
-        creator_niche = st.text_input(
-            "Niche / Category (optional)",
-            placeholder="e.g. Comedy, Motovlog, Tech",
-            key="input_creator_niche"
-        )
+    # ── Search Console Card ──────────────────────────────────────────────────
+    with st.container(border=True):
+        col_a, col_b, col_c = st.columns([1.4, 1.4, 1.0])
+        with col_a:
+            creator_name = st.text_input(
+                "Target Creator to Copy (Creator A)",
+                placeholder="e.g. CarryMinati, MrBeast, Aakash Dhawan",
+                key="input_creator_name"
+            )
+        with col_b:
+            comparison_creator = st.text_input(
+                "Benchmark Creator (Creator B, Optional)",
+                placeholder="e.g. Ashish Chanchlani, Ryan Trahan, your channel",
+                key="input_comparison_creator",
+                help="Add a rival or benchmark creator to run an accurate head-to-head comparison and pinpoint the exact gap to win."
+            )
+        with col_c:
+            creator_niche = st.text_input(
+                "Niche / Category (optional)",
+                placeholder="e.g. Comedy, Motovlog, Tech",
+                key="input_creator_niche"
+            )
 
-    # ── Spelling & Similar Creator Suggestions (Auto-Detection) ───────────────
-    if creator_name and len(creator_name.strip()) >= 2:
-        suggestions = find_similar_creators(creator_name.strip(), min_score=0.45, limit=4)
-        is_exact = any(s["name"].lower() == creator_name.strip().lower() for s in suggestions)
-        if suggestions and not is_exact:
-            st.markdown("💡 **Similar / Corrected Creator Options (Click to Select):**")
-            sug_cols = st.columns(min(len(suggestions), 4))
-            for s_idx, sug in enumerate(suggestions[:4]):
-                with sug_cols[s_idx]:
-                    def _make_picker(target_n=sug["name"], target_cat=sug["niche"]):
-                        def _callback():
-                            st.session_state["input_creator_name"] = target_n
-                            if target_cat:
-                                st.session_state["input_creator_niche"] = target_cat
-                        return _callback
-                    st.button(
-                        f"👉 **{sug['name']}**\n\n`{sug['niche'][:24]}`",
-                        key=f"sug_btn_t1_{s_idx}_{sug['name'][:8]}",
-                        use_container_width=True,
-                        on_click=_make_picker(sug["name"], sug["niche"])
-                    )
-        elif not suggestions and len(creator_name.strip()) >= 4:
-            c_spell_a, c_spell_b = st.columns([3, 1])
-            with c_spell_a:
-                st.caption(f"Unfamiliar creator '{creator_name}'? Check if there's a recognized spelling.")
-            with c_spell_b:
-                if st.button("🔍 AI Spell Fix", key="ai_spell_t1", use_container_width=True):
-                    with st.spinner("Finding closest creators..."):
-                        ai_sugs = resolve_misspelled_creator_with_llm(creator_name.strip())
-                        st.session_state["ai_sugs_t1"] = ai_sugs
-            if st.session_state.get("ai_sugs_t1"):
-                st.markdown("🤖 **AI Identified Creators:**")
-                ai_cols = st.columns(len(st.session_state["ai_sugs_t1"]))
-                for a_idx, a_sug in enumerate(st.session_state["ai_sugs_t1"]):
-                    with ai_cols[a_idx]:
-                        def _make_ai_picker(target_n=a_sug["name"], target_cat=a_sug["niche"]):
+        # ── Spelling & Similar Creator Suggestions (Auto-Detection) ───────────
+        if creator_name and len(creator_name.strip()) >= 2:
+            suggestions = find_similar_creators(creator_name.strip(), min_score=0.45, limit=4)
+            is_exact = any(s["name"].lower() == creator_name.strip().lower() for s in suggestions)
+            if suggestions and not is_exact:
+                st.markdown("💡 **Similar / Corrected Creator Options (Click to Select):**")
+                sug_cols = st.columns(min(len(suggestions), 4))
+                for s_idx, sug in enumerate(suggestions[:4]):
+                    with sug_cols[s_idx]:
+                        def _make_picker(target_n=sug["name"], target_cat=sug["niche"]):
                             def _callback():
                                 st.session_state["input_creator_name"] = target_n
                                 if target_cat:
                                     st.session_state["input_creator_niche"] = target_cat
                             return _callback
                         st.button(
-                            f"👉 **{a_sug['name']}**\n\n`{a_sug['niche'][:24]}`",
-                            key=f"ai_btn_t1_{a_idx}_{a_sug['name'][:8]}",
+                            f"👉 **{sug['name']}**\n\n`{sug['niche'][:24]}`",
+                            key=f"sug_btn_t1_{s_idx}_{sug['name'][:8]}",
                             use_container_width=True,
-                            on_click=_make_ai_picker(a_sug["name"], a_sug["niche"])
+                            on_click=_make_picker(sug["name"], sug["niche"])
+                        )
+            elif not suggestions and len(creator_name.strip()) >= 4:
+                c_spell_a, c_spell_b = st.columns([3, 1])
+                with c_spell_a:
+                    st.caption(f"Unfamiliar creator '{creator_name}'? Check if there's a recognized spelling.")
+                with c_spell_b:
+                    if st.button("🔍 AI Spell Fix", key="ai_spell_t1", use_container_width=True):
+                        with st.spinner("Finding closest creators..."):
+                            ai_sugs = resolve_misspelled_creator_with_llm(creator_name.strip())
+                            st.session_state["ai_sugs_t1"] = ai_sugs
+                if st.session_state.get("ai_sugs_t1"):
+                    st.markdown("🤖 **AI Identified Creators:**")
+                    ai_cols = st.columns(len(st.session_state["ai_sugs_t1"]))
+                    for a_idx, a_sug in enumerate(st.session_state["ai_sugs_t1"]):
+                        with ai_cols[a_idx]:
+                            def _make_ai_picker(target_n=a_sug["name"], target_cat=a_sug["niche"]):
+                                def _callback():
+                                    st.session_state["input_creator_name"] = target_n
+                                    if target_cat:
+                                        st.session_state["input_creator_niche"] = target_cat
+                                return _callback
+                            st.button(
+                                f"👉 **{a_sug['name']}**\n\n`{a_sug['niche'][:24]}`",
+                                key=f"ai_btn_t1_{a_idx}_{a_sug['name'][:8]}",
+                                use_container_width=True,
+                                on_click=_make_ai_picker(a_sug["name"], a_sug["niche"])
+                            )
+
+        # ── Spelling & Similar Creator Suggestions for Creator B (Benchmark) ─
+        if comparison_creator and len(comparison_creator.strip()) >= 2:
+            comp_suggestions = find_similar_creators(comparison_creator.strip(), min_score=0.45, limit=3)
+            comp_is_exact = any(s["name"].lower() == comparison_creator.strip().lower() for s in comp_suggestions)
+            if comp_suggestions and not comp_is_exact:
+                st.markdown("💡 **Benchmark Creator Options (Click to Select):**")
+                csug_cols = st.columns(min(len(comp_suggestions), 3))
+                for cs_idx, csug in enumerate(comp_suggestions[:3]):
+                    with csug_cols[cs_idx]:
+                        def _make_comp_picker(target_n=csug["name"]):
+                            def _callback():
+                                st.session_state["input_comparison_creator"] = target_n
+                            return _callback
+                        st.button(
+                            f"👉 **{csug['name']}**\n\n`{csug['niche'][:24]}`",
+                            key=f"comp_sug_btn_{cs_idx}_{csug['name'][:8]}",
+                            use_container_width=True,
+                            on_click=_make_comp_picker(csug["name"])
                         )
 
-    # ── Spelling & Similar Creator Suggestions for Creator B (Benchmark) ─────
-    if comparison_creator and len(comparison_creator.strip()) >= 2:
-        comp_suggestions = find_similar_creators(comparison_creator.strip(), min_score=0.45, limit=3)
-        comp_is_exact = any(s["name"].lower() == comparison_creator.strip().lower() for s in comp_suggestions)
-        if comp_suggestions and not comp_is_exact:
-            st.markdown("💡 **Benchmark Creator Options (Click to Select):**")
-            csug_cols = st.columns(min(len(comp_suggestions), 3))
-            for cs_idx, csug in enumerate(comp_suggestions[:3]):
-                with csug_cols[cs_idx]:
-                    def _make_comp_picker(target_n=csug["name"]):
-                        def _callback():
-                            st.session_state["input_comparison_creator"] = target_n
-                        return _callback
-                    st.button(
-                        f"👉 **{csug['name']}**\n\n`{csug['niche'][:24]}`",
-                        key=f"comp_sug_btn_{cs_idx}_{csug['name'][:8]}",
-                        use_container_width=True,
-                        on_click=_make_comp_picker(csug["name"])
-                    )
+        run_intel = st.button("🚀 Run Deep Analysis & Reverse-Engineer", type="primary", key="intel_btn", use_container_width=True)
 
-    run_intel = st.button("🚀 Analyze & Reverse-Engineer", type="primary", key="intel_btn")
-
+    # ── Pipeline Execution ───────────────────────────────────────────────────
     if run_intel and creator_name.strip():
-        # Check previous findings for this user and creator to avoid duplicates & ensure continuity
         prev_findings = {}
         if st.session_state.get("logged_in_user"):
             prev_findings = get_user_previous_findings(st.session_state.logged_in_user, creator_name.strip())
@@ -358,13 +753,13 @@ with tab_home:
         creator_name_display = st.session_state.get("intel_name", "Creator")
         profile = intel.get("creator_profile", {})
 
-        # ── Show cache badge + refresh if loaded from history ──
+        # ── Show cache badge + refresh if loaded from history ────────────────
         if st.session_state.get("intel_from_cache"):
             cache_col1, cache_col2 = st.columns([3, 1])
             with cache_col1:
                 st.info(f"📂 Loaded from saved profile. Data may not be the latest.")
             with cache_col2:
-                if st.button("🔄 Refresh Live", key="btn_refresh_intel"):
+                if st.button("🔄 Refresh Live", key="btn_refresh_intel", use_container_width=True):
                     st.session_state.intel = None
                     st.session_state.intel_from_cache = False
                     with st.spinner(f"🌐 Re-scanning {creator_name_display}'s latest data..."):
@@ -413,43 +808,77 @@ with tab_home:
                         except Exception as e:
                             st.error(f"Refresh failed: {e}")
 
-        st.markdown("---")
-
-        # ── 1. CREATOR OVERVIEW (WITH VERIFIED PHOTO) ────────────────────────
+        # ── 1. CREATOR OVERVIEW (WITH VERIFIED PHOTO & GLOW CARD) ────────────
         tier = profile.get("tier") or "Mega (10M+)"
         niche_disp = profile.get("core_niche") or "Short-form Content"
         loc_disp = profile.get("location") or "India"
         avatar_url = profile.get("avatar_url", "")
 
-        c_img_col, c_text_col = st.columns([1, 4])
-        with c_img_col:
-            if avatar_url:
-                st.image(avatar_url, width=130, caption=profile.get('name', creator_name_display))
-            else:
-                st.markdown("### 👤")
-        with c_text_col:
-            st.markdown(f"## {profile.get('name', creator_name_display)}")
-            st.markdown(f"**Tier:** `{tier}` &nbsp;·&nbsp; **Category:** `{niche_disp}` &nbsp;·&nbsp; **Region:** 📍 `{loc_disp}`")
-            accounts = profile.get("discovered_accounts", [])
-            if accounts:
-                acc_pills = []
-                for acc in accounts:
-                    p = acc.get("platform", "Link")
-                    t = acc.get("title", p)
-                    u = acc.get("url", "")
-                    if u:
-                        acc_pills.append(f"[{p}: {t}]({u})")
-                    else:
-                        acc_pills.append(f"{p}: {t}")
-                st.caption("🔗 **Discovered Handles:** " + " · ".join(acc_pills))
+        tier_badge_color = "#F59E0B" if "Mega" in tier else "#7C3AED" if "Macro" in tier else "#06B6D4"
 
-        c_desc1, c_desc2 = st.columns(2)
-        with c_desc1:
-            st.info(f"🎭 **Tone & Style:** {profile.get('tone_and_style') or 'High-energy, satirical, engaging delivery.'}")
-        with c_desc2:
-            st.info(f"👥 **Audience Vibe:** {profile.get('audience_vibe') or 'Young, college, mobile-first community.'}")
+        with st.container(border=True):
+            c_img_col, c_text_col = st.columns([1, 4])
+            with c_img_col:
+                if avatar_url:
+                    st.markdown(f"""
+                    <div style="display:flex; justify-content:center; align-items:center; padding: 4px;">
+                      <img src="{avatar_url}" style="
+                        width: 110px; height: 110px;
+                        border-radius: 50%;
+                        object-fit: cover;
+                        border: 3px solid rgba(124, 58, 237, 0.6);
+                        box-shadow: 0 0 25px rgba(124, 58, 237, 0.4);
+                      ">
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown("""
+                    <div style="
+                      width: 100px; height: 100px; border-radius: 50%;
+                      background: linear-gradient(135deg, #7C3AED, #06B6D4);
+                      display: flex; align-items: center; justify-content: center;
+                      font-size: 2.2rem; margin: auto;
+                    ">👤</div>
+                    """, unsafe_allow_html=True)
 
-        st.markdown("---")
+            with c_text_col:
+                st.markdown(f"""
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;">
+                  <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.6rem; font-weight: 800; margin: 0; color: #FFFFFF;">
+                    {profile.get('name', creator_name_display)}
+                  </h2>
+                  <span style="
+                    background: {tier_badge_color}20;
+                    border: 1px solid {tier_badge_color}60;
+                    color: {tier_badge_color};
+                    font-family: 'JetBrains Mono', monospace;
+                    font-size: 0.72rem;
+                    padding: 2px 9px;
+                    border-radius: 99px;
+                    font-weight: 600;
+                  ">{tier}</span>
+                </div>
+                """, unsafe_allow_html=True)
+
+                st.markdown(f"**Category:** `{niche_disp}` &nbsp;·&nbsp; **Region:** 📍 `{loc_disp}`")
+                accounts = profile.get("discovered_accounts", [])
+                if accounts:
+                    acc_pills = []
+                    for acc in accounts:
+                        p = acc.get("platform", "Link")
+                        t = acc.get("title", p)
+                        u = acc.get("url", "")
+                        if u:
+                            acc_pills.append(f"[{p}: {t}]({u})")
+                        else:
+                            acc_pills.append(f"{p}: {t}")
+                    st.caption("🔗 **Discovered Handles:** " + " · ".join(acc_pills))
+
+            c_desc1, c_desc2 = st.columns(2)
+            with c_desc1:
+                st.info(f"🎭 **Tone & Style:** {profile.get('tone_and_style') or 'High-energy, satirical, engaging delivery.'}")
+            with c_desc2:
+                st.info(f"👥 **Audience Vibe:** {profile.get('audience_vibe') or 'Young, college, mobile-first community.'}")
 
         # ── UNIFIED SUB-TABS ON HOME PAGE ────────────────────────────────────
         subtab_ideas, subtab_clone = st.tabs([
@@ -490,7 +919,7 @@ with tab_home:
                     with st.container(border=True):
                         st.markdown("##### 🔍 Viral Reference Anatomy")
                         st.metric("Trending Momentum", sel_vid.get("views", "Viral Wave"))
-                        st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\"{sel_vid.get('opening_hook', '—')}\"*")
+                        st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\x22{sel_vid.get('opening_hook', '—')}\x22*")
                         st.markdown(f"**🧠 Why Viewers Stayed (Retention Trigger):**\n{sel_vid.get('why_it_went_viral', '—')}")
                         st.info(f"**📋 Adaptable Hook Template For You:**\n{sel_vid.get('adapt_hook_template', '—')}")
 
@@ -525,7 +954,7 @@ with tab_home:
                     with st.container(border=True):
                         st.markdown("##### 🔍 Creator's Proven Hook Breakdown")
                         st.metric("Views Benchmark", c_sel_vid.get("views", "Top Performer"))
-                        st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\"{c_sel_vid.get('opening_hook', '—')}\"*")
+                        st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\x22{c_sel_vid.get('opening_hook', '—')}\x22*")
                         st.markdown(f"**🧠 Why Viewers Stayed:**\n{c_sel_vid.get('why_it_went_viral', '—')}")
                         st.info(f"**📋 Adaptable Strategy:**\n{c_sel_vid.get('adapt_hook_template', '—')}")
 
@@ -585,7 +1014,7 @@ with tab_home:
                                     st.caption(f"`{freq_badge}`")
                                     quote = rev.get("audience_quote_example", "")
                                     if quote:
-                                        st.markdown(f"> *\"{quote}\"*")
+                                        st.markdown(f"> *\x22{quote}\x22*")
                                     st.markdown(f"**Channel Impact:** {rev.get('impact_on_channel', 'Causes viewer attrition.')}")
 
                 if imp_suggs:
@@ -602,8 +1031,8 @@ with tab_home:
                                 with st.container(border=True):
                                     st.markdown("**🎯 Upgraded Counter-Hook:**")
                                     up_hook = imp.get('hook_upgrade', '')
-                                    st.info(f"*\"{up_hook}\"*")
-                                    if st.button(f"▶ Test 4 Upgrade Hooks in Simulator", key=f"btn_test_fix_{imp_idx}"):
+                                    st.info(f"*\x22{up_hook}\x22*")
+                                    if st.button(f"▶ Test 4 Upgrade Hooks in Simulator", key=f"btn_test_fix_{imp_idx}", use_container_width=True):
                                         cand_imp_hooks = imp.get("candidate_hooks", [])
                                         if not cand_imp_hooks or len(cand_imp_hooks) < 3:
                                             cand_imp_hooks = [
@@ -629,7 +1058,7 @@ with tab_home:
                     st.markdown(f"### 💡 High-Potential Content Suggestions ({len(suggestions)} Ideas Ready to Test)")
                     st.caption("AI-engineered concepts based on live trending topics. Every suggestion includes 4 distinct candidate hooks and a playable reference video.")
                 with c_sug_col2:
-                    if st.button("🚀 Test ALL 5 Ideas in Hook Testing", key="btn_test_all_ideas_top", use_container_width=True):
+                    if st.button("🚀 Test ALL 5 Ideas in Hook Testing", key="btn_test_all_ideas_top", use_container_width=True, type="primary"):
                         all_idea_hooks = []
                         for s_i, s_item in enumerate(suggestions[:5], start=1):
                             s_hks = s_item.get("candidate_hooks", [])
@@ -669,12 +1098,34 @@ with tab_home:
 
                         hooks = s.get("candidate_hooks", [])
                         if hooks:
-                            st.markdown("**Candidate Hooks (Engineered for 3-sec short-form retention):**")
+                            st.markdown("**🎯 Candidate Hooks (Engineered for 3-sec Short-Form Retention):**")
                             for hk in hooks:
-                                st.markdown(f"- **{hk.get('sid', '?')}**: {hk.get('text', '')}")
+                                s_id = hk.get('sid', '?')
+                                h_txt = hk.get('text', '')
+                                st.markdown(f"""
+                                <div style="
+                                  display: flex; align-items: flex-start; gap: 9px;
+                                  background: rgba(124, 58, 237, 0.07);
+                                  border: 1px solid rgba(124, 58, 237, 0.22);
+                                  border-left: 3px solid #7C3AED;
+                                  border-radius: 8px;
+                                  padding: 7px 12px;
+                                  margin-bottom: 5px;
+                                ">
+                                  <span style="
+                                    background: #7C3AED; color: #FFFFFF;
+                                    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+                                    padding: 2px 6px; border-radius: 4px; font-weight: 700;
+                                    flex-shrink: 0; margin-top: 1px;
+                                  ">{s_id}</span>
+                                  <span style="font-family: 'Inter', sans-serif; font-size: 0.84rem; color: #F1F5F9; line-height: 1.45;">
+                                    {h_txt}
+                                  </span>
+                                </div>
+                                """, unsafe_allow_html=True)
 
                         # Bridge to Tab 2
-                        if st.button(f"▶ Test all 4 candidate hooks for Idea #{s.get('id')} in Hook Simulator", key=f"test_idea_{s.get('id')}"):
+                        if st.button(f"▶ Test all 4 candidate hooks for Idea #{s.get('id')} in Hook Simulator", key=f"test_idea_{s.get('id')}", use_container_width=True):
                             hook_lines = "\n".join(
                                 [f"{hk['sid']}: {hk['text']}" for hk in hooks if 'sid' in hk and 'text' in hk]
                             )
@@ -749,15 +1200,15 @@ with tab_home:
                         hc1, hc2 = st.columns(2)
                         with hc1:
                             st.markdown(f"**How {tc_name} Opens:**")
-                            st.write(f"> *\"{hk_contrast.get('creator_a_hook', '—')}\"*")
+                            st.write(f"> *\x22{hk_contrast.get('creator_a_hook', '—')}\x22*")
                         with hc2:
                             st.markdown(f"**How {bench_n} Opens:**")
-                            st.write(f"> *\"{hk_contrast.get('creator_b_hook', '—')}\"*")
+                            st.write(f"> *\x22{hk_contrast.get('creator_b_hook', '—')}\x22*")
 
                         win_hook = hk_contrast.get("winning_hybrid_hook", "")
                         if win_hook:
-                            st.info(f"🔥 **Your Winning Hybrid Hook:**\n*\"{win_hook}\"*")
-                            if st.button("▶ Test 4-Hook Contrast Duel in Simulator", key="btn_test_hybrid_hook"):
+                            st.info(f"🔥 **Your Winning Hybrid Hook:**\n*\x22{win_hook}\x22*")
+                            if st.button("▶ Test 4-Hook Contrast Duel in Simulator", key="btn_test_hybrid_hook", use_container_width=True):
                                 h2h_cand_hooks = hk_contrast.get("candidate_hooks")
                                 if not h2h_cand_hooks or len(h2h_cand_hooks) < 3:
                                     h2h_cand_hooks = [
@@ -903,12 +1354,34 @@ with tab_home:
 
                         hooks = idea.get("candidate_hooks", [])
                         if hooks:
-                            st.markdown("**🎯 Candidate Upgrade Hooks:**")
+                            st.markdown("**🎯 Candidate Upgrade Hooks (Engineered Retention Pacing):**")
                             for h in hooks:
-                                st.markdown(f"- **{h.get('sid', '')}**: *{h.get('text', '')}*")
+                                s_id = h.get('sid', '?')
+                                h_txt = h.get('text', '')
+                                st.markdown(f"""
+                                <div style="
+                                  display: flex; align-items: flex-start; gap: 9px;
+                                  background: rgba(6, 182, 212, 0.07);
+                                  border: 1px solid rgba(6, 182, 212, 0.22);
+                                  border-left: 3px solid #06B6D4;
+                                  border-radius: 8px;
+                                  padding: 7px 12px;
+                                  margin-bottom: 5px;
+                                ">
+                                  <span style="
+                                    background: #06B6D4; color: #000000;
+                                    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+                                    padding: 2px 6px; border-radius: 4px; font-weight: 700;
+                                    flex-shrink: 0; margin-top: 1px;
+                                  ">{s_id}</span>
+                                  <span style="font-family: 'Inter', sans-serif; font-size: 0.84rem; color: #F1F5F9; line-height: 1.45;">
+                                    {h_txt}
+                                  </span>
+                                </div>
+                                """, unsafe_allow_html=True)
 
                             # Bridge to Tab 2
-                            if st.button(f"▶ Test all 4 piracy upgrade hooks for Upgrade #{idea.get('id')} in Simulator", key=f"test_piracy_{idea.get('id')}"):
+                            if st.button(f"▶ Test all 4 piracy upgrade hooks for Upgrade #{idea.get('id')} in Simulator", key=f"test_piracy_{idea.get('id')}", use_container_width=True):
                                 hook_lines = "\n".join(
                                     [f"{h['sid']}: {h['text']}" for h in hooks if 'sid' in h and 'text' in h]
                                 )
@@ -920,41 +1393,53 @@ with tab_home:
                                 st.success("✅ Hooks pre-filled! Switch to the **🎯 Hook Testing & Predictions** tab above.")
 
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB 2 — HOOK TESTING & REVENUE/FAME PREDICTIONS (Second Page)
+#  TAB 2 — HOOK TESTING & REVENUE/FAME PREDICTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab_hooks:
-    st.markdown("### 🎯 Hook Testing on Synthetic Audience")
-    st.caption("Calibrate hooks against simulated student audiences (18–24), filter clickbait, and predict estimated video revenue and viral fame index.")
+    st.markdown("""
+    <div style="margin-bottom: 1.2rem;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.25rem;">🎯</span>
+        <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.35rem; font-weight: 800; margin: 0; color: #FFFFFF;">
+          Hook Testing on Synthetic Audience
+        </h2>
+      </div>
+      <p style="font-family: 'Inter', sans-serif; font-size: 0.84rem; color: #94A3B8; margin: 4px 0 0 32px;">
+        Calibrate hooks against simulated student audiences (18–24), filter clickbait, and predict estimated video revenue and viral fame index.
+      </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # Dynamic trending hooks button
-    col_t1, col_t2 = st.columns([3, 1])
-    with col_t2:
-        if st.button("⚡ Load Live Trending Hooks", help="Fetches real trending comedy/roast hooks from live internet research"):
-            st.session_state.prefill_hooks = (
-                "Creator: CarryMinati. Niche: Viral Roasts & Parody Shorts.\n"
-                "S1: I found the fakest gym influencer on Instagram and confronted him.\n"
-                "S2: Nobody noticed this millionaire YouTuber doing this in India...\n"
-                "S3: If you watch motivational podcasts, I have terrible news for you.\n"
-                "S4: This one video got 10 million views for the worst reason ever."
-            )
-            st.rerun()
+    with st.container(border=True):
+        col_t1, col_t2 = st.columns([3, 1])
+        with col_t2:
+            if st.button("⚡ Load Live Trending Hooks", help="Fetches real trending comedy/roast hooks from live internet research", use_container_width=True):
+                st.session_state.prefill_hooks = (
+                    "Creator: CarryMinati. Niche: Viral Roasts & Parody Shorts.\n"
+                    "S1: I found the fakest gym influencer on Instagram and confronted him.\n"
+                    "S2: Nobody noticed this millionaire YouTuber doing this in India...\n"
+                    "S3: If you watch motivational podcasts, I have terrible news for you.\n"
+                    "S4: This one video got 10 million views for the worst reason ever."
+                )
+                st.rerun()
 
-    default_text = st.session_state.get("prefill_hooks", "")
-    text = st.text_area(
-        "Candidate Hooks (or paste channel brief + hooks S1 to S4):",
-        value=default_text,
-        height=140,
-        placeholder="e.g. Comedy Shorts for Indian college students. S1: Hook 1... S2: Hook 2..."
-    )
+        default_text = st.session_state.get("prefill_hooks", "")
+        text = st.text_area(
+            "Candidate Hooks (or paste channel brief + hooks S1 to S4):",
+            value=default_text,
+            height=140,
+            placeholder="e.g. Comedy Shorts for Indian college students. S1: Hook 1... S2: Hook 2..."
+        )
 
-    n = st.slider(
-        "Synthetic audience sample size", 10, 150, 15, 5,
-        help="15-20 personas takes ~25s on Groq free tier. 50+ gives maximum demographic granularity."
-    )
+        n = st.slider(
+            "Synthetic audience sample size", 10, 150, 15, 5,
+            help="15-20 personas takes ~25s on Groq free tier. 50+ gives maximum demographic granularity."
+        )
 
-    if st.button("▶ Run on synthetic audience", type="primary") and text:
+        run_hook_test = st.button("▶ Run on Synthetic Audience", type="primary", use_container_width=True)
+
+    if run_hook_test and text:
         with st.spinner("Asking synthetic personas & predicting performance..."):
             try:
                 res = run_study(text, n)
@@ -993,7 +1478,6 @@ with tab_hooks:
             st.caption("Machine-learning predictions based on stop-scroll retention, audience polarization, and short-form monetization algorithms.")
 
             # Modeling formulas
-            # 1. Estimated Views
             if top_score >= 4.2:
                 views_tier = "2.5M – 5.0M Views (Viral Breakout)"
                 min_v, max_v = 2_500_000, 5_000_000
@@ -1064,12 +1548,12 @@ with tab_hooks:
                     st.markdown(f"**Tier:** `{fame_label}`")
                     st.metric("Projected Audience Growth", subs_gain)
                     st.markdown(f"- 🚀 **Recommendation Push Likelihood:** `{algo_prob}`")
-                    st.markdown(f"- 🏆 **Top Hook:** *\"{top_hook_content}\"*")
+                    st.markdown(f"- 🏆 **Top Hook:** *\x22{top_hook_content}\x22*")
                     st.info(f"✨ **Stop-Scroll Rating:** `{top_score:.2f} / 5.0` &nbsp;·&nbsp; **Favorite Rate:** `{top_best:.0%}`")
 
             st.markdown("---")
 
-            # ── 1. HOOK RANKING VISUALIZATION ─────────────────────────────────
+            # ── 1. HOOK RANKING VISUALIZATION (Dark Themed Plotly) ─────────────
             st.subheader("🏆 Hook Performance Ranking")
             fig_score = px.bar(
                 items_df,
@@ -1078,7 +1562,7 @@ with tab_hooks:
                 orientation="h",
                 text=items_df["score"].apply(lambda s: f"{s:.2f}"),
                 color="score",
-                color_continuous_scale="Tealgrn",
+                color_continuous_scale="Purples",
                 hover_data={"hook_text": True, "score": ":.2f", "clickbait": ":.0%"},
                 labels={"score": "Stop-Scroll Rating (1.0 to 5.0)", "sid": "Hook", "hook_text": "Hook Text"},
                 title="Viewer Stop-Scroll Score (Higher = Better Retention)"
@@ -1086,7 +1570,12 @@ with tab_hooks:
             fig_score.update_layout(
                 yaxis={"autorange": "reversed"},
                 height=300,
-                margin=dict(l=10, r=10, t=35, b=10)
+                margin=dict(l=10, r=10, t=35, b=10),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font={"color": "#F8FAFC", "family": "Plus Jakarta Sans, sans-serif"},
+                xaxis={"gridcolor": "rgba(255,255,255,0.08)"},
+                yaxis_gridcolor="rgba(255,255,255,0.08)"
             )
             st.plotly_chart(fig_score, use_container_width=True)
 
@@ -1096,20 +1585,30 @@ with tab_hooks:
                 st.markdown("##### 🌟 Audience Favorite (`Best`) Share")
                 fig_best = px.bar(
                     items_df, x="best", y="sid", orientation="h",
-                    color_discrete_sequence=["#00CC96"],
+                    color_discrete_sequence=["#10B981"],
                     labels={"best": "% Picked as Best", "sid": "Hook"}
                 )
-                fig_best.update_layout(xaxis_tickformat='.0%', height=220, margin=dict(l=10, r=10, t=20, b=10))
+                fig_best.update_layout(
+                    xaxis_tickformat='.0%', height=220, margin=dict(l=10, r=10, t=20, b=10),
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                    font={"color": "#F8FAFC", "family": "Plus Jakarta Sans, sans-serif"},
+                    xaxis_gridcolor="rgba(255,255,255,0.08)"
+                )
                 st.plotly_chart(fig_best, use_container_width=True)
 
             with pol_col2:
                 st.markdown("##### ⚠️ High Drop-off (`Worst`) Share")
                 fig_worst = px.bar(
                     items_df, x="worst", y="sid", orientation="h",
-                    color_discrete_sequence=["#EF553B"],
+                    color_discrete_sequence=["#EF4444"],
                     labels={"worst": "% Picked as Worst", "sid": "Hook"}
                 )
-                fig_worst.update_layout(xaxis_tickformat='.0%', height=220, margin=dict(l=10, r=10, t=20, b=10))
+                fig_worst.update_layout(
+                    xaxis_tickformat='.0%', height=220, margin=dict(l=10, r=10, t=20, b=10),
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                    font={"color": "#F8FAFC", "family": "Plus Jakarta Sans, sans-serif"},
+                    xaxis_gridcolor="rgba(255,255,255,0.08)"
+                )
                 st.plotly_chart(fig_worst, use_container_width=True)
 
             clickbait_hooks = items_df[items_df["clickbait"] >= 0.15]
@@ -1117,7 +1616,7 @@ with tab_hooks:
                 for _, r in clickbait_hooks.iterrows():
                     st.warning(
                         f"🚨 **Clickbait Risk on {r['sid']}**: "
-                        f"{r['clickbait']:.0%} of viewers felt misled by: *\"{r['hook_text']}\"*"
+                        f"{r['clickbait']:.0%} of viewers felt misled by: *\x22{r['hook_text']}\x22*"
                     )
 
             with st.expander("📋 View Complete Ranking Data Table"):
@@ -1156,12 +1655,12 @@ with tab_hooks:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB 3 — CHANNEL REACH, COMMERCIALS & CREATOR'S OWN VIDEOS (Third Page)
+#  TAB 3 — CHANNEL REACH, COMMERCIALS & CREATOR'S OWN VIDEOS
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab_analytics:
     intel = st.session_state.get("intel")
     if not intel:
-        st.info("💡 Please search and analyze a creator in the **💡 Viral Ideas & Competitors** tab first.")
+        st.info("💡 Please search and analyze a creator in the **🏠 Creator Intelligence & Clone Studio** tab first.")
     else:
         profile = intel.get("creator_profile", {})
         metrics = intel.get("platform_metrics", {})
@@ -1222,7 +1721,12 @@ with tab_analytics:
                     text="Display",
                     title="Audience Scale Distribution (YouTube vs Instagram)"
                 )
-                fig_plat.update_layout(height=180, margin=dict(l=10, r=10, t=35, b=10), showlegend=False)
+                fig_plat.update_layout(
+                    height=180, margin=dict(l=10, r=10, t=35, b=10), showlegend=False,
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                    font={"color": "#F8FAFC", "family": "Plus Jakarta Sans, sans-serif"},
+                    xaxis_gridcolor="rgba(255,255,255,0.08)"
+                )
                 st.plotly_chart(fig_plat, use_container_width=True)
         except Exception:
             pass
@@ -1306,7 +1810,7 @@ with tab_analytics:
                 with st.container(border=True):
                     st.markdown("##### 🔍 Creator's Proven Hook Breakdown")
                     st.metric("Views Benchmark", c_sel_vid.get("views", "Top Performer"))
-                    st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\"{c_sel_vid.get('opening_hook', '—')}\"*")
+                    st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\x22{c_sel_vid.get('opening_hook', '—')}\x22*")
                     st.markdown(f"**🧠 Why Viewers Stayed:**\n{c_sel_vid.get('why_it_went_viral', '—')}")
                     st.info(f"**📋 Adaptable Strategy:**\n{c_sel_vid.get('adapt_hook_template', '—')}")
         else:
