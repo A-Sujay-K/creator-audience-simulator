@@ -51,6 +51,17 @@ with st.sidebar:
                             st.session_state.intel = cached
                             st.session_state.intel_name = h["creator_name"]
                             st.session_state.intel_from_cache = True
+                            cached_clone = get_cached_clone(user, h["creator_name"])
+                            if cached_clone:
+                                st.session_state.copy_data = {
+                                    "target_creator": h["creator_name"],
+                                    "target_niche": cached.get("creator_profile", {}).get("core_niche", ""),
+                                    "target_profile": cached.get("creator_profile", {}),
+                                    "style_card": cached_clone.get("style_card", {}),
+                                    "blueprints": cached_clone.get("blueprints", []),
+                                    "piracy_ideas": cached_clone.get("piracy_ideas", []),
+                                    "target_intel": cached,
+                                }
                             st.rerun()
         else:
             st.caption("No searches yet. Analyse a creator to build your history.")
@@ -160,21 +171,20 @@ def render_playable_video(v_url: str, title: str = "", platform: str = ""):
             st.link_button("▶️ Open Media Link", clean_url, type="secondary")
 
 
-# ─── TOP-LEVEL TABS (4-Tab Architecture) ─────────────────────────────────────
-tab_ideas, tab_hooks, tab_analytics, tab_copy = st.tabs([
-    "💡 Viral Ideas & Competitors", 
+# ─── TOP-LEVEL TABS (Clean 3-Tab Architecture) ──────────────────────────────
+tab_home, tab_hooks, tab_analytics = st.tabs([
+    "🏠 Creator Intelligence & Clone Studio", 
     "🎯 Hook Testing & Predictions", 
-    "📊 Channel Reach & Commercials",
-    "🔬 Copy Winning Creator"
+    "📊 Channel Reach & Commercials"
 ])
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB 1 — VIRAL IDEAS, NICHE TRENDS & COMPETITORS  (First Page)
+#  HOME PAGE — CREATOR INTELLIGENCE, COMPETITORS & CLONE STUDIO
 # ═══════════════════════════════════════════════════════════════════════════════
-with tab_ideas:
-    st.markdown("### 🔍 Creator Search & Viral Content Ideas")
-    st.caption("Discover competitor gaps, trending niche formats from across the internet, and AI-engineered viral content suggestions.")
+with tab_home:
+    st.markdown("### 🏠 Creator Intelligence & Clone Studio")
+    st.caption("All-in-one Creator Command Center: Analyze any creator, benchmark their competition, reverse-engineer their style DNA, and generate ready-to-film blueprints and upgrade concepts.")
 
     col_a, col_b = st.columns([2, 1])
     with col_a:
@@ -238,25 +248,54 @@ with tab_ideas:
                             on_click=_make_ai_picker(a_sug["name"], a_sug["niche"])
                         )
 
-    run_intel = st.button("🚀 Discover & Analyse", type="primary", key="intel_btn")
+    run_intel = st.button("🚀 Analyze & Reverse-Engineer", type="primary", key="intel_btn")
 
     if run_intel and creator_name.strip():
-        st.session_state.intel = None  # Clear old cached data
-        with st.spinner(f"🌐 Scanning {creator_name}'s landscape and live internet trends..."):
+        with st.status(f"🌐 Analyzing {creator_name}'s landscape & viral formula...", expanded=True) as status:
             try:
+                status.write("🔍 Scanning web footprint, social handles & verified uploads...")
                 from parallel.intelligence import generate_creator_intelligence
                 intel = generate_creator_intelligence(creator_name.strip(), creator_niche.strip())
                 st.session_state.intel = intel
                 st.session_state.intel_name = creator_name.strip()
                 st.session_state.intel_from_cache = False
-                st.success("Analysis complete!")
-                # ── Auto-save to profile if logged in ──
+
+                t_profile = intel.get("creator_profile", {})
+                t_niche = t_profile.get("core_niche", creator_niche.strip() or "Digital Content")
+                t_creator_vids = intel.get("creator_videos", [])
+                t_niche_vids = intel.get("niche_trending_videos", [])
+
+                status.write("🧬 Deconstructing Style DNA, editing rhythm & blueprints...")
+                status.write("📋 Generating frame-by-frame shooting script & 5 upgrade piracy concepts...")
+
+                dossier = generate_unified_clone_dossier(creator_name.strip(), t_niche, t_creator_vids, t_niche_vids)
+                copy_result = {
+                    "target_creator": creator_name.strip(),
+                    "target_niche": t_niche,
+                    "target_profile": t_profile,
+                    "style_card": dossier["style_card"],
+                    "blueprints": dossier["blueprints"],
+                    "piracy_ideas": dossier["piracy_ideas"],
+                    "target_intel": intel,
+                }
+                st.session_state.copy_data = copy_result
+
+                # Auto-save to profile if logged in
                 if st.session_state.get("logged_in_user"):
-                    niche_detected = intel.get("creator_profile", {}).get("core_niche", creator_niche.strip())
-                    save_intel(st.session_state.logged_in_user, creator_name.strip(), niche_detected, intel)
+                    save_intel(st.session_state.logged_in_user, creator_name.strip(), t_niche, intel)
                     push_summary_to_bridge(st.session_state.logged_in_user, creator_name.strip(), intel)
+                    save_clone_run(
+                        st.session_state.logged_in_user,
+                        creator_name.strip(),
+                        dossier["style_card"],
+                        dossier["blueprints"],
+                        dossier["piracy_ideas"]
+                    )
+
+                status.update(label="✅ Analysis & Clone Dossier Complete!", state="complete")
             except Exception as e:
-                st.error(f"Intelligence engine notice: {e}")
+                status.update(label="⚠️ Error during analysis", state="error")
+                st.error(f"Engine notice: {e}")
     elif run_intel:
         st.warning("Please enter a creator name.")
 
@@ -280,9 +319,32 @@ with tab_ideas:
                             fresh_intel = generate_creator_intelligence(creator_name_display)
                             st.session_state.intel = fresh_intel
                             st.session_state.intel_name = creator_name_display
+
+                            t_prof = fresh_intel.get("creator_profile", {})
+                            t_nic = t_prof.get("core_niche", "")
+                            fresh_dossier = generate_unified_clone_dossier(
+                                creator_name_display, t_nic,
+                                fresh_intel.get("creator_videos", []),
+                                fresh_intel.get("niche_trending_videos", [])
+                            )
+                            st.session_state.copy_data = {
+                                "target_creator": creator_name_display,
+                                "target_niche": t_nic,
+                                "target_profile": t_prof,
+                                "style_card": fresh_dossier["style_card"],
+                                "blueprints": fresh_dossier["blueprints"],
+                                "piracy_ideas": fresh_dossier["piracy_ideas"],
+                                "target_intel": fresh_intel,
+                            }
                             if st.session_state.get("logged_in_user"):
-                                niche_d = fresh_intel.get("creator_profile", {}).get("core_niche", "")
-                                save_intel(st.session_state.logged_in_user, creator_name_display, niche_d, fresh_intel)
+                                save_intel(st.session_state.logged_in_user, creator_name_display, t_nic, fresh_intel)
+                                save_clone_run(
+                                    st.session_state.logged_in_user,
+                                    creator_name_display,
+                                    fresh_dossier["style_card"],
+                                    fresh_dossier["blueprints"],
+                                    fresh_dossier["piracy_ideas"]
+                                )
                             st.rerun()
                         except Exception as e:
                             st.error(f"Refresh failed: {e}")
@@ -325,109 +387,324 @@ with tab_ideas:
 
         st.markdown("---")
 
-        # ── 2. NICHE & INTERNET TRENDING CONTENT (OTHER CREATORS) ─────────────
-        st.markdown(f"### 🎬 Top Trending in Niche & Internet (Other Creators) — Watch On-Screen")
-        st.caption(f"Real viral videos and Reels trending across the broader web in this niche by **OTHER creators** (NOT {profile.get('name', creator_name_display)}). Watch directly on screen to analyze winning hook patterns.")
+        # ── UNIFIED SUB-TABS ON HOME PAGE ────────────────────────────────────
+        subtab_ideas, subtab_clone = st.tabs([
+            "💡 Viral Ideas & Competition Benchmarks", 
+            "🔬 Copy Winning Creator (Clone Studio)"
+        ])
 
-        niche_vids = intel.get("niche_trending_videos") or []
-        if niche_vids:
-            vid_labels = [f"[{v.get('platform', 'Video')}] {v.get('title', 'Trending Video')} ({v.get('views', 'Trending')})" for v in niche_vids]
-            selected_idx = st.radio(
-                "Pick a viral video from other creators to watch on screen:",
-                range(len(niche_vids)),
-                format_func=lambda i: vid_labels[i],
-                horizontal=True,
-                key="radio_niche_vids"
-            )
+        # ─────────────────────────────────────────────────────────────────────
+        #  SUB-TAB A: VIRAL IDEAS, BENCHMARKS & COMPETITION
+        # ─────────────────────────────────────────────────────────────────────
+        with subtab_ideas:
+            # A1. NICHE & INTERNET TRENDING CONTENT (OTHER CREATORS)
+            st.markdown(f"### 🎬 Top Trending in Niche & Internet (Other Creators) — Watch On-Screen")
+            st.caption(f"Real viral videos and Reels trending across the broader web in this niche by **OTHER creators** (NOT {profile.get('name', creator_name_display)}). Watch directly on screen to analyze winning hook patterns.")
 
-            sel_vid = niche_vids[selected_idx]
-            v_url = sel_vid.get("url", "")
-            v_plat = sel_vid.get("platform", "YouTube")
+            niche_vids = intel.get("niche_trending_videos") or []
+            if niche_vids:
+                vid_labels = [f"[{v.get('platform', 'Video')}] {v.get('title', 'Trending Video')} ({v.get('views', 'Trending')})" for v in niche_vids]
+                selected_idx = st.radio(
+                    "Pick a viral video from other creators to watch on screen:",
+                    range(len(niche_vids)),
+                    format_func=lambda i: vid_labels[i],
+                    horizontal=True,
+                    key="radio_niche_vids"
+                )
 
-            st.markdown(f"#### 📺 {sel_vid.get('title', 'Trending Video')}")
+                sel_vid = niche_vids[selected_idx]
+                v_url = sel_vid.get("url", "")
+                v_plat = sel_vid.get("platform", "YouTube")
 
-            vcol_player, vcol_analysis = st.columns([1.2, 1])
-            with vcol_player:
-                render_playable_video(v_url, sel_vid.get("title", "Trending Video"), v_plat)
+                st.markdown(f"#### 📺 {sel_vid.get('title', 'Trending Video')}")
 
-            with vcol_analysis:
-                with st.container(border=True):
-                    st.markdown("##### 🔍 Viral Reference Anatomy")
-                    st.metric("Trending Momentum", sel_vid.get("views", "Viral Wave"))
-                    st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\"{sel_vid.get('opening_hook', '—')}\"*")
-                    st.markdown(f"**🧠 Why Viewers Stayed (Retention Trigger):**\n{sel_vid.get('why_it_went_viral', '—')}")
-                    st.info(f"**📋 Adaptable Hook Template For You:**\n{sel_vid.get('adapt_hook_template', '—')}")
+                vcol_player, vcol_analysis = st.columns([1.2, 1])
+                with vcol_player:
+                    render_playable_video(v_url, sel_vid.get("title", "Trending Video"), v_plat)
 
-        st.markdown("---")
+                with vcol_analysis:
+                    with st.container(border=True):
+                        st.markdown("##### 🔍 Viral Reference Anatomy")
+                        st.metric("Trending Momentum", sel_vid.get("views", "Viral Wave"))
+                        st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\"{sel_vid.get('opening_hook', '—')}\"*")
+                        st.markdown(f"**🧠 Why Viewers Stayed (Retention Trigger):**\n{sel_vid.get('why_it_went_viral', '—')}")
+                        st.info(f"**📋 Adaptable Hook Template For You:**\n{sel_vid.get('adapt_hook_template', '—')}")
 
-        # ── 3. COMPETITOR BENCHMARKING & GAPS ──────────────────────────────────
-        competitors = intel.get("competitor_benchmarking", [])
-        if competitors:
-            st.markdown("### ⚔️ Competitor Benchmarking & Gaps")
-            st.caption("Detailed reconnaissance of what rivals in your niche are doing, where they are weak, and how you can capture their audience.")
-            for comp in competitors:
-                with st.expander(f"🔴 {comp.get('competitor_name', 'Competitor')} — Breakdown & How To Beat Them"):
-                    cc1, cc2 = st.columns(2)
-                    with cc1:
-                        st.markdown(f"**Recent Content Focus:** {comp.get('recent_content_focus', '—')}")
-                        st.markdown(f"**Their Main Strength:** {comp.get('their_strength', '—')}")
-                    with cc2:
-                        st.markdown(f"**Their Critical Gap / Weakness:** {comp.get('their_gap', '—')}")
-                        st.success(f"**🏆 Your Winning Move:** {comp.get('how_to_beat_them', '—')}")
+            st.markdown("---")
 
-        st.markdown("---")
+            # A2. CREATOR'S OWN TOP CONTENT (PLAYABLE ON SCREEN)
+            creator_vids = intel.get("creator_videos", [])
+            if creator_vids:
+                st.markdown(f"### 🎬 {profile.get('name', 'Creator')}'s Own Top Content — Watch On-Screen & Deconstruct Hooks")
+                st.caption(f"Watch {profile.get('name', 'the creator')}'s own highest-performing uploads and Instagram Reels directly on screen.")
 
-        # ── 4. HIGH-POTENTIAL CONTENT SUGGESTIONS (WITH REFERENCE VIDEO PER IDEA) ──
-        suggestions = intel.get("content_suggestions", [])
-        if suggestions:
-            st.markdown("### 💡 High-Potential Content Suggestions (Ready to Test)")
-            st.caption("AI-engineered ideas based on current trending topics. Every suggestion includes a playable reference video benchmarking the format.")
-            for s in suggestions:
-                with st.container(border=True):
-                    h1, h2 = st.columns([3, 1])
-                    with h1:
-                        st.markdown(f"##### Idea #{s.get('id', '?')}: {s.get('title', 'Untitled')}")
-                        st.caption(f"🔥 Trending topic: {s.get('trending_topic', '—')}")
-                        st.markdown(f"**Why it works:** {s.get('why_it_works', '—')}")
-                    with h2:
-                        st.metric("Estimated Views", s.get("estimated_views", "—"))
+                cvid_labels = [f"[{v.get('platform', 'Video')}] {v.get('title', 'Video')} ({v.get('views', 'Popular')})" for v in creator_vids]
+                c_selected_idx = st.radio(
+                    "Select a video from this creator to watch & analyze:",
+                    range(len(creator_vids)),
+                    format_func=lambda i: cvid_labels[i],
+                    horizontal=True,
+                    key="radio_creator_vids_home"
+                )
 
-                    # Playable Reference Video Benchmark for this Idea (DYNAMIC — only shown if verified playable)
-                    ref = s.get("reference_video") or {}
-                    ref_url = ref.get("url", "")
-                    ref_title = ref.get("title", "Benchmark Video Reference")
-                    ref_creator = ref.get("creator", "Proven Creator")
-                    ref_why = ref.get("why_reference", "Demonstrates the retention curve.")
-                    ref_verified = ref.get("verified", False)
+                c_sel_vid = creator_vids[c_selected_idx]
+                cv_url = c_sel_vid.get("url", "")
+                cv_plat = c_sel_vid.get("platform", "YouTube")
 
-                    if ref_verified and ref_url:
-                        with st.expander(f"🎬 Watch Concept Reference Video: {ref_title} ({ref_creator})", expanded=True):
-                            rv_col1, rv_col2 = st.columns([1.2, 1])
-                            with rv_col1:
-                                render_playable_video(ref_url, ref_title, ref.get("platform", ""))
-                            with rv_col2:
-                                st.markdown(f"**Benchmark Creator / Source:** `{ref_creator}`")
-                                st.info(f"**Why this benchmarks the concept:**\n{ref_why}")
-                                st.markdown("**Takeaway:** Adapt this reference's pattern interrupt and visual pacing to your video.")
+                st.markdown(f"#### 📺 {c_sel_vid.get('title', 'Creator Video')}")
 
+                cvcol_player, cvcol_analysis = st.columns([1.2, 1])
+                with cvcol_player:
+                    render_playable_video(cv_url, c_sel_vid.get("title", "Creator Video"), cv_plat)
 
-                    hooks = s.get("candidate_hooks", [])
-                    if hooks:
-                        st.markdown("**Candidate Hooks (Engineered for 3-sec short-form retention):**")
-                        for hk in hooks:
-                            st.markdown(f"- **{hk.get('sid', '?')}**: {hk.get('text', '')}")
+                with cvcol_analysis:
+                    with st.container(border=True):
+                        st.markdown("##### 🔍 Creator's Proven Hook Breakdown")
+                        st.metric("Views Benchmark", c_sel_vid.get("views", "Top Performer"))
+                        st.markdown(f"**⚡ Opening 3-Second Hook:**\n> *\"{c_sel_vid.get('opening_hook', '—')}\"*")
+                        st.markdown(f"**🧠 Why Viewers Stayed:**\n{c_sel_vid.get('why_it_went_viral', '—')}")
+                        st.info(f"**📋 Adaptable Strategy:**\n{c_sel_vid.get('adapt_hook_template', '—')}")
 
-                    # Bridge to Tab 2
-                    if st.button(f"▶ Test these hooks in Hook Testing tab", key=f"test_idea_{s.get('id')}"):
-                        hook_lines = "\n".join(
-                            [f"{hk['sid']}: {hk['text']}" for hk in hooks if 'sid' in hk and 'text' in hk]
-                        )
-                        prefill = (
-                            f"Creator: {creator_name_display}. Topic: {s.get('trending_topic', '')}.\n"
-                            f"{hook_lines}"
-                        )
-                        st.session_state.prefill_hooks = prefill
-                        st.success("✅ Hooks pre-filled! Switch to the **🎯 Hook Testing & Predictions** tab above.")
+                st.markdown("---")
+
+            # A3. COMPETITOR BENCHMARKING & GAPS
+            competitors = intel.get("competitor_benchmarking", [])
+            if competitors:
+                st.markdown("### ⚔️ Competitor Benchmarking & Gaps")
+                st.caption("Detailed reconnaissance of what rivals in your niche are doing, where they are weak, and how you can capture their audience.")
+                for comp in competitors:
+                    with st.expander(f"🔴 {comp.get('competitor_name', 'Competitor')} — Breakdown & How To Beat Them"):
+                        cc1, cc2 = st.columns(2)
+                        with cc1:
+                            st.markdown(f"**Recent Content Focus:** {comp.get('recent_content_focus', '—')}")
+                            st.markdown(f"**Their Main Strength:** {comp.get('their_strength', '—')}")
+                        with cc2:
+                            st.markdown(f"**Their Critical Gap / Weakness:** {comp.get('their_gap', '—')}")
+                            st.success(f"**🏆 Your Winning Move:** {comp.get('how_to_beat_them', '—')}")
+
+                st.markdown("---")
+
+            # A4. HIGH-POTENTIAL CONTENT SUGGESTIONS (WITH REFERENCE VIDEO PER IDEA)
+            suggestions = intel.get("content_suggestions", [])
+            if suggestions:
+                st.markdown("### 💡 High-Potential Content Suggestions (Ready to Test)")
+                st.caption("AI-engineered ideas based on current trending topics. Every suggestion includes a playable reference video benchmarking the format.")
+                for s in suggestions:
+                    with st.container(border=True):
+                        h1, h2 = st.columns([3, 1])
+                        with h1:
+                            st.markdown(f"##### Idea #{s.get('id', '?')}: {s.get('title', 'Untitled')}")
+                            st.caption(f"🔥 Trending topic: {s.get('trending_topic', '—')}")
+                            st.markdown(f"**Why it works:** {s.get('why_it_works', '—')}")
+                        with h2:
+                            st.metric("Estimated Views", s.get("estimated_views", "—"))
+
+                        ref = s.get("reference_video") or {}
+                        ref_url = ref.get("url", "")
+                        ref_title = ref.get("title", "Benchmark Video Reference")
+                        ref_creator = ref.get("creator", "Proven Creator")
+                        ref_why = ref.get("why_reference", "Demonstrates the retention curve.")
+                        ref_verified = ref.get("verified", False)
+
+                        if ref_verified and ref_url:
+                            with st.expander(f"🎬 Watch Concept Reference Video: {ref_title} ({ref_creator})", expanded=True):
+                                rv_col1, rv_col2 = st.columns([1.2, 1])
+                                with rv_col1:
+                                    render_playable_video(ref_url, ref_title, ref.get("platform", ""))
+                                with rv_col2:
+                                    st.markdown(f"**Benchmark Creator / Source:** `{ref_creator}`")
+                                    st.info(f"**Why this benchmarks the concept:**\n{ref_why}")
+                                    st.markdown("**Takeaway:** Adapt this reference's pattern interrupt and visual pacing to your video.")
+
+                        hooks = s.get("candidate_hooks", [])
+                        if hooks:
+                            st.markdown("**Candidate Hooks (Engineered for 3-sec short-form retention):**")
+                            for hk in hooks:
+                                st.markdown(f"- **{hk.get('sid', '?')}**: {hk.get('text', '')}")
+
+                        # Bridge to Tab 2
+                        if st.button(f"▶ Test these hooks in Hook Testing tab", key=f"test_idea_{s.get('id')}"):
+                            hook_lines = "\n".join(
+                                [f"{hk['sid']}: {hk['text']}" for hk in hooks if 'sid' in hk and 'text' in hk]
+                            )
+                            prefill = (
+                                f"Creator: {creator_name_display}. Topic: {s.get('trending_topic', '')}.\n"
+                                f"{hook_lines}"
+                            )
+                            st.session_state.prefill_hooks = prefill
+                            st.success("✅ Hooks pre-filled! Switch to the **🎯 Hook Testing & Predictions** tab above.")
+
+        # ─────────────────────────────────────────────────────────────────────
+        #  SUB-TAB B: COPY WINNING CREATOR (CLONE STUDIO)
+        # ─────────────────────────────────────────────────────────────────────
+        with subtab_clone:
+            copy_data = st.session_state.get("copy_data")
+            if not copy_data:
+                # If copy_data was not yet created for this creator, generate it on demand
+                with st.spinner("Generating Clone Dossier for this creator..."):
+                    t_nic = profile.get("core_niche", "Digital Content")
+                    fresh_dossier = generate_unified_clone_dossier(
+                        creator_name_display, t_nic,
+                        intel.get("creator_videos", []),
+                        intel.get("niche_trending_videos", [])
+                    )
+                    copy_data = {
+                        "target_creator": creator_name_display,
+                        "target_niche": t_nic,
+                        "target_profile": profile,
+                        "style_card": fresh_dossier["style_card"],
+                        "blueprints": fresh_dossier["blueprints"],
+                        "piracy_ideas": fresh_dossier["piracy_ideas"],
+                        "target_intel": intel,
+                    }
+                    st.session_state.copy_data = copy_data
+
+            tc_name = copy_data.get("target_creator", creator_name_display)
+            tc_niche = copy_data.get("target_niche", profile.get("core_niche", "Digital Content"))
+
+            # B1. STYLE REPLICATOR (DNA Card)
+            st.markdown(f"### 🧬 {tc_name}'s Style DNA")
+            st.caption(f"The exact formula this creator uses in every {tc_niche} video — decoded for replication.")
+
+            sc = copy_data.get("style_card", {})
+            dna = sc.get("style_dna", {})
+
+            if dna:
+                dna_c1, dna_c2 = st.columns(2)
+                with dna_c1:
+                    with st.container(border=True):
+                        st.markdown("##### 🎯 Hook Formula")
+                        st.markdown(f"> *{dna.get('hook_formula', '—')}*")
+                        st.markdown("##### 🏗️ Content Structure")
+                        st.markdown(f"> *{dna.get('content_structure', '—')}*")
+                        st.markdown("##### ✂️ Editing Rhythm")
+                        st.markdown(f"> *{dna.get('editing_rhythm', '—')}*")
+                with dna_c2:
+                    with st.container(border=True):
+                        st.markdown("##### 🖼️ Thumbnail Formula")
+                        st.markdown(f"> *{dna.get('thumbnail_formula', '—')}*")
+                        st.markdown("##### 📢 CTA Pattern")
+                        st.markdown(f"> *{dna.get('cta_pattern', '—')}*")
+                        st.markdown("##### 🧠 Viral Trigger")
+                        st.warning(f"**{dna.get('viral_trigger', '—')}**")
+                        st.markdown("##### 🤝 Audience Contract")
+                        st.info(f"*{dna.get('audience_contract', '—')}*")
+
+            # Clone roadmap
+            roadmap = sc.get("clone_roadmap", [])
+            if roadmap:
+                st.markdown("#### 🗺️ 5-Step Clone Roadmap")
+                for step in roadmap:
+                    diff_color = {"Easy": "🟢", "Medium": "🟡", "Hard": "🔴"}.get(step.get("difficulty", "Medium"), "⚪")
+                    with st.expander(f"Step {step.get('step', '?')}: {step.get('action', '—')} {diff_color} {step.get('difficulty', '')}"):
+                        st.markdown(f"**Why it works:** {step.get('why_it_works', '—')}")
+
+            diff_angle = sc.get("differentiation_angle", "")
+            if diff_angle:
+                st.success(f"🎯 **Your Differentiation Angle:** {diff_angle}")
+
+            st.markdown("---")
+
+            # B2. BLUEPRINT GENERATOR
+            bps = copy_data.get("blueprints", [])
+            if bps:
+                st.markdown(f"### 📋 Video Blueprints — Ready-to-Film Scripts")
+                st.caption(f"Frame-by-frame deconstruction of {tc_name}'s top videos with a replicable shooting script you can film today.")
+
+                for bp_idx, bp in enumerate(bps):
+                    source_v = bp.get("source_video", {})
+                    bp_title = source_v.get("title", f"Blueprint #{bp_idx+1}")
+                    with st.expander(f"📹 Blueprint: {bp_title}", expanded=bp_idx == 0):
+                        if source_v.get("url"):
+                            render_playable_video(source_v["url"], bp_title, source_v.get("platform", "YouTube"))
+
+                        vb = bp.get("video_breakdown", {})
+                        if vb:
+                            seg_cols = st.columns(3)
+                            for seg_idx, (seg_key, seg_label, seg_icon) in enumerate([
+                                ("hook_segment", "Hook (0-3s)", "⚡"),
+                                ("build_segment", "Build (3-45s)", "📈"),
+                                ("climax_segment", "Climax (45s+)", "🎆")
+                            ]):
+                                seg = vb.get(seg_key, {})
+                                with seg_cols[seg_idx]:
+                                    with st.container(border=True):
+                                        st.markdown(f"**{seg_icon} {seg_label}**")
+                                        st.markdown(f"*What happens:* {seg.get('what_happens', seg.get('structure', seg.get('payoff', '—')))}")
+                                        trigger = seg.get("psychological_trigger", seg.get("retention_technique", seg.get("cta", "")))
+                                        if trigger:
+                                            st.caption(f"🧠 {trigger}")
+                                        rep = seg.get("replicate_as", "")
+                                        if rep:
+                                            st.info(f"**Your version:** {rep}")
+
+                        # Shooting script
+                        script = bp.get("shooting_script", [])
+                        if script:
+                            st.markdown("#### 🎬 Shooting Script")
+                            script_data = []
+                            for s in script:
+                                script_data.append({
+                                    "Scene": s.get("scene", ""),
+                                    "Shot": s.get("shot_type", ""),
+                                    "Action": s.get("action", ""),
+                                    "Dialogue / Caption": s.get("dialogue_or_caption", ""),
+                                    "Duration (s)": s.get("duration_seconds", "")
+                                })
+                            st.dataframe(pd.DataFrame(script_data), hide_index=True)
+
+                        equip = bp.get("equipment_needed", [])
+                        prod_hrs = bp.get("estimated_production_hours", "")
+                        if equip or prod_hrs:
+                            eq1, eq2 = st.columns(2)
+                            with eq1:
+                                if equip:
+                                    st.markdown("**🛠️ Equipment:** " + " · ".join([f"`{e}`" for e in equip]))
+                            with eq2:
+                                if prod_hrs:
+                                    st.metric("⏱️ Est. Production Time", prod_hrs)
+
+            st.markdown("---")
+
+            # B3. NICHE PIRACY IDEAS
+            piracy_list = copy_data.get("piracy_ideas", [])
+            if piracy_list:
+                st.markdown(f"### 🏴‍☠️ Niche Piracy — 5 Ideas That Beat {tc_name}")
+                st.caption(f"Each idea is a direct upgrade of {tc_name}'s top content. Better hook, better angle, better execution.")
+
+                for idea in piracy_list:
+                    angle_emoji = {
+                        "More cinematic": "🎬",
+                        "More emotional": "❤️",
+                        "Faster paced": "⚡",
+                        "More relatable": "🤝",
+                        "Bigger stakes": "💰",
+                        "Better data": "📊"
+                    }.get(idea.get("upgrade_angle", ""), "🔥")
+
+                    with st.expander(f"{angle_emoji} Idea #{idea.get('id', '?')}: {idea.get('your_upgrade_title', '—')}  —  {idea.get('estimated_views', '')}"):
+                        st.markdown(f"**They did:** {idea.get('competitor_did', '—')}")
+                        st.markdown(f"**Your upgrade:** {idea.get('your_upgrade_title', '—')}")
+                        st.success(f"**Why yours wins:** {idea.get('why_yours_wins', '—')}")
+                        st.caption(f"Upgrade angle: `{idea.get('upgrade_angle', '—')}`")
+
+                        hooks = idea.get("candidate_hooks", [])
+                        if hooks:
+                            st.markdown("**🎯 Candidate Upgrade Hooks:**")
+                            for h in hooks:
+                                st.markdown(f"- **{h.get('sid', '')}**: *{h.get('text', '')}*")
+
+                            # Bridge to Tab 2
+                            if st.button(f"▶ Test these piracy hooks in Hook Testing tab", key=f"test_piracy_{idea.get('id')}"):
+                                hook_lines = "\n".join(
+                                    [f"{h['sid']}: {h['text']}" for h in hooks if 'sid' in h and 'text' in h]
+                                )
+                                prefill = (
+                                    f"Creator: {tc_name} (Piracy Upgrade). Topic: {idea.get('your_upgrade_title', '')}.\n"
+                                    f"{hook_lines}"
+                                )
+                                st.session_state.prefill_hooks = prefill
+                                st.success("✅ Hooks pre-filled! Switch to the **🎯 Hook Testing & Predictions** tab above.")
 
 
 
@@ -821,270 +1098,3 @@ with tab_analytics:
                     st.info(f"**📋 Adaptable Strategy:**\n{c_sel_vid.get('adapt_hook_template', '—')}")
         else:
             st.info("Creator video analysis is currently loading or being calibrated.")
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  TAB 4 — COPY WINNING CREATOR  (Style Replicator + Blueprint + Niche Piracy)
-# ═══════════════════════════════════════════════════════════════════════════════
-with tab_copy:
-    st.markdown("### 🔬 Copy Winning Creator")
-    st.caption("Clone any creator's formula: reverse-engineer their style DNA, deconstruct their best video into a shooting script, and generate upgrade ideas that beat their content.")
-
-    copy_col_a, copy_col_b = st.columns([2, 1])
-    with copy_col_a:
-        target_creator = st.text_input(
-            "Target Creator to Copy",
-            placeholder="e.g. MrBeast, CarryMinati, Aakash Dhawan",
-            key="input_copy_creator"
-        )
-    with copy_col_b:
-        target_niche = st.text_input(
-            "Their Niche (optional)",
-            placeholder="e.g. Comedy, Motovlog, Tech",
-            key="input_copy_niche"
-        )
-
-    # ── Spelling & Similar Creator Suggestions for Copying ───────────────────
-    if target_creator and len(target_creator.strip()) >= 2:
-        copy_suggestions = find_similar_creators(target_creator.strip(), min_score=0.45, limit=4)
-        is_exact_copy = any(s["name"].lower() == target_creator.strip().lower() for s in copy_suggestions)
-        if copy_suggestions and not is_exact_copy:
-            st.markdown("💡 **Similar / Corrected Creator Options (Click to Select):**")
-            cs_cols = st.columns(min(len(copy_suggestions), 4))
-            for cs_idx, csug in enumerate(copy_suggestions[:4]):
-                with cs_cols[cs_idx]:
-                    def _make_copy_picker(target_n=csug["name"], target_cat=csug["niche"]):
-                        def _callback():
-                            st.session_state["input_copy_creator"] = target_n
-                            if target_cat:
-                                st.session_state["input_copy_niche"] = target_cat
-                        return _callback
-                    st.button(
-                        f"👉 **{csug['name']}**\n\n`{csug['niche'][:24]}`",
-                        key=f"csug_btn_t4_{cs_idx}_{csug['name'][:8]}",
-                        use_container_width=True,
-                        on_click=_make_copy_picker(csug["name"], csug["niche"])
-                    )
-
-    # ── Quick-Clone Helper if a Creator is Already Loaded in Tab 1 ───────────
-    loaded_intel = st.session_state.get("intel")
-    loaded_name = st.session_state.get("intel_name", "")
-    if loaded_intel and loaded_name:
-        qc_col1, qc_col2 = st.columns([3, 1])
-        with qc_col1:
-            st.info(f"⚡ **{loaded_name}** is already analyzed in memory! You can clone their style instantly without re-scanning.")
-        with qc_col2:
-            def _quick_copy():
-                st.session_state["input_copy_creator"] = loaded_name
-                st.session_state["input_copy_niche"] = loaded_intel.get("creator_profile", {}).get("core_niche", "")
-            st.button("⚡ Fill Active Creator", key="btn_fill_active", use_container_width=True, on_click=_quick_copy)
-
-    run_copy = st.button("🧬 Reverse-Engineer This Creator", type="primary", key="copy_btn")
-
-    if run_copy and target_creator.strip():
-        with st.status(f"🔬 Reverse-engineering {target_creator}'s viral formula...", expanded=True) as status:
-            try:
-                target_intel = None
-                
-                # Check 1: Is this creator already in memory from Tab 1?
-                if loaded_intel and (
-                    target_creator.strip().lower() in loaded_name.lower() or 
-                    loaded_name.lower() in target_creator.strip().lower()
-                ):
-                    status.write("⚡ Using verified creator footprint from current session...")
-                    target_intel = loaded_intel
-                
-                # Check 2: Is this creator in the user's saved profile cache?
-                elif st.session_state.get("logged_in_user"):
-                    status.write("📂 Checking saved profile history...")
-                    cached_it = get_cached_intel(st.session_state.logged_in_user, target_creator.strip())
-                    if cached_it:
-                        status.write("⚡ Loaded creator data from your profile cache...")
-                        target_intel = cached_it
-
-                # Check 3: If not cached anywhere, perform fast web recon
-                if not target_intel:
-                    status.write("🌐 Scanning creator uploads and niche footprint online...")
-                    from parallel.intelligence import generate_creator_intelligence
-                    target_intel = generate_creator_intelligence(target_creator.strip(), target_niche.strip())
-
-                t_profile = target_intel.get("creator_profile", {})
-                t_niche = t_profile.get("core_niche", target_niche.strip() or "Digital Content")
-                t_creator_vids = target_intel.get("creator_videos", [])
-                t_niche_vids = target_intel.get("niche_trending_videos", [])
-
-                status.write("🧬 Deconstructing Style DNA, hook formula & editing rhythm...")
-                status.write("📋 Generating frame-by-frame shooting script & blueprints...")
-                status.write("🏴‍☠️ Formulating 5 direct upgrade concepts...")
-
-                # Single unified fast call with guaranteed non-empty fallback
-                dossier = generate_unified_clone_dossier(target_creator.strip(), t_niche, t_creator_vids, t_niche_vids)
-
-                copy_result = {
-                    "target_creator": target_creator.strip(),
-                    "target_niche": t_niche,
-                    "target_profile": t_profile,
-                    "style_card": dossier["style_card"],
-                    "blueprints": dossier["blueprints"],
-                    "piracy_ideas": dossier["piracy_ideas"],
-                    "target_intel": target_intel,
-                }
-                st.session_state.copy_data = copy_result
-                status.update(label="✅ Creator formula reverse-engineered successfully!", state="complete")
-
-                # Save to profile if logged in
-                if st.session_state.get("logged_in_user"):
-                    save_clone_run(
-                        st.session_state.logged_in_user,
-                        target_creator.strip(),
-                        dossier["style_card"],
-                        dossier["blueprints"],
-                        dossier["piracy_ideas"]
-                    )
-
-            except Exception as e:
-                status.update(label="⚠️ Error during analysis", state="error")
-                st.error(f"Clone engine notice: {e}")
-    elif run_copy:
-        st.warning("Please enter a creator name to copy.")
-
-    copy_data = st.session_state.get("copy_data")
-    if copy_data:
-        st.markdown("---")
-
-        tc_name = copy_data["target_creator"]
-        tc_niche = copy_data["target_niche"]
-        tc_profile = copy_data.get("target_profile", {})
-
-        # ── SECTION A: STYLE REPLICATOR (DNA Card) ──────────────────────────
-        st.markdown(f"### 🧬 {tc_name}'s Style DNA")
-        st.caption(f"The exact formula this creator uses in every {tc_niche} video — decoded for replication.")
-
-        sc = copy_data.get("style_card", {})
-        dna = sc.get("style_dna", {})
-
-        if dna:
-            dna_c1, dna_c2 = st.columns(2)
-            with dna_c1:
-                with st.container(border=True):
-                    st.markdown("##### 🎯 Hook Formula")
-                    st.markdown(f"> *{dna.get('hook_formula', '—')}*")
-                    st.markdown("##### 🏗️ Content Structure")
-                    st.markdown(f"> *{dna.get('content_structure', '—')}*")
-                    st.markdown("##### ✂️ Editing Rhythm")
-                    st.markdown(f"> *{dna.get('editing_rhythm', '—')}*")
-            with dna_c2:
-                with st.container(border=True):
-                    st.markdown("##### 🖼️ Thumbnail Formula")
-                    st.markdown(f"> *{dna.get('thumbnail_formula', '—')}*")
-                    st.markdown("##### 📢 CTA Pattern")
-                    st.markdown(f"> *{dna.get('cta_pattern', '—')}*")
-                    st.markdown("##### 🧠 Viral Trigger")
-                    st.warning(f"**{dna.get('viral_trigger', '—')}**")
-                    st.markdown("##### 🤝 Audience Contract")
-                    st.info(f"*{dna.get('audience_contract', '—')}*")
-
-        # Clone roadmap
-        roadmap = sc.get("clone_roadmap", [])
-        if roadmap:
-            st.markdown("#### 🗺️ 5-Step Clone Roadmap")
-            for step in roadmap:
-                diff_color = {"Easy": "🟢", "Medium": "🟡", "Hard": "🔴"}.get(step.get("difficulty", "Medium"), "⚪")
-                with st.expander(f"Step {step.get('step', '?')}: {step.get('action', '—')} {diff_color} {step.get('difficulty', '')}"):
-                    st.markdown(f"**Why it works:** {step.get('why_it_works', '—')}")
-
-        diff_angle = sc.get("differentiation_angle", "")
-        if diff_angle:
-            st.success(f"🎯 **Your Differentiation Angle:** {diff_angle}")
-
-        st.markdown("---")
-
-        # ── SECTION B: BLUEPRINT GENERATOR ──────────────────────────────────
-        bps = copy_data.get("blueprints", [])
-        if bps:
-            st.markdown(f"### 📋 Video Blueprints — Ready-to-Film Scripts")
-            st.caption(f"Frame-by-frame deconstruction of {tc_name}'s top videos with a replicable shooting script you can film today.")
-
-            for bp_idx, bp in enumerate(bps):
-                source_v = bp.get("source_video", {})
-                bp_title = source_v.get("title", f"Blueprint #{bp_idx+1}")
-                with st.expander(f"📹 Blueprint: {bp_title}", expanded=bp_idx == 0):
-                    # Source video player
-                    if source_v.get("url"):
-                        render_playable_video(source_v["url"], bp_title, source_v.get("platform", "YouTube"))
-
-                    vb = bp.get("video_breakdown", {})
-                    if vb:
-                        seg_cols = st.columns(3)
-                        for seg_idx, (seg_key, seg_label, seg_icon) in enumerate([
-                            ("hook_segment", "Hook (0-3s)", "⚡"),
-                            ("build_segment", "Build (3-45s)", "📈"),
-                            ("climax_segment", "Climax (45s+)", "🎆")
-                        ]):
-                            seg = vb.get(seg_key, {})
-                            with seg_cols[seg_idx]:
-                                with st.container(border=True):
-                                    st.markdown(f"**{seg_icon} {seg_label}**")
-                                    st.markdown(f"*What happens:* {seg.get('what_happens', seg.get('structure', seg.get('payoff', '—')))}")
-                                    trigger = seg.get("psychological_trigger", seg.get("retention_technique", seg.get("cta", "")))
-                                    if trigger:
-                                        st.caption(f"🧠 {trigger}")
-                                    rep = seg.get("replicate_as", "")
-                                    if rep:
-                                        st.info(f"**Your version:** {rep}")
-
-                    # Shooting script
-                    script = bp.get("shooting_script", [])
-                    if script:
-                        st.markdown("#### 🎬 Shooting Script")
-                        script_data = []
-                        for s in script:
-                            script_data.append({
-                                "Scene": s.get("scene", ""),
-                                "Shot": s.get("shot_type", ""),
-                                "Action": s.get("action", ""),
-                                "Dialogue / Caption": s.get("dialogue_or_caption", ""),
-                                "Duration (s)": s.get("duration_seconds", "")
-                            })
-                        st.dataframe(pd.DataFrame(script_data), hide_index=True)
-
-                    equip = bp.get("equipment_needed", [])
-                    prod_hrs = bp.get("estimated_production_hours", "")
-                    if equip or prod_hrs:
-                        eq1, eq2 = st.columns(2)
-                        with eq1:
-                            if equip:
-                                st.markdown("**🛠️ Equipment:** " + " · ".join([f"`{e}`" for e in equip]))
-                        with eq2:
-                            if prod_hrs:
-                                st.metric("⏱️ Est. Production Time", prod_hrs)
-
-        st.markdown("---")
-
-        # ── SECTION C: NICHE PIRACY IDEAS ───────────────────────────────────
-        piracy_list = copy_data.get("piracy_ideas", [])
-        if piracy_list:
-            st.markdown(f"### 🏴‍☠️ Niche Piracy — 5 Ideas That Beat {tc_name}")
-            st.caption(f"Each idea is a direct upgrade of {tc_name}'s top content. Better hook, better angle, better execution.")
-
-            for idea in piracy_list:
-                angle_emoji = {
-                    "More cinematic": "🎬",
-                    "More emotional": "❤️",
-                    "Faster paced": "⚡",
-                    "More relatable": "🤝",
-                    "Bigger stakes": "💰",
-                    "Better data": "📊"
-                }.get(idea.get("upgrade_angle", ""), "🔥")
-
-                with st.expander(f"{angle_emoji} Idea #{idea.get('id', '?')}: {idea.get('your_upgrade_title', '—')}  —  {idea.get('estimated_views', '')}"):
-                    st.markdown(f"**They did:** {idea.get('competitor_did', '—')}")
-                    st.markdown(f"**Your upgrade:** {idea.get('your_upgrade_title', '—')}")
-                    st.success(f"**Why yours wins:** {idea.get('why_yours_wins', '—')}")
-                    st.caption(f"Upgrade angle: `{idea.get('upgrade_angle', '—')}`")
-
-                    hooks = idea.get("candidate_hooks", [])
-                    if hooks:
-                        st.markdown("**🎯 Test These Hooks:**")
-                        for h in hooks:
-                            st.markdown(f"- `{h.get('sid', '')}`: *{h.get('text', '')}*")
