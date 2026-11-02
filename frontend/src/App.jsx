@@ -471,7 +471,7 @@ export default function App() {
           ) : (
             <div className="flex items-center justify-center h-full p-6">
               <a href={cleanUrl} target="_blank" rel="noreferrer" className={`text-xs ${th.textSecondary} hover:${th.textPrimary} flex items-center gap-2`}>
-                <Play className="w-4 h-4 text-red-500" /> Open YouTube Stream <ExternalLink className="w-3.5 h-3.5" />
+                <Play className="w-4 h-4 text-red-500" /> {cleanUrl.includes("search_query=") ? "Explore Benchmark on YouTube" : "Open YouTube Stream"} <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
           )}
