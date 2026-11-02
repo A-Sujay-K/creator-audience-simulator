@@ -128,10 +128,38 @@ def api_signup(req: LoginRequest):
     if len(pin) < 3:
         raise HTTPException(status_code=400, detail="PIN must be at least 3 digits.")
     try:
-        create_profile(username, pin)
-        return {"success": True, "username": username}
+        profile = create_profile(username, pin)
+        return {
+            "success": True,
+            "username": username,
+            "bridge_set": profile.get("bridge_set"),
+            "bridge_sync": profile.get("bridge_sync")
+        }
     except UsernameTaken:
         raise HTTPException(status_code=409, detail="Username already taken.")
+
+@app.post("/api/user/sync-bridge-set")
+def api_sync_bridge_set(username: str = Query(...)):
+    """Explicitly provision or re-verify the user's isolated Set on Cosmitude Bridge."""
+    u = username.strip().lower()
+    from parallel.bridge_client import create_bridge_user_set
+    from parallel.profiles import _load, _save, ProfileNotFound
+    res = create_bridge_user_set(u)
+    try:
+        profile = _load(u)
+        profile["bridge_set"] = f"Set_{u}"
+        profile["bridge_sync"] = {
+            "set_name": f"Set_{u}",
+            "synced_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "status": "active" if res.get("success") else "failed",
+            "details": res
+        }
+        _save(profile)
+    except ProfileNotFound:
+        pass
+    except Exception as e:
+        logger.warning(f"Failed to update profile bridge_sync: {e}")
+    return res
 
 @app.get("/api/user/history")
 def api_history(username: str = Query(...)):

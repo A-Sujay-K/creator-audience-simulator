@@ -71,15 +71,40 @@ def profile_exists(username: str) -> bool:
 
 
 def create_profile(username: str, pin: str) -> dict:
-    """Create a new user profile. Raises UsernameTaken if username already exists."""
+    """Create a new user profile and automatically provision an isolated Set on Cosmitude Bridge."""
     _ensure_dir()
     if profile_exists(username):
         raise UsernameTaken(f"Username '{username}' is already taken.")
+    
+    clean_user = username.lower().strip()
+    set_name = f"Set_{clean_user}"
+    
+    # Automatically provision isolated Set in Cosmitude Bridge
+    bridge_sync = {"set_name": set_name, "status": "pending"}
+    try:
+        from parallel.bridge_client import create_bridge_user_set
+        res = create_bridge_user_set(clean_user)
+        bridge_sync = {
+            "set_name": set_name,
+            "synced_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "status": "active" if res.get("success") else "failed",
+            "details": res
+        }
+    except Exception as e:
+        bridge_sync = {
+            "set_name": set_name,
+            "synced_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "status": "failed",
+            "error": str(e)
+        }
+
     profile = {
-        "username": username.lower().strip(),
+        "username": clean_user,
         "display_name": username.strip(),
         "pin_hash": _hash_pin(pin),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "bridge_set": set_name,
+        "bridge_sync": bridge_sync,
         "searches": [],      # list of past creator intelligence runs
         "clones_run": [],    # list of past style-copy / piracy runs
         "bridge_pushes": []  # log of Cosmitude Bridge syncs
