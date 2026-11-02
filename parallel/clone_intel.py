@@ -223,8 +223,9 @@ Given a target creator, their niche, and their top performing content, return ON
 Rules:
 - Generate exactly 5 piracy ideas.
 - Each idea MUST be a specific, filmable upgrade — not a vague 'do it better'.
-- The upgrade must be clearly differentiated from the original.
-- Hooks must be punchy, scroll-stopping, under 10 words each.
+- The upgrade must be clearly differentiated from the original and exploit the competitor's gap.
+- ZERO GENERIC HOOKS: Every hook must contain specific niche nouns, models, brands, prices, or concrete stakes (no '30 days of X' templates).
+- Hooks must be punchy, scroll-stopping, under 12 words each.
 - Return ONLY valid JSON."""
 
 
@@ -550,10 +551,10 @@ def generate_unified_clone_dossier(creator_name: str, niche: str, creator_vids: 
         valid_p_hooks = [h for h in p_hooks if isinstance(h, dict) and h.get("text")]
         p_title = p_idea.get("your_upgrade_title", f"Upgrade #{p_idx}")
         p_fallbacks = [
-            f"I tested {p_title} for 30 days and broke every rule.",
-            f"Why nobody tells you the truth about {p_title}.",
-            f"The exact mistake everyone makes with {p_title} — exposed.",
-            f"Day 1 vs Day 30: the real transformation with {p_title}."
+            f"I put {p_title} to the ultimate live test — here is what broke first.",
+            f"The hidden trick behind {p_title} that nobody in {niche} admits.",
+            f"Everyone in the comments called {p_title} impossible. Watch this.",
+            f"Stop wasting time on standard {niche} advice — this changes the result."
         ]
         while len(valid_p_hooks) < 4:
             v_i = len(valid_p_hooks)

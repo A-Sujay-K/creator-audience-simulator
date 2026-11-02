@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  Film, Sparkles, Layers, ShieldAlert, Target, BarChart3,
+  Sparkles, Layers, ShieldAlert, Target, BarChart3,
   Search, ArrowRight, ExternalLink, Check, Copy, User,
   LogOut, RefreshCw, ChevronRight, Swords, Compass, Lock,
-  Play, Clock, DollarSign, TrendingUp, HelpCircle, AlertCircle
+  Play, Clock, DollarSign, TrendingUp, HelpCircle, AlertCircle,
+  Sun, Moon, Flame, Zap, Lightbulb, Eye, Share2, CheckCircle2,
+  ChevronDown, Tv, Award, Users, AlertTriangle, FileText, CheckCircle,
+  Sliders, ArrowUpRight
 } from 'lucide-react';
 
 const PRESET_CREATORS = [
@@ -14,7 +17,114 @@ const PRESET_CREATORS = [
   { name: 'Ryan Trahan', niche: 'Documentary Storytelling' }
 ];
 
+/**
+ * FeatureHelp Component:
+ * Clean, dynamically aligned info explainer popover.
+ * Placed ONLY in dedicated window headers to eliminate clutter.
+ * Anchored cleanly to prevent any viewport overflow or misalignment.
+ */
+function FeatureHelp({ title, description, tip, align = "right" }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const helpRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (helpRef.current && !helpRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    }
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') setIsOpen(false);
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={helpRef} className="relative inline-flex items-center shrink-0">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        className={`inline-flex items-center justify-center w-5 h-5 rounded-md text-xs transition-all duration-150 cursor-pointer ${
+          isOpen
+            ? 'bg-blue-600 text-white shadow-xs'
+            : 'text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-500/10'
+        }`}
+        aria-label={title || "Feature guide"}
+        title={!isOpen ? "Click to learn how this works" : undefined}
+      >
+        <HelpCircle className="w-3.5 h-3.5" />
+      </button>
+
+      {isOpen && (
+        <div
+          role="tooltip"
+          onClick={(e) => e.stopPropagation()}
+          className={`absolute top-full mt-2 ${
+            align === "left" ? "left-0" : "right-0"
+          } w-72 sm:w-80 p-4 rounded-xl shadow-2xl z-50 text-left bg-[#0E111A] text-slate-100 border border-slate-700/80 shadow-black/70 backdrop-blur-xl animate-popover`}
+          style={{ maxWidth: 'calc(100vw - 32px)' }}
+        >
+          {title && (
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+              <span className="font-heading font-semibold text-xs text-white flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                {title}
+              </span>
+              <button 
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="text-slate-400 hover:text-white text-xs p-0.5 rounded transition cursor-pointer"
+                aria-label="Close tooltip"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          <p className="text-[11px] leading-relaxed text-slate-300">
+            {description}
+          </p>
+          {tip && (
+            <div className="mt-2.5 pt-2 border-t border-white/10 text-[10px] text-blue-300 flex items-start gap-1.5 font-medium bg-blue-500/10 p-2 rounded-lg">
+              <span className="shrink-0 text-xs">💡</span>
+              <span className="leading-normal">{tip}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
+  // Theme State: 'dark' | 'light'
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') || 'dark';
+    }
+    return 'dark';
+  });
+
+  const isDark = theme === 'dark';
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  // Tab & UI state
   const [activeTab, setActiveTab] = useState('dossier');
   const [expandedRoadmapStep, setExpandedRoadmapStep] = useState(null);
   const [creatorName, setCreatorName] = useState('');
@@ -54,7 +164,68 @@ export default function App() {
   // Copy Feedback
   const [copiedKey, setCopiedKey] = useState(null);
 
-  // Suggestion lookup (fills fields only, NEVER auto-analyzes)
+  // Dynamic Senior-Designer Color System
+  const th = isDark ? {
+    root: 'bg-[#090A0F] text-[#F8FAFC]',
+    sidebar: 'bg-[#0E1017] border-white/[0.08]',
+    header: 'bg-[#0E1017]/90 backdrop-blur-xl border-white/[0.08]',
+    card: 'bg-[#12151F] border-white/[0.08] shadow-sm',
+    cardInner: 'bg-[#0A0C13] border-white/[0.06]',
+    cardHover: 'hover:bg-white/[0.03]',
+    cardHighlight: 'bg-gradient-to-b from-[#181D2B] to-[#12151F] border-blue-500/30',
+    input: 'bg-[#0B0D14] border-white/[0.12] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-[#F8FAFC] placeholder-slate-500',
+    btnPrimary: 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-md shadow-blue-500/20 active:scale-[0.99]',
+    btnSecondary: 'bg-[#151824] hover:bg-[#1D2132] text-slate-300 hover:text-white border-white/[0.10]',
+    navActive: 'bg-blue-600/10 text-blue-400 border-blue-500/30 font-semibold shadow-xs',
+    navInactive: 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border-transparent',
+    pill: 'bg-[#151824] text-slate-300 border-white/[0.08]',
+    pillSecondary: 'bg-[#0D0F17] text-slate-400 border-white/[0.07] hover:text-white hover:border-white/[0.15]',
+    pillSelected: 'bg-blue-600/15 text-blue-400 border-blue-500/40 font-semibold',
+    textPrimary: 'text-[#F8FAFC]',
+    textSecondary: 'text-slate-400',
+    textMuted: 'text-slate-500',
+    border: 'border-white/[0.08]',
+    borderMedium: 'border-white/[0.14]',
+    tableHead: 'bg-[#0A0C13] text-slate-400 border-white/[0.08]',
+    tableRow: 'bg-[#12151F] hover:bg-white/[0.02]',
+    codeBg: 'bg-[#06070B] border-white/[0.08]',
+    modalBg: 'bg-[#10131E] border-white/[0.15] shadow-2xl',
+    statusCard: 'bg-gradient-to-b from-[#131724] to-[#0E111A] border-blue-500/30 shadow-lg shadow-blue-500/5',
+    progressTrack: 'bg-[#0A0C13] border-white/[0.08]',
+    progressBar: 'bg-gradient-to-r from-blue-500 to-indigo-500',
+    sliderTrack: 'accent-blue-500',
+  } : {
+    root: 'bg-[#F8FAFC] text-slate-900',
+    sidebar: 'bg-white border-slate-200/90 shadow-xs',
+    header: 'bg-white/95 backdrop-blur-xl border-slate-200/90 shadow-xs',
+    card: 'bg-white border-slate-200/90 shadow-sm shadow-slate-200/40',
+    cardInner: 'bg-slate-50/80 border-slate-200/80',
+    cardHover: 'hover:bg-slate-50',
+    cardHighlight: 'bg-gradient-to-b from-blue-50/40 to-white border-blue-200',
+    input: 'bg-white border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 text-slate-900 placeholder-slate-400',
+    btnPrimary: 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold shadow-md shadow-blue-500/20 active:scale-[0.99]',
+    btnSecondary: 'bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-200 shadow-xs',
+    navActive: 'bg-blue-50 text-blue-700 border-blue-200 font-semibold shadow-xs',
+    navInactive: 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-transparent',
+    pill: 'bg-slate-100 text-slate-700 border-slate-200',
+    pillSecondary: 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300',
+    pillSelected: 'bg-blue-50 text-blue-700 border-blue-300 font-semibold',
+    textPrimary: 'text-slate-900',
+    textSecondary: 'text-slate-600',
+    textMuted: 'text-slate-400',
+    border: 'border-slate-200',
+    borderMedium: 'border-slate-300',
+    tableHead: 'bg-slate-50 text-slate-600 border-slate-200',
+    tableRow: 'bg-white hover:bg-slate-50/80',
+    codeBg: 'bg-slate-950 text-white border-slate-800',
+    modalBg: 'bg-white border-slate-200 shadow-2xl',
+    statusCard: 'bg-white border-blue-200 shadow-lg shadow-blue-500/5',
+    progressTrack: 'bg-slate-100 border-slate-200',
+    progressBar: 'bg-gradient-to-r from-blue-600 to-indigo-600',
+    sliderTrack: 'accent-blue-600',
+  };
+
+  // Suggestion lookup
   useEffect(() => {
     if (creatorName.trim().length >= 2) {
       const timer = setTimeout(async () => {
@@ -115,13 +286,13 @@ export default function App() {
     }
   };
 
-  // Restore cached run instantly without re-calling LLM
+  // Restore cached run
   const handleLoadCached = async (targetCreator, targetComp) => {
     if (!user) return;
     setCreatorName(targetCreator);
     if (targetComp) setComparisonCreator(targetComp);
     setLoading(true);
-    setStatusText(`Restoring cached dossier for ${targetCreator}...`);
+    setStatusText(`Restoring saved report for ${targetCreator}...`);
     try {
       const res = await fetch(`/api/user/cached?username=${encodeURIComponent(user)}&creator=${encodeURIComponent(targetCreator)}`);
       if (res.ok) {
@@ -154,7 +325,7 @@ export default function App() {
     }
   };
 
-  // Explicit Analyze action — ONLY runs when user clicks button or presses Enter
+  // Analyze action
   const handleAnalyze = async () => {
     const target = creatorName.trim();
     if (!target) return;
@@ -162,7 +333,7 @@ export default function App() {
     setLoading(true);
     setErrorBanner('');
     setStatusStep(1);
-    setStatusText(`Reconnaissance: Scanning verified web & video footprint for ${target}...`);
+    setStatusText(`Searching web & video footprint for ${target}...`);
     setElapsedSeconds(0);
     setSelectedUploadIdx(0);
     setSelectedPeerIdx(0);
@@ -174,16 +345,16 @@ export default function App() {
       setElapsedSeconds(elapsed);
       if (elapsed < 8) {
         setStatusStep(1);
-        setStatusText(`🌐 Step 1/4: Multi-platform web & video reconnaissance (Firecrawl)... (${elapsed}s)`);
+        setStatusText(`🌐 Phase 1/4: Scanning video footprint & verified accounts... (${elapsed}s)`);
       } else if (elapsed < 20) {
         setStatusStep(2);
-        setStatusText(`🧬 Step 2/4: Profiling demographics, engagement & rate cards... (${elapsed}s)`);
+        setStatusText(`👥 Phase 2/4: Profiling audience demographics & sponsorship rate card... (${elapsed}s)`);
       } else if (elapsed < 32) {
         setStatusStep(3);
-        setStatusText(`🎬 Step 3/4: Reverse-engineering hook formulas & peer benchmarks... (${elapsed}s)`);
+        setStatusText(`🎬 Phase 3/4: Deconstructing opening hooks & viral pacing... (${elapsed}s)`);
       } else {
         setStatusStep(4);
-        setStatusText(`💡 Step 4/4: Synthesizing 5 viral concepts & shooting blueprints... (${elapsed}s)`);
+        setStatusText(`💡 Phase 4/4: Synthesizing 5 production ideas & shooting script... (${elapsed}s)`);
       }
     }, 1000);
 
@@ -249,7 +420,7 @@ export default function App() {
     setTimeout(() => setCopiedKey(null), 1800);
   };
 
-  // Universal Video Player (Supports YouTube, Shorts, Instagram, TikTok)
+  // Video Player Component
   const renderVideo = (url, title) => {
     if (!url) return null;
     let cleanUrl = url.trim();
@@ -262,19 +433,19 @@ export default function App() {
       const vidMatch = cleanUrl.match(/(?:v=|\/embed\/|youtu\.be\/|\/shorts\/)([A-Za-z0-9_-]+)/);
       const vidId = vidMatch ? vidMatch[1] : '';
       return (
-        <div className="w-full aspect-video rounded-lg overflow-hidden bg-[#0A0C10] border border-[#212533]">
+        <div className={`w-full aspect-video rounded-xl overflow-hidden border shadow-inner ${th.codeBg}`}>
           {vidId ? (
             <iframe
               src={`https://www.youtube.com/embed/${vidId}`}
               className="w-full h-full border-0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
-              title={title || 'YouTube Stream'}
+              title={title || 'YouTube Player'}
             />
           ) : (
-            <div className="flex items-center justify-center h-full">
-              <a href={cleanUrl} target="_blank" rel="noreferrer" className="text-xs text-[#8E95A5] hover:text-[#E2E5EE] flex items-center gap-1">
-                Open YouTube Stream <ExternalLink className="w-3.5 h-3.5" />
+            <div className="flex items-center justify-center h-full p-6">
+              <a href={cleanUrl} target="_blank" rel="noreferrer" className={`text-xs ${th.textSecondary} hover:${th.textPrimary} flex items-center gap-2`}>
+                <Play className="w-4 h-4 text-red-500" /> Open YouTube Stream <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
           )}
@@ -286,19 +457,19 @@ export default function App() {
       const match = cleanUrl.match(/\/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
       const code = match ? match[1] : '';
       return (
-        <div className="w-full rounded-lg overflow-hidden bg-[#0A0C10] border border-[#212533] p-2 text-center">
+        <div className={`w-full rounded-xl overflow-hidden border p-2 text-center ${th.codeBg}`}>
           {code ? (
             <iframe
               src={`https://www.instagram.com/reel/${code}/embed`}
-              className="w-full h-80 border-0 rounded"
+              className="w-full h-80 border-0 rounded-lg"
               scrolling="no"
               allowFullScreen
               title={title || 'Instagram Reel'}
             />
           ) : (
             <div className="py-8">
-              <a href={cleanUrl} target="_blank" rel="noreferrer" className="text-xs text-[#8E95A5] hover:text-[#E2E5EE] inline-flex items-center gap-1">
-                View on Instagram <ExternalLink className="w-3.5 h-3.5" />
+              <a href={cleanUrl} target="_blank" rel="noreferrer" className={`text-xs ${th.textSecondary} hover:${th.textPrimary} inline-flex items-center gap-1.5`}>
+                <Play className="w-4 h-4 text-pink-500" /> View on Instagram <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
           )}
@@ -307,9 +478,9 @@ export default function App() {
     }
 
     return (
-      <div className="p-4 bg-[#11131A] border border-[#212533] rounded-lg text-center">
-        <a href={cleanUrl} target="_blank" rel="noreferrer" className="text-xs text-[#8E95A5] hover:text-[#E2E5EE] inline-flex items-center gap-1">
-          Open Media Link ({title || cleanUrl}) <ExternalLink className="w-3 h-3" />
+      <div className={`p-5 border rounded-xl text-center ${th.cardInner}`}>
+        <a href={cleanUrl} target="_blank" rel="noreferrer" className={`text-xs ${th.textSecondary} hover:${th.textPrimary} inline-flex items-center gap-2 font-medium`}>
+          <Play className="w-4 h-4 text-blue-500" /> Watch Media Source ({title || cleanUrl}) <ExternalLink className="w-3.5 h-3.5" />
         </a>
       </div>
     );
@@ -331,66 +502,141 @@ export default function App() {
   const demographics = intelData?.audience_demographics || {};
 
   return (
-    <div className="min-h-screen flex bg-[#0D0F14] text-[#E2E5EE]">
-      {/* ─── LEFT SIDEBAR NAVIGATION (240px) ──────────────────────────────── */}
-      <aside className="w-60 bg-[#11131A] border-r border-[#212533] flex flex-col justify-between shrink-0 select-none hidden md:flex">
+    <div className={`min-h-screen flex ${th.root} transition-colors duration-200 antialiased`}>
+      {/* ─── LEFT SIDEBAR NAVIGATION (Clean, Minimal, NO "?" Icons) ────────── */}
+      <aside className={`w-64 border-r flex flex-col justify-between shrink-0 select-none hidden md:flex ${th.sidebar} transition-colors duration-200 z-20`}>
         <div>
-          {/* Brand header */}
-          <div className="h-14 border-b border-[#212533] px-4 flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-md bg-[#252A38] border border-[#31374A] flex items-center justify-center font-bold text-xs text-[#E2E5EE]">
-              P
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-heading font-bold text-xs tracking-tight text-[#E2E5EE]">PARALLEL</span>
-                <span className="font-mono text-[9px] px-1 rounded bg-[#181B24] border border-[#262A38] text-[#8E95A5]">2.4</span>
+          {/* Brand Header: HookLab */}
+          <div className={`h-16 border-b px-5 flex items-center justify-between ${th.border}`}>
+            <div className="flex items-center gap-3">
+              {/* HookLab Logo Mark: Dual-Hook Waveform Prism */}
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 via-indigo-600 to-cyan-400 p-0.5 shadow-md shadow-blue-500/20 flex items-center justify-center shrink-0">
+                <div className="w-full h-full bg-[#0E1017] rounded-[10px] flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 5v14M18 5v14M6 12h12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                </div>
               </div>
-              <div className="text-[10px] text-[#5E6577]">Creator Intelligence OS</div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className={`font-heading font-extrabold text-sm tracking-tight ${th.textPrimary}`}>HookLab</span>
+                  <span className="font-mono text-[9px] px-1.5 py-0.5 rounded font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">AI</span>
+                </div>
+                <div className={`text-[10px] ${th.textMuted} font-medium`}>Viral Creator Intelligence</div>
+              </div>
             </div>
           </div>
 
-          {/* Navigation Items */}
-          <nav className="p-3 space-y-1">
-            {[
-              { id: 'dossier', label: 'Executive Dossier', icon: Film },
-              { id: 'ideas', label: 'Viral Content Studio (5)', icon: Sparkles },
-              { id: 'blueprints', label: 'Style DNA & Blueprints', icon: Layers },
-              { id: 'friction', label: 'Audience Friction Audit', icon: ShieldAlert },
-              { id: 'simulator', label: 'Hook Simulator & Economics', icon: Target },
-              { id: 'reach', label: 'Reach & Commercials', icon: BarChart3 }
-            ].map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition ${
-                    isActive
-                      ? 'bg-[#1C202C] text-[#E2E5EE] border border-[#2B3042]'
-                      : 'text-[#8E95A5] hover:text-[#E2E5EE] hover:bg-[#151821] border border-transparent'
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#8E95A5]' : 'text-[#5E6577]'}`} />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Search History */}
-          {user && userHistory.length > 0 && (
-            <div className="p-3 border-t border-[#212533]">
-              <div className="text-[10px] font-mono uppercase text-[#5E6577] mb-2 px-1">
-                Saved Sessions
+          {/* Grouped Sidebar Navigation (CLEAN: No "?" badges) */}
+          <div className="p-3.5 space-y-4">
+            <div>
+              <div className={`px-2.5 mb-1.5 text-[9px] font-mono uppercase font-bold tracking-wider ${th.textMuted}`}>
+                Intelligence &amp; Content
               </div>
-              <div className="space-y-1 max-h-40 overflow-y-auto">
+              <nav className="space-y-1">
+                {[
+                  { 
+                    id: 'dossier', 
+                    label: 'Creator Profile & Summary', 
+                    icon: Sparkles
+                  },
+                  { 
+                    id: 'ideas', 
+                    label: '5 Ready-to-Make Video Ideas', 
+                    icon: Flame, 
+                    badge: '5'
+                  },
+                  { 
+                    id: 'blueprints', 
+                    label: 'Creator Style Blueprint', 
+                    icon: Layers
+                  }
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition cursor-pointer border ${
+                        isActive ? th.navActive : th.navInactive
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-500' : th.textMuted}`} />
+                        <span className="truncate">{tab.label}</span>
+                      </div>
+                      {tab.badge && (
+                        <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold ${
+                          isActive ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                        }`}>
+                          {tab.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            <div>
+              <div className={`px-2.5 mb-1.5 text-[9px] font-mono uppercase font-bold tracking-wider ${th.textMuted}`}>
+                Retention &amp; Revenue
+              </div>
+              <nav className="space-y-1">
+                {[
+                  { 
+                    id: 'friction', 
+                    label: 'Viewer Complaints & Drop-offs', 
+                    icon: ShieldAlert
+                  },
+                  { 
+                    id: 'simulator', 
+                    label: 'Video Hook Tester', 
+                    icon: Target
+                  },
+                  { 
+                    id: 'reach', 
+                    label: 'Audience Size & Ad Rates', 
+                    icon: TrendingUp
+                  }
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition cursor-pointer border ${
+                        isActive ? th.navActive : th.navInactive
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-500' : th.textMuted}`} />
+                        <span className="truncate">{tab.label}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
+
+          {/* Saved Sessions Drawer */}
+          {user && userHistory.length > 0 && (
+            <div className={`p-3.5 border-t ${th.border}`}>
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className={`text-[10px] font-mono uppercase ${th.textMuted} font-bold tracking-wider`}>
+                  Saved Searches
+                </span>
+              </div>
+              <div className="space-y-1 max-h-36 overflow-y-auto">
                 {userHistory.map((h, idx) => (
                   <button
                     key={h.id || idx}
                     type="button"
                     onClick={() => handleLoadCached(h.creator_name, h.comparison_creator || '')}
-                    className="w-full text-left px-2 py-1 text-[11px] text-[#8E95A5] hover:text-[#E2E5EE] hover:bg-[#151821] rounded truncate block transition"
+                    className={`w-full text-left px-2.5 py-1.5 text-xs ${th.textSecondary} hover:${th.textPrimary} ${th.cardHover} rounded-md truncate block transition`}
                   >
                     {h.creator_name} {h.comparison_creator ? `vs ${h.comparison_creator}` : ''}
                   </button>
@@ -400,17 +646,47 @@ export default function App() {
           )}
         </div>
 
-        {/* User Profile Card */}
-        <div className="p-3 border-t border-[#212533]">
+        {/* Sidebar Footer: Theme Toggle & User Auth */}
+        <div className={`p-3.5 border-t space-y-2.5 ${th.border}`}>
+          {/* Theme Switcher Card */}
+          <div className={`flex items-center justify-between p-1.5 rounded-xl border ${th.cardInner}`}>
+            <span className={`text-xs font-medium px-2 ${th.textSecondary}`}>Mode</span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition ${
+                  !isDark ? 'bg-white shadow-xs text-blue-600 font-semibold' : 'text-slate-400 hover:text-white'
+                }`}
+                title="White Theme"
+              >
+                <Sun className="w-3.5 h-3.5" />
+                <span className="text-[10px]">Light</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition ${
+                  isDark ? 'bg-[#181B26] shadow-xs text-blue-400 font-semibold border border-white/10' : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="Dark Theme"
+              >
+                <Moon className="w-3.5 h-3.5" />
+                <span className="text-[10px]">Dark</span>
+              </button>
+            </div>
+          </div>
+
+          {/* User Account / Profile */}
           {user ? (
-            <div className="flex items-center justify-between bg-[#151821] border border-[#212533] rounded-md p-2">
+            <div className={`flex items-center justify-between border rounded-xl p-2.5 ${th.cardInner}`}>
               <div className="truncate">
-                <span className="text-[10px] text-[#5E6577] block font-mono">Connected</span>
-                <span className="text-xs font-medium text-[#E2E5EE] truncate">@{user}</span>
+                <span className={`text-[9px] ${th.textMuted} block font-mono uppercase font-bold`}>Active Account</span>
+                <span className={`text-xs font-semibold ${th.textPrimary} truncate`}>@{user}</span>
               </div>
               <button
                 onClick={() => setUser(null)}
-                className="text-[#8E95A5] hover:text-[#E2E5EE] p-1 rounded"
+                className={`p-1.5 rounded-lg ${th.textSecondary} hover:${th.textPrimary} transition`}
                 title="Sign Out"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -419,9 +695,10 @@ export default function App() {
           ) : (
             <button
               onClick={() => setAuthModalOpen(true)}
-              className="w-full py-1.5 px-2.5 rounded bg-[#181B24] hover:bg-[#1D212D] border border-[#2B3042] text-[#8E95A5] hover:text-[#E2E5EE] text-xs font-medium flex items-center justify-center gap-1.5 transition"
+              className={`w-full py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-2 transition cursor-pointer ${th.btnSecondary}`}
             >
-              <Lock className="w-3 h-3" /> Account / Bridge Store
+              <Lock className="w-3.5 h-3.5 text-blue-500" /> 
+              <span>Sign In / Save Progress</span>
             </button>
           )}
         </div>
@@ -429,55 +706,94 @@ export default function App() {
 
       {/* ─── MAIN CONTENT VIEWPORT ────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header Bar */}
-        <header className="h-14 bg-[#11131A] border-b border-[#212533] px-5 flex items-center justify-between gap-4 sticky top-0 z-30">
+        {/* Sticky Header Bar */}
+        <header className={`h-16 border-b px-6 flex items-center justify-between gap-4 sticky top-0 z-30 ${th.header}`}>
           <div className="flex items-center gap-2">
-            <span className="font-heading font-semibold text-xs text-[#E2E5EE]">PARALLEL CREATOR OS</span>
-            <span className="text-xs text-[#5E6577] hidden sm:inline">· Continuous Creator Intelligence &amp; Retention Decoupler</span>
+            <span className={`font-heading font-extrabold text-sm tracking-tight ${th.textPrimary}`}>HookLab Studio</span>
+            <span className={`text-xs ${th.textMuted} hidden lg:inline`}>/ Viral Pacing, Hook Decoupler &amp; Growth Studio</span>
           </div>
 
-          <div className="flex items-center gap-2 font-mono text-[11px] text-[#5E6577] shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#3B7A57] animate-pulse"></span>
-            <span>Groq LPU (GPT-OSS-120B)</span>
+          <div className="flex items-center gap-3">
+            {/* LPU Status Indicator */}
+            <div className={`hidden sm:flex items-center gap-2 font-mono text-[11px] px-3 py-1 rounded-full border ${th.pill}`}>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="font-medium">Groq LPU Engine (GPT-OSS-120B)</span>
+            </div>
+
+            {/* Direct Theme Switcher Button */}
+            <button
+              type="button"
+              onClick={() => setTheme(isDark ? 'light' : 'dark')}
+              className={`p-2 rounded-xl border flex items-center gap-2 text-xs font-medium transition cursor-pointer ${th.btnSecondary}`}
+              title={isDark ? "Switch to White Theme" : "Switch to Dark Theme"}
+              aria-label="Toggle Theme"
+            >
+              {isDark ? (
+                <>
+                  <Sun className="w-4 h-4 text-amber-400" />
+                  <span className="hidden sm:inline font-semibold">Light</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-blue-600" />
+                  <span className="hidden sm:inline font-semibold">Dark</span>
+                </>
+              )}
+            </button>
           </div>
         </header>
 
-        {/* Workspace Body Canvas */}
-        <main className="p-6 max-w-6xl w-full mx-auto space-y-6">
+        {/* Workspace Canvas */}
+        <main className="p-6 md:p-8 max-w-6xl w-full mx-auto space-y-7">
           {/* Dismissible Error Banner */}
           {errorBanner && (
-            <div className="p-3 bg-[#24171A] border border-[#52252C] rounded-lg flex items-center justify-between text-xs text-[#F28B82]">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-[#F28B82] shrink-0" />
-                <span>{errorBanner}</span>
+            <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-between text-xs text-rose-500 shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                <span className="font-medium">{errorBanner}</span>
               </div>
-              <button onClick={() => setErrorBanner('')} className="text-[#8E95A5] hover:text-[#E2E5EE] text-xs px-2 py-0.5 rounded">
+              <button onClick={() => setErrorBanner('')} className="text-xs px-2.5 py-1 rounded-md hover:bg-rose-500/20 font-semibold cursor-pointer">
                 Dismiss
               </button>
             </div>
           )}
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* RECONNAISSANCE & DECOUPLING CONSOLE (Inputs ONLY fill; click to run)*/}
+          {/* DEDICATED WINDOW: CREATOR RECON & DECOUPLING CONSOLE               */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
-          <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-[#212533]">
+          <div className={`border rounded-2xl p-5 md:p-6 shadow-sm space-y-5 ${th.card}`}>
+            {/* Window Header with Dedicated Aligned Info Button */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-2 border-b border-white/[0.06]">
               <div>
-                <h2 className="font-heading font-semibold text-sm text-[#E2E5EE] tracking-tight">
-                  Reconnaissance &amp; Decoupling Console
+                <h2 className={`font-heading font-extrabold text-base tracking-tight ${th.textPrimary}`}>
+                  Analyze Any Creator
                 </h2>
-                <p className="text-xs text-[#8E95A5]">Multi-platform web scrape + Groq LPU neural synthesis</p>
+                <p className={`text-xs ${th.textSecondary} mt-0.5`}>
+                  Multi-platform web scrape + Groq LPU neural synthesis
+                </p>
               </div>
-              <span className="text-[11px] font-mono text-[#5E6577]">
-                Live Footprint Crawl
-              </span>
+
+              <div className="flex items-center gap-3">
+                <div className={`text-[11px] font-mono px-2.5 py-0.5 rounded-full border flex items-center gap-1.5 ${th.pill}`}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                  <span>Live Footprint Crawl</span>
+                </div>
+                {/* Clean, perfectly aligned info button for the whole console window */}
+                <FeatureHelp 
+                  title="How Creator Analysis Works"
+                  description="Type in any creator's name. HookLab researches their real public video catalog, measures audience retention drop-offs, reverse-engineers their 3-second opening hook formula, and synthesizes 5 production-ready concepts."
+                  tip="Add a benchmark rival creator to run a comparative retention duel and generate a hybrid hook."
+                  align="right"
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+            {/* Inputs Grid (Clean, symmetrical, NO noisy individual "?" badges) */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
               {/* Target Creator Input */}
               <div className="md:col-span-5 relative">
-                <label className="block text-[10px] font-mono uppercase text-[#5E6577] mb-1 font-semibold">
-                  Target Creator (To Clone) *
+                <label className={`block text-[10px] font-mono uppercase font-bold tracking-wider mb-1.5 ${th.textMuted}`}>
+                  Creator to Study *
                 </label>
                 <div className="relative">
                   <input
@@ -486,10 +802,11 @@ export default function App() {
                     onChange={(e) => setCreatorName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
                     placeholder="e.g. CarryMinati, MrBeast, Aakash Dhawan"
-                    className="w-full bg-[#11131A] border border-[#212533] focus:border-[#4F6382] rounded-md px-3 py-2 text-xs text-[#E2E5EE] placeholder-[#5E6577] outline-none transition"
+                    className={`w-full rounded-xl px-3.5 py-2.5 text-xs outline-none transition border font-medium ${th.input}`}
                   />
+                  {/* Autocomplete Suggestions Menu */}
                   {suggestions.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-[#151821] border border-[#2B3042] rounded-md shadow-2xl z-50 max-h-48 overflow-y-auto">
+                    <div className={`absolute left-0 right-0 top-full mt-2 border rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto ${th.modalBg}`}>
                       {suggestions.map((s, idx) => (
                         <button
                           key={idx}
@@ -499,10 +816,10 @@ export default function App() {
                             if (s.niche) setNiche(s.niche);
                             setSuggestions([]);
                           }}
-                          className="w-full text-left px-3 py-2 text-xs text-[#8E95A5] hover:text-[#E2E5EE] hover:bg-[#1C202C] border-b border-[#212533] last:border-0 flex justify-between"
+                          className={`w-full text-left px-4 py-2.5 text-xs ${th.textSecondary} hover:${th.textPrimary} ${th.cardHover} border-b ${th.border} last:border-0 flex justify-between items-center transition cursor-pointer`}
                         >
-                          <span className="font-medium text-[#E2E5EE]">{s.name}</span>
-                          <span className="text-[10px] text-[#5E6577]">{s.niche}</span>
+                          <span className={`font-semibold ${th.textPrimary}`}>{s.name}</span>
+                          <span className={`text-[11px] font-mono ${th.textMuted}`}>{s.niche}</span>
                         </button>
                       ))}
                     </div>
@@ -512,38 +829,44 @@ export default function App() {
 
               {/* Benchmark Rival Input */}
               <div className="md:col-span-4">
-                <label className="block text-[10px] font-mono uppercase text-[#5E6577] mb-1 font-semibold">
-                  Benchmark Creator (Optional Rival)
+                <label className={`block text-[10px] font-mono uppercase font-bold tracking-wider mb-1.5 ${th.textMuted}`}>
+                  Compare With Rival (Optional)
                 </label>
-                <input
-                  type="text"
-                  value={comparisonCreator}
-                  onChange={(e) => setComparisonCreator(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
-                  placeholder="e.g. Ashish Chanchlani, Ryan Trahan"
-                  className="w-full bg-[#11131A] border border-[#212533] focus:border-[#4F6382] rounded-md px-3 py-2 text-xs text-[#E2E5EE] placeholder-[#5E6577] outline-none transition"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={comparisonCreator}
+                    onChange={(e) => setComparisonCreator(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
+                    placeholder="e.g. Ashish Chanchlani, Ryan Trahan"
+                    className={`w-full rounded-xl px-3.5 py-2.5 text-xs outline-none transition border font-medium ${th.input}`}
+                  />
+                </div>
               </div>
 
-              {/* Category / Niche Input */}
+              {/* Content Category Input */}
               <div className="md:col-span-3">
-                <label className="block text-[10px] font-mono uppercase text-[#5E6577] mb-1 font-semibold">
-                  Category / Niche (Optional)
+                <label className={`block text-[10px] font-mono uppercase font-bold tracking-wider mb-1.5 ${th.textMuted}`}>
+                  Content Category (Optional)
                 </label>
-                <input
-                  type="text"
-                  value={niche}
-                  onChange={(e) => setNiche(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
-                  placeholder="e.g. Comedy, Motovlog, Tech"
-                  className="w-full bg-[#11131A] border border-[#212533] focus:border-[#4F6382] rounded-md px-3 py-2 text-xs text-[#E2E5EE] placeholder-[#5E6577] outline-none transition"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={niche}
+                    onChange={(e) => setNiche(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
+                    placeholder="e.g. Comedy, Motovlog, Tech"
+                    className={`w-full rounded-xl px-3.5 py-2.5 text-xs outline-none transition border font-medium ${th.input}`}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Quick Preset Chips (Fills fields ONLY — does NOT auto-analyze) */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[11px] text-[#5E6577] mr-1">Suggested Targets:</span>
+            {/* Featured Creators Shelf (Cleanly aligned, NO question marks) */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className={`text-[11px] font-mono uppercase font-bold mr-1 ${th.textMuted}`}>
+                Popular Creators:
+              </span>
               {PRESET_CREATORS.map((p, idx) => (
                 <button
                   key={idx}
@@ -552,154 +875,190 @@ export default function App() {
                     setCreatorName(p.name);
                     setNiche(p.niche);
                   }}
-                  className="px-2.5 py-1 rounded bg-[#11131A] hover:bg-[#1A1D28] text-[#8E95A5] hover:text-[#E2E5EE] border border-[#212533] transition text-[11px]"
+                  className={`px-3 py-1.5 rounded-lg border text-xs transition cursor-pointer flex items-center gap-1.5 ${th.pillSecondary}`}
                 >
-                  {p.name} <span className="text-[9px] text-[#5E6577]">({p.niche})</span>
+                  <span className={`font-semibold ${th.textPrimary}`}>{p.name}</span>
+                  <span className={`text-[10px] ${th.textMuted}`}>({p.niche})</span>
                 </button>
               ))}
             </div>
 
-            {/* Explicit Action Button */}
+            {/* Prominent Action Button */}
             <button
               type="button"
               onClick={handleAnalyze}
               disabled={loading || !creatorName.trim()}
-              className="w-full py-2.5 px-4 rounded-lg bg-[#252A38] hover:bg-[#2D3344] disabled:opacity-50 text-xs font-semibold text-[#E2E5EE] border border-[#31374A] transition shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              className={`w-full py-3 px-6 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${th.btnPrimary} disabled:opacity-50`}
             >
               {loading ? (
                 <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#8E95A5]" />
-                  <span>Executing Deep Analysis &amp; Decoupling Formula...</span>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Analyzing Creator &amp; Reverse-Engineering Formula...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3.5 h-3.5 text-[#8E95A5]" />
-                  <span>Execute Deep Analysis &amp; Decouple Formula</span>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Analyze Creator &amp; Generate Blueprint</span>
                 </>
               )}
             </button>
           </div>
 
-          {/* Multi-step loading widget */}
+          {/* AI Synthesis Pipeline Status Tracker */}
           {loading && (
-            <div className="p-4 bg-[#151821] border border-[#2B3042] rounded-xl space-y-3 shadow-sm">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 text-[#E2E5EE] font-medium">
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#8E95A5]" />
-                  <span>{statusText || 'Deconstructing digital footprint and audience retention...'}</span>
+            <div className={`p-5 md:p-6 border rounded-2xl space-y-4 shadow-lg ${th.statusCard}`}>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div className={`flex items-center gap-2.5 ${th.textPrimary} font-bold text-xs`}>
+                  <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />
+                  <span>{statusText || 'Researching digital footprint and viewer retention...'}</span>
                 </div>
-                <span className="font-mono text-[11px] text-[#5E6577]">
-                  {elapsedSeconds}s elapsed · avg ~35s
+                <span className={`font-mono text-[11px] ${th.textMuted}`}>
+                  {elapsedSeconds}s elapsed · estimated ~35s
                 </span>
               </div>
-              <div className="w-full bg-[#11131A] h-1.5 rounded-full overflow-hidden border border-[#212533]">
+              <div className={`w-full h-2 rounded-full overflow-hidden border ${th.progressTrack}`}>
                 <div
-                  className="bg-[#4F6382] h-full rounded-full transition-all duration-700 ease-out"
+                  className={`h-full rounded-full transition-all duration-700 ease-out ${th.progressBar}`}
                   style={{
-                    width: `${Math.min(95, Math.max(12, statusStep * 24 + Math.min(15, elapsedSeconds)))}%`
+                    width: `${Math.min(96, Math.max(12, statusStep * 24 + Math.min(15, elapsedSeconds)))}%`
                   }}
                 />
               </div>
-              <div className="flex justify-between text-[10px] font-mono text-[#5E6577]">
-                <span className={statusStep >= 1 ? 'text-[#8E95A5]' : ''}>1. Recon</span>
-                <span className={statusStep >= 2 ? 'text-[#8E95A5]' : ''}>2. Demographics</span>
-                <span className={statusStep >= 3 ? 'text-[#8E95A5]' : ''}>3. Hook Formulas</span>
-                <span className={statusStep >= 4 ? 'text-[#8E95A5]' : ''}>4. Concepts &amp; Blueprints</span>
+              <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono ${th.textMuted}`}>
+                <div className={`p-2 rounded-lg border ${statusStep >= 1 ? 'border-blue-500/40 bg-blue-500/10 text-blue-400 font-bold' : th.cardInner}`}>
+                  1. Footprint Search
+                </div>
+                <div className={`p-2 rounded-lg border ${statusStep >= 2 ? 'border-blue-500/40 bg-blue-500/10 text-blue-400 font-bold' : th.cardInner}`}>
+                  2. Audience &amp; Rates
+                </div>
+                <div className={`p-2 rounded-lg border ${statusStep >= 3 ? 'border-blue-500/40 bg-blue-500/10 text-blue-400 font-bold' : th.cardInner}`}>
+                  3. Hook Formulas
+                </div>
+                <div className={`p-2 rounded-lg border ${statusStep >= 4 ? 'border-blue-500/40 bg-blue-500/10 text-blue-400 font-bold' : th.cardInner}`}>
+                  4. Scripts &amp; Ideas
+                </div>
               </div>
             </div>
           )}
 
           {/* ─────────────────────────────────────────────────────────────── */}
-          {/* TAB 1: EXECUTIVE DOSSIER                                         */}
+          {/* TAB 1: CREATOR PROFILE & SUMMARY                                */}
           {/* ─────────────────────────────────────────────────────────────── */}
           {activeTab === 'dossier' && (
-            <div className="space-y-5">
+            <div className="space-y-6">
               {!intelData ? (
-                <div className="text-center py-16 text-[#5E6577] border border-dashed border-[#212533] rounded-xl">
-                  <Film className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-xs">Specify a target creator above and click "Execute Deep Analysis" to generate the Executive Dossier.</p>
+                <div className={`text-center py-20 border border-dashed rounded-2xl ${th.card} p-8 space-y-3`}>
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto text-blue-500">
+                    <Sparkles className="w-6 h-6" />
+                  </div>
+                  <h3 className={`font-heading font-bold text-base ${th.textPrimary}`}>Ready to Study Any Creator</h3>
+                  <p className={`text-xs ${th.textSecondary} max-w-md mx-auto leading-relaxed`}>
+                    Type a creator's name in the box above (like CarryMinati or MrBeast) and click "Analyze Creator" to reveal their complete growth profile.
+                  </p>
                 </div>
               ) : (
                 <>
-                  {/* Executive Header Card */}
-                  <div className="bg-[#151821] border border-[#212533] rounded-xl p-5">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                      {profile.avatar_url ? (
-                        <img src={profile.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover border border-[#2B3042]" />
-                      ) : (
-                        <div className="w-16 h-16 rounded-full bg-[#1E222D] flex items-center justify-center text-xl">👤</div>
-                      )}
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="font-heading font-bold text-lg text-[#E2E5EE]">{profile.name}</h2>
-                          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#1D212D] text-[#8E95A5] border border-[#2B3042]">
-                            {profile.tier || 'Macro'}
-                          </span>
-                        </div>
-                        <div className="text-xs text-[#8E95A5] space-x-3">
-                          <span>Niche: <strong className="text-[#E2E5EE]">{profile.core_niche || 'Digital Content'}</strong></span>
-                          <span>•</span>
-                          <span>Region: <strong className="text-[#E2E5EE]">{profile.location || 'India'}</strong></span>
-                        </div>
-                        {/* Verified Handles Pills */}
-                        {profile.discovered_accounts?.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                            <span className="text-[10px] font-mono text-[#5E6577] uppercase mr-1">Verified:</span>
-                            {profile.discovered_accounts.map((acc, aIdx) => (
-                              <a
-                                key={aIdx}
-                                href={acc.url || '#'}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="px-2 py-0.5 rounded bg-[#11131A] border border-[#212533] text-[10px] text-[#8E95A5] hover:text-[#E2E5EE] inline-flex items-center gap-1 transition"
-                              >
-                                <span>{acc.platform}: {acc.title}</span>
-                                {acc.url && <ExternalLink className="w-2.5 h-2.5" />}
-                              </a>
-                            ))}
-                          </div>
+                  {/* Executive Creator Briefing Card */}
+                  <div className={`border rounded-2xl p-6 space-y-5 ${th.card}`}>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        {profile.avatar_url ? (
+                          <img src={profile.avatar_url} alt="" className="w-16 h-16 rounded-2xl object-cover border-2 border-blue-500/40 shadow-md" />
+                        ) : (
+                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl border ${th.cardInner}`}>👤</div>
                         )}
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            <h2 className={`font-heading font-extrabold text-2xl ${th.textPrimary}`}>{profile.name}</h2>
+                            <span className={`font-mono text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${th.pill}`}>
+                              {profile.tier || 'Macro Creator'}
+                            </span>
+                          </div>
+                          <div className={`text-xs ${th.textSecondary} flex flex-wrap items-center gap-3 font-medium`}>
+                            <span>Category: <strong className={th.textPrimary}>{profile.core_niche || 'Digital Content'}</strong></span>
+                            <span>•</span>
+                            <span>Primary Region: <strong className={th.textPrimary}>{profile.location || 'India'}</strong></span>
+                          </div>
+
+                          {/* Verified Handles */}
+                          {profile.discovered_accounts?.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                              <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold mr-1`}>Verified:</span>
+                              {profile.discovered_accounts.map((acc, aIdx) => (
+                                <a
+                                  key={aIdx}
+                                  href={acc.url || '#'}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] border inline-flex items-center gap-1.5 transition ${th.pillSecondary}`}
+                                >
+                                  <span>{acc.platform}: {acc.title}</span>
+                                  {acc.url && <ExternalLink className="w-3 h-3 text-blue-500" />}
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Single aligned info button for the profile section */}
+                      <FeatureHelp 
+                        title="Creator Profile Snapshot" 
+                        description="General overview of the creator, their subscriber tier, main category, verified accounts, and vocal rhythm."
+                        align="right"
+                      />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 pt-4 border-t border-[#212533]">
-                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3 text-xs">
-                        <div className="text-[10px] font-mono text-[#5E6577] uppercase mb-1">Delivery Rhythm &amp; Style</div>
-                        <p className="text-[#8E95A5]">{profile.tone_and_style || 'High-energy, satirical, engaging delivery.'}</p>
+                    {/* Delivery Style & Audience Persona Cards */}
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t ${th.border}`}>
+                      <div className={`border rounded-xl p-4 text-xs space-y-1.5 ${th.cardInner}`}>
+                        <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold block`}>Speaking Style &amp; Pacing</span>
+                        <p className={`${th.textSecondary} leading-relaxed font-medium`}>{profile.tone_and_style || 'High-energy, satirical, engaging delivery.'}</p>
                       </div>
-                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3 text-xs">
-                        <div className="text-[10px] font-mono text-[#5E6577] uppercase mb-1">Audience Persona</div>
-                        <p className="text-[#8E95A5]">{profile.audience_vibe || 'Young, college, mobile-first community.'}</p>
+                      <div className={`border rounded-xl p-4 text-xs space-y-1.5 ${th.cardInner}`}>
+                        <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold block`}>Who Watches Them</span>
+                        <p className={`${th.textSecondary} leading-relaxed font-medium`}>{profile.audience_vibe || 'Young, college, mobile-first community.'}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Head-to-Head Comparative Duel */}
                   {h2h && (
-                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Swords className="w-4 h-4 text-[#8E95A5]" />
-                        <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">
-                          Head-to-Head Duel: {profile.name} vs {h2h.benchmark_creator}
-                        </h3>
+                    <div className={`border rounded-2xl p-6 space-y-4 ${th.card}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <Swords className="w-4 h-4 text-blue-500" />
+                          <h3 className={`font-heading font-extrabold text-sm ${th.textPrimary}`}>
+                            Side-by-Side Comparison: {profile.name} vs {h2h.benchmark_creator}
+                          </h3>
+                        </div>
+                        <FeatureHelp 
+                          title="Side-by-Side Retention Duel"
+                          description="Compares the retention strengths of both creators and crafts a winning hybrid opening hook combining the best of both."
+                          align="right"
+                        />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs mb-3">
-                        <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                          <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">{profile.name} Retention Edge</span>
-                          <p className="text-[#8E95A5]">{h2h.target_style_edge}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div className={`border rounded-xl p-4 space-y-1 ${th.cardInner}`}>
+                          <span className={`text-[10px] font-mono text-emerald-500 uppercase block font-bold`}>
+                            {profile.name}'s Key Retention Edge
+                          </span>
+                          <p className={`${th.textSecondary} leading-relaxed`}>{h2h.target_style_edge}</p>
                         </div>
-                        <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                          <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">{h2h.benchmark_creator} Retention Vulnerability</span>
-                          <p className="text-[#8E95A5]">{h2h.benchmark_weakness}</p>
+                        <div className={`border rounded-xl p-4 space-y-1 ${th.cardInner}`}>
+                          <span className={`text-[10px] font-mono text-rose-500 uppercase block font-bold`}>
+                            {h2h.benchmark_creator}'s Vulnerability
+                          </span>
+                          <p className={`${th.textSecondary} leading-relaxed`}>{h2h.benchmark_weakness}</p>
                         </div>
                       </div>
 
                       {h2h.hook_contrast?.winning_hybrid_hook && (
-                        <div className="bg-[#11131A] border border-[#2B3042] rounded-lg p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                          <div>
-                            <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Winning Hybrid Hook</span>
-                            <span className="text-xs text-[#E2E5EE] italic">"{h2h.hook_contrast.winning_hybrid_hook}"</span>
+                        <div className={`border rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${th.cardInner}`}>
+                          <div className="space-y-1">
+                            <span className={`text-[10px] font-mono ${th.textMuted} uppercase block font-bold`}>Winning Hybrid Opening Hook</span>
+                            <span className={`text-xs ${th.textPrimary} italic font-semibold`}>"{h2h.hook_contrast.winning_hybrid_hook}"</span>
                           </div>
                           <button
                             type="button"
@@ -713,62 +1072,67 @@ export default function App() {
                               setHooksText(`Battle: ${profile.name} vs ${h2h.benchmark_creator}\n` + cand.map(h => `${h.sid}: ${h.text}`).join('\n'));
                               setActiveTab('simulator');
                             }}
-                            className="px-3 py-1 bg-[#252A38] hover:bg-[#2D3344] border border-[#31374A] text-xs text-[#E2E5EE] rounded transition shrink-0"
+                            className={`px-4 py-2 border text-xs font-bold rounded-lg transition shrink-0 cursor-pointer ${th.btnSecondary}`}
                           >
-                            Send 4-Hook Contrast Duel to Simulator →
+                            Send to Hook Tester →
                           </button>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Creator's Proven Uploads (Watch & Deconstruct with selector) */}
+                  {/* Creator's Proven Uploads */}
                   {creatorVideos.length > 0 && (
-                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-4">
+                    <div className={`border rounded-2xl p-6 space-y-5 ${th.card}`}>
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                        <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">
-                          Creator Proven Uploads ({creatorVideos.length} Uploads Deconstructed)
-                        </h3>
-                        <span className="text-[11px] font-mono text-[#5E6577]">Click upload to watch &amp; analyze</span>
+                        <div>
+                          <h3 className={`font-heading font-extrabold text-sm ${th.textPrimary}`}>
+                            Top Performing Videos ({creatorVideos.length} Uploads Deconstructed)
+                          </h3>
+                          <span className={`text-[11px] font-mono ${th.textMuted}`}>Click to watch &amp; examine pacing</span>
+                        </div>
+                        <FeatureHelp 
+                          title="Top Videos Deconstruction"
+                          description="Real videos uploaded by this creator. Click any video to inspect its exact opening 3-second hook and why it held viewer attention."
+                          align="right"
+                        />
                       </div>
 
-                      {/* Video selector pills */}
-                      <div className="flex flex-wrap gap-1.5">
+                      {/* Video Selector Pills */}
+                      <div className="flex flex-wrap gap-2">
                         {creatorVideos.map((v, vIdx) => (
                           <button
                             key={vIdx}
                             type="button"
                             onClick={() => setSelectedUploadIdx(vIdx)}
-                            className={`px-2.5 py-1 rounded text-xs transition border text-left truncate max-w-xs ${
-                              selectedUploadIdx === vIdx
-                                ? 'bg-[#252A38] text-[#E2E5EE] border-[#4F6382]'
-                                : 'bg-[#11131A] text-[#8E95A5] hover:text-[#E2E5EE] border-[#212533]'
+                            className={`px-3 py-1.5 rounded-lg text-xs transition border text-left truncate max-w-xs cursor-pointer ${
+                              selectedUploadIdx === vIdx ? th.pillSelected : th.pillSecondary
                             }`}
                           >
-                            <span className="font-mono text-[10px] text-[#5E6577] mr-1">[{v.platform || 'Video'}]</span>
+                            <span className={`font-mono text-[10px] ${th.textMuted} mr-1.5 font-bold`}>[{v.platform || 'Video'}]</span>
                             {v.title || `Upload #${vIdx + 1}`}
                           </button>
                         ))}
                       </div>
 
-                      {/* Active video player & metrics */}
+                      {/* Video Player & Retention Deconstruction */}
                       {creatorVideos[selectedUploadIdx] && (
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-2">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-1">
                           <div className="lg:col-span-7">
                             {renderVideo(creatorVideos[selectedUploadIdx].url, creatorVideos[selectedUploadIdx].title)}
                           </div>
-                          <div className="lg:col-span-5 space-y-3 text-xs">
-                            <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                              <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Views Benchmark</span>
-                              <span className="text-sm font-semibold text-[#E2E5EE]">{creatorVideos[selectedUploadIdx].views || 'High Engagement'}</span>
+                          <div className="lg:col-span-5 space-y-3.5 text-xs">
+                            <div className={`border rounded-xl p-4 ${th.cardInner}`}>
+                              <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>View Count Benchmark</span>
+                              <span className={`text-base font-extrabold text-emerald-500`}>{creatorVideos[selectedUploadIdx].views || 'High Engagement'}</span>
                             </div>
-                            <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                              <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Opening 3-Sec Hook</span>
-                              <p className="text-[#E2E5EE] italic">"{creatorVideos[selectedUploadIdx].opening_hook || '—'}"</p>
+                            <div className={`border rounded-xl p-4 ${th.cardInner}`}>
+                              <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>First 3-Second Opening Hook</span>
+                              <p className={`${th.textPrimary} italic font-semibold leading-relaxed`}>"{creatorVideos[selectedUploadIdx].opening_hook || '—'}"</p>
                             </div>
-                            <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                              <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Why It Held Attention</span>
-                              <p className="text-[#8E95A5]">{creatorVideos[selectedUploadIdx].why_it_went_viral || '—'}</p>
+                            <div className={`border rounded-xl p-4 ${th.cardInner}`}>
+                              <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>Why People Watched Until the End</span>
+                              <p className={`${th.textSecondary} leading-relaxed`}>{creatorVideos[selectedUploadIdx].why_it_went_viral || '—'}</p>
                             </div>
                           </div>
                         </div>
@@ -776,51 +1140,56 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* Peer Niche Trending Videos from Other Creators */}
+                  {/* Peer Category Trending Videos */}
                   {peerVideos.length > 0 && (
-                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-4">
+                    <div className={`border rounded-2xl p-6 space-y-5 ${th.card}`}>
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                        <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">
-                          Peer Trending Videos in this Niche ({peerVideos.length} Uploads by Others)
-                        </h3>
-                        <span className="text-[11px] font-mono text-[#5E6577]">Category benchmarks</span>
+                        <div>
+                          <h3 className={`font-heading font-extrabold text-sm ${th.textPrimary}`}>
+                            Popular Videos from Similar Creators ({peerVideos.length} Category Benchmarks)
+                          </h3>
+                          <span className={`text-[11px] font-mono ${th.textMuted}`}>Category viral benchmarks</span>
+                        </div>
+                        <FeatureHelp 
+                          title="Category Benchmarks"
+                          description="Viral videos from other creators in the same niche so you can identify emerging trends and adapt their opening hooks."
+                          align="right"
+                        />
                       </div>
 
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-wrap gap-2">
                         {peerVideos.map((pv, pIdx) => (
                           <button
                             key={pIdx}
                             type="button"
                             onClick={() => setSelectedPeerIdx(pIdx)}
-                            className={`px-2.5 py-1 rounded text-xs transition border text-left truncate max-w-xs ${
-                              selectedPeerIdx === pIdx
-                                ? 'bg-[#252A38] text-[#E2E5EE] border-[#4F6382]'
-                                : 'bg-[#11131A] text-[#8E95A5] hover:text-[#E2E5EE] border-[#212533]'
+                            className={`px-3 py-1.5 rounded-lg text-xs transition border text-left truncate max-w-xs cursor-pointer ${
+                              selectedPeerIdx === pIdx ? th.pillSelected : th.pillSecondary
                             }`}
                           >
-                            <span className="font-mono text-[10px] text-[#5E6577] mr-1">[{pv.platform || 'Peer'}]</span>
+                            <span className={`font-mono text-[10px] ${th.textMuted} mr-1.5 font-bold`}>[{pv.platform || 'Peer'}]</span>
                             {pv.title || `Peer #${pIdx + 1}`}
                           </button>
                         ))}
                       </div>
 
                       {peerVideos[selectedPeerIdx] && (
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-2">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-1">
                           <div className="lg:col-span-7">
                             {renderVideo(peerVideos[selectedPeerIdx].url, peerVideos[selectedPeerIdx].title)}
                           </div>
-                          <div className="lg:col-span-5 space-y-3 text-xs">
-                            <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                              <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Peer Views</span>
-                              <span className="text-sm font-semibold text-[#E2E5EE]">{peerVideos[selectedPeerIdx].views || 'Trending Wave'}</span>
+                          <div className="lg:col-span-5 space-y-3.5 text-xs">
+                            <div className={`border rounded-xl p-4 ${th.cardInner}`}>
+                              <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>Total Views</span>
+                              <span className={`text-base font-extrabold text-emerald-500`}>{peerVideos[selectedPeerIdx].views || 'Trending Wave'}</span>
                             </div>
-                            <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                              <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Their Opening Hook</span>
-                              <p className="text-[#E2E5EE] italic">"{peerVideos[selectedPeerIdx].opening_hook || '—'}"</p>
+                            <div className={`border rounded-xl p-4 ${th.cardInner}`}>
+                              <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>Their Opening Hook</span>
+                              <p className={`${th.textPrimary} italic font-semibold leading-relaxed`}>"{peerVideos[selectedPeerIdx].opening_hook || '—'}"</p>
                             </div>
-                            <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                              <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Adapt-Hook Template</span>
-                              <p className="text-[#8E95A5]">{peerVideos[selectedPeerIdx].adapt_hook_template || '—'}</p>
+                            <div className={`border rounded-xl p-4 ${th.cardInner}`}>
+                              <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>How to Adapt This Hook for Yourself</span>
+                              <p className={`${th.textSecondary} leading-relaxed`}>{peerVideos[selectedPeerIdx].adapt_hook_template || '—'}</p>
                             </div>
                           </div>
                         </div>
@@ -833,14 +1202,22 @@ export default function App() {
           )}
 
           {/* ─────────────────────────────────────────────────────────────── */}
-          {/* TAB 2: VIRAL CONCEPTS (5)                                       */}
+          {/* TAB 2: 5 READY-TO-MAKE VIDEO IDEAS                              */}
           {/* ─────────────────────────────────────────────────────────────── */}
           {activeTab === 'ideas' && (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div>
-                  <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">5 Content Concepts with 4 Hook Archetypes</h3>
-                  <p className="text-xs text-[#8E95A5]">Engineered for short-form retention pacing with playable reference benchmarks.</p>
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div>
+                    <h3 className={`font-heading font-extrabold text-base ${th.textPrimary}`}>5 Ready-to-Make Video Ideas with 4 Opening Hooks</h3>
+                    <p className={`text-xs ${th.textSecondary} mt-0.5`}>Engineered for short-form retention pacing with playable reference benchmarks.</p>
+                  </div>
+                  <FeatureHelp 
+                    title="5 Viral Video Concepts"
+                    description="Custom video angles designed using the creator's viral mechanics. Each video idea includes 4 tested opening hook styles (Incident, Curiosity, Shock, Contrarian)."
+                    tip="Click 'Test All 5 in Hook Tester' to score candidate openers against simulated viewers."
+                    align="right"
+                  />
                 </div>
                 {suggestionsList.length > 0 && (
                   <button
@@ -853,87 +1230,157 @@ export default function App() {
                       setHooksText(`5-Concept Showdown:\n${lines.join('\n')}`);
                       setActiveTab('simulator');
                     }}
-                    className="px-3 py-1.5 bg-[#252A38] hover:bg-[#2D3344] border border-[#31374A] text-xs text-[#E2E5EE] rounded transition"
+                    className={`px-4 py-2 border text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${th.btnSecondary}`}
                   >
-                    🚀 Push ALL 5 Concepts to Simulator →
+                    <Target className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Test All 5 in Hook Tester →</span>
                   </button>
                 )}
               </div>
 
               {suggestionsList.length === 0 ? (
-                <div className="text-center py-16 text-[#5E6577] border border-dashed border-[#212533] rounded-xl">
-                  <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-xs">Analyze a creator in the console above to generate viral concepts.</p>
+                <div className={`text-center py-20 border border-dashed rounded-2xl ${th.card} p-8 space-y-3`}>
+                  <Flame className="w-10 h-10 mx-auto text-orange-500 opacity-40" />
+                  <h3 className={`font-semibold text-sm ${th.textPrimary}`}>No Video Ideas Yet</h3>
+                  <p className={`text-xs ${th.textSecondary}`}>Analyze a creator in the command bar above to generate 5 high-retention video briefs.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {suggestionsList.map((item, idx) => (
-                    <div key={idx} className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-3">
+                    <div key={idx} className={`border rounded-2xl p-6 space-y-4 ${th.card}`}>
                       <div className="flex justify-between items-start gap-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#1D212D] text-[#8E95A5] border border-[#2B3042]">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2.5 mb-2">
+                            <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
                               CONCEPT #{item.id || idx + 1}
                             </span>
-                            <span className="text-[11px] text-[#8E95A5] font-mono">{item.trending_topic}</span>
+                            <span className={`text-xs font-mono font-medium ${th.textMuted}`}>{item.trending_topic}</span>
                           </div>
-                          <h4 className="font-heading font-semibold text-sm text-[#E2E5EE]">{item.title}</h4>
-                          <p className="text-xs text-[#8E95A5] mt-1">{item.why_it_works}</p>
+                          <h4 className={`font-heading font-extrabold text-lg ${th.textPrimary}`}>{item.title}</h4>
+                          <p className={`text-xs ${th.textSecondary} mt-1.5 leading-relaxed`}>{item.why_it_works}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className="text-[10px] font-mono text-[#5E6577] block uppercase">Est. Views</span>
-                          <span className="text-xs font-semibold text-[#E2E5EE]">{item.estimated_views}</span>
+                          <span className={`text-[10px] font-mono ${th.textMuted} block uppercase font-bold`}>Estimated Views</span>
+                          <span className="text-base font-extrabold text-emerald-500">{item.estimated_views}</span>
                         </div>
                       </div>
 
-                      {/* Reference Benchmark Video Player (Restored from app.py) */}
-                      {item.reference_video?.url && (
-                        <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3 space-y-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-mono text-[10px] text-[#5E6577] uppercase">
-                              Reference Benchmark: {item.reference_video.title} ({item.reference_video.creator || 'Benchmark'})
+                      {/* Audience Psychology & Strategic Intelligence Badges */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1">
+                        {item.target_audience_appeal && (
+                          <div className={`p-2.5 rounded-xl border text-xs ${th.cardInner}`}>
+                            <span className={`text-[10px] font-mono font-bold uppercase tracking-wider block mb-1 text-blue-400 flex items-center gap-1.5`}>
+                              <Users className="w-3 h-3 text-blue-400" /> Target Demographic
                             </span>
-                            <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-[#1D212D] text-[#8E95A5]">
+                            <p className={`text-[11px] leading-snug ${th.textSecondary}`}>{item.target_audience_appeal}</p>
+                          </div>
+                        )}
+                        {item.audience_sentiment_reaction && (
+                          <div className={`p-2.5 rounded-xl border text-xs ${th.cardInner}`}>
+                            <span className={`text-[10px] font-mono font-bold uppercase tracking-wider block mb-1 text-amber-400 flex items-center gap-1.5`}>
+                              <Flame className="w-3 h-3 text-amber-400" /> Audience Reaction
+                            </span>
+                            <p className={`text-[11px] leading-snug ${th.textSecondary}`}>{item.audience_sentiment_reaction}</p>
+                          </div>
+                        )}
+                        {item.benchmark_differentiation && (
+                          <div className={`p-2.5 rounded-xl border text-xs ${th.cardInner}`}>
+                            <span className={`text-[10px] font-mono font-bold uppercase tracking-wider block mb-1 text-emerald-400 flex items-center gap-1.5`}>
+                              <Swords className="w-3 h-3 text-emerald-400" /> Benchmark Counter
+                            </span>
+                            <p className={`text-[11px] leading-snug ${th.textSecondary}`}>{item.benchmark_differentiation}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Reference Benchmark Video Player */}
+                      {item.reference_video?.url && (
+                        <div className={`border rounded-xl p-4 space-y-3 ${th.cardInner}`}>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className={`font-mono text-[10px] ${th.textMuted} uppercase font-bold flex items-center gap-1.5`}>
+                              <Play className="w-3.5 h-3.5 text-red-500" /> Reference Benchmark: {item.reference_video.title} ({item.reference_video.creator || 'Benchmark'})
+                            </span>
+                            <span className={`font-mono text-[9px] px-2 py-0.5 rounded-full border ${th.pill}`}>
                               {item.reference_video.platform || 'Video'}
                             </span>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                             <div className="md:col-span-6">
                               {renderVideo(item.reference_video.url, item.reference_video.title)}
                             </div>
-                            <div className="md:col-span-6 text-xs text-[#8E95A5]">
-                              <span className="text-[10px] font-mono text-[#5E6577] block uppercase mb-1">Strategic Rationale</span>
-                              <p>{item.reference_video.why_reference || 'Demonstrates category retention pacing and curiosity payoff.'}</p>
+                            <div className={`md:col-span-6 text-xs ${th.textSecondary}`}>
+                              <span className={`text-[10px] font-mono ${th.textMuted} block uppercase font-bold mb-1`}>Strategic Pacing Rationale</span>
+                              <p className="leading-relaxed">{item.reference_video.why_reference || 'Demonstrates category retention pacing and curiosity payoff.'}</p>
                             </div>
                           </div>
                         </div>
                       )}
 
                       {/* 4 Hook Archetypes */}
-                      <div className="pt-3 border-t border-[#212533] space-y-1.5">
-                        <span className="text-[10px] font-mono uppercase text-[#5E6577] block">4 Hook Archetypes (3-Sec Retention Pacing):</span>
-                        {item.candidate_hooks?.map((hk, hIdx) => {
-                          const archetypes = ['INCIDENT', 'CURIOSITY', 'SHOCK', 'CONTRARIAN'];
-                          const arch = archetypes[hIdx % archetypes.length];
-                          const hookKey = `h-${idx}-${hIdx}`;
-                          return (
-                            <div key={hIdx} className="bg-[#11131A] border border-[#212533] rounded p-2.5 flex items-center justify-between gap-3 text-xs">
-                              <div className="flex items-start gap-2">
-                                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#1D212D] text-[#8E95A5] font-bold">{hk.sid || `S${hIdx + 1}`}</span>
-                                <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-[#1D212D] text-[#5E6577] uppercase">{arch}</span>
-                                <span className="text-[#E2E5EE]">{hk.text}</span>
+                      <div className={`pt-4 border-t space-y-2.5 ${th.border}`}>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                          <span className={`text-[10px] font-mono uppercase font-bold ${th.textMuted} block`}>
+                            4 Tested Opening Styles (First 3 Seconds) — Grounded in Audience Psychology:
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-500">
+                            Incident · Curiosity · Audience Shock · Benchmark Challenge
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-2.5">
+                          {item.candidate_hooks?.map((hk, hIdx) => {
+                            const archetypes = [
+                              { label: 'INCIDENT / STAKES', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+                              { label: 'CURIOSITY GAP', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+                              { label: 'AUDIENCE REACTION', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
+                              { label: 'BENCHMARK CHALLENGE', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+                            ];
+                            const arch = archetypes[hIdx % archetypes.length];
+                            const hookKey = `h-${idx}-${hIdx}`;
+                            return (
+                              <div key={hIdx} className={`border rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${th.cardInner} hover:border-white/[0.12] transition`}>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                                    <span className={`font-mono text-[10px] px-2 py-0.5 rounded-md font-bold border ${th.pill}`}>{hk.sid || `S${hIdx + 1}`}</span>
+                                    <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded border font-bold uppercase tracking-wide ${arch.color}`}>
+                                      {hk.archetype || arch.label}
+                                    </span>
+                                    {hk.hook_technique && (
+                                      <span className={`text-[10px] font-mono ${th.textMuted}`}>
+                                        · {hk.hook_technique}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className={`${th.textPrimary} font-medium text-xs leading-relaxed italic`}>
+                                    "{hk.text}"
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setHooksText(`Single Hook Test (${item.title}):\n${hk.sid || 'S1'}: ${hk.text}`);
+                                      setActiveTab('simulator');
+                                    }}
+                                    className={`px-2 py-1 rounded-md border text-[11px] font-medium transition cursor-pointer flex items-center gap-1 ${th.btnSecondary}`}
+                                    title="Test just this single hook in simulator"
+                                  >
+                                    <Zap className="w-3 h-3 text-amber-400" /> <span>Test</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyText(hk.text, hookKey)}
+                                    className={`p-1.5 rounded-md border transition cursor-pointer shrink-0 ${th.btnSecondary}`}
+                                    title="Copy this hook line"
+                                  >
+                                    {copiedKey === hookKey ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                                  </button>
+                                </div>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => copyText(hk.text, hookKey)}
-                                className="text-[#5E6577] hover:text-[#E2E5EE] p-1 rounded"
-                                title="Copy"
-                              >
-                                {copiedKey === hookKey ? <Check className="w-3.5 h-3.5 text-[#3B7A57]" /> : <Copy className="w-3.5 h-3.5" />}
-                              </button>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -941,9 +1388,9 @@ export default function App() {
                             setHooksText(`Concept #${item.id}: ${item.title}\n${lines}`);
                             setActiveTab('simulator');
                           }}
-                          className="mt-2 text-xs text-[#8E95A5] hover:text-[#E2E5EE] flex items-center gap-1 font-medium transition"
+                          className="mt-2 text-xs font-semibold text-blue-500 hover:text-blue-400 flex items-center gap-1.5 transition cursor-pointer"
                         >
-                          Test all 4 hooks for Concept #{item.id} in Simulator <ArrowRight className="w-3 h-3" />
+                          <span>Test all 4 opening hooks for Idea #{item.id} in Hook Tester</span> <ArrowRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -954,169 +1401,151 @@ export default function App() {
           )}
 
           {/* ─────────────────────────────────────────────────────────────── */}
-          {/* TAB 3: STYLE DNA & BLUEPRINTS                                    */}
+          {/* TAB 3: CREATOR STYLE BLUEPRINT & SCRIPTS                        */}
           {/* ─────────────────────────────────────────────────────────────── */}
           {activeTab === 'blueprints' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {!copyData ? (
-                <div className="text-center py-16 text-[#5E6577] border border-dashed border-[#212533] rounded-xl">
-                  <Layers className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-xs">Analyze a creator to decode style DNA, 5-step roadmap, scripts, and piracy ideas.</p>
+                <div className={`text-center py-20 border border-dashed rounded-2xl ${th.card} p-8 space-y-3`}>
+                  <Layers className="w-10 h-10 mx-auto text-blue-500 opacity-40" />
+                  <h3 className={`font-semibold text-sm ${th.textPrimary}`}>No Blueprint Loaded</h3>
+                  <p className={`text-xs ${th.textSecondary}`}>Analyze a creator to decode their editing cadence, shooting script, and growth roadmap.</p>
                 </div>
               ) : (
                 <>
                   {/* Style DNA Card */}
-                  <div className="bg-[#151821] border border-[#212533] rounded-xl p-5">
-                    <h3 className="font-heading font-semibold text-sm text-[#E2E5EE] mb-3">Decoded Style DNA</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
-                      <div className="bg-[#11131A] border border-[#212533] rounded p-3">
-                        <span className="font-mono text-[10px] text-[#5E6577] uppercase block mb-1">Hook Formula</span>
-                        <p className="text-[#8E95A5]">{styleDna.hook_formula || '—'}</p>
+                  <div className={`border rounded-2xl p-6 space-y-4 ${th.card}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <Layers className="w-4 h-4 text-blue-500" />
+                        <h3 className={`font-heading font-extrabold text-sm ${th.textPrimary}`}>The Creator's Secret Recipe (Style DNA)</h3>
                       </div>
-                      <div className="bg-[#11131A] border border-[#212533] rounded p-3">
-                        <span className="font-mono text-[10px] text-[#5E6577] uppercase block mb-1">Content Structure</span>
-                        <p className="text-[#8E95A5]">{styleDna.content_structure || '—'}</p>
+                      <FeatureHelp 
+                        title="Style DNA"
+                        description="The core components that form the creator's video style: opening hooks, editing tempo, thumbnail patterns, and psychological triggers."
+                        align="right"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
+                      <div className={`border rounded-xl p-4 space-y-1 ${th.cardInner}`}>
+                        <span className={`font-mono text-[10px] ${th.textMuted} uppercase block font-bold`}>Opening Hook Strategy</span>
+                        <p className={`${th.textSecondary} leading-relaxed`}>{styleDna.hook_formula || '—'}</p>
                       </div>
-                      <div className="bg-[#11131A] border border-[#212533] rounded p-3">
-                        <span className="font-mono text-[10px] text-[#5E6577] uppercase block mb-1">Editing Cadence</span>
-                        <p className="text-[#8E95A5]">{styleDna.editing_rhythm || '—'}</p>
+                      <div className={`border rounded-xl p-4 space-y-1 ${th.cardInner}`}>
+                        <span className={`font-mono text-[10px] ${th.textMuted} uppercase block font-bold`}>Video Story Structure</span>
+                        <p className={`${th.textSecondary} leading-relaxed`}>{styleDna.content_structure || '—'}</p>
                       </div>
-                      <div className="bg-[#11131A] border border-[#212533] rounded p-3">
-                        <span className="font-mono text-[10px] text-[#5E6577] uppercase block mb-1">Thumbnail Formula</span>
-                        <p className="text-[#8E95A5]">{styleDna.thumbnail_formula || '—'}</p>
+                      <div className={`border rounded-xl p-4 space-y-1 ${th.cardInner}`}>
+                        <span className={`font-mono text-[10px] ${th.textMuted} uppercase block font-bold`}>Editing Speed &amp; Rhythm</span>
+                        <p className={`${th.textSecondary} leading-relaxed`}>{styleDna.editing_rhythm || '—'}</p>
                       </div>
-                      <div className="bg-[#11131A] border border-[#212533] rounded p-3">
-                        <span className="font-mono text-[10px] text-[#5E6577] uppercase block mb-1">CTA Pattern</span>
-                        <p className="text-[#8E95A5]">{styleDna.cta_pattern || '—'}</p>
+                      <div className={`border rounded-xl p-4 space-y-1 ${th.cardInner}`}>
+                        <span className={`font-mono text-[10px] ${th.textMuted} uppercase block font-bold`}>Thumbnail Design Recipe</span>
+                        <p className={`${th.textSecondary} leading-relaxed`}>{styleDna.thumbnail_formula || '—'}</p>
                       </div>
-                      <div className="bg-[#11131A] border border-[#212533] rounded p-3">
-                        <span className="font-mono text-[10px] text-[#5E6577] uppercase block mb-1">Viral Psychological Trigger</span>
-                        <p className="text-[#8E95A5]">{styleDna.viral_trigger || '—'}</p>
+                      <div className={`border rounded-xl p-4 space-y-1 ${th.cardInner}`}>
+                        <span className={`font-mono text-[10px] ${th.textMuted} uppercase block font-bold`}>Subscribe Call-to-Action Pattern</span>
+                        <p className={`${th.textSecondary} leading-relaxed`}>{styleDna.cta_pattern || '—'}</p>
+                      </div>
+                      <div className={`border rounded-xl p-4 space-y-1 ${th.cardInner}`}>
+                        <span className={`font-mono text-[10px] ${th.textMuted} uppercase block font-bold`}>Viral Psychological Trigger</span>
+                        <p className={`${th.textSecondary} leading-relaxed`}>{styleDna.viral_trigger || '—'}</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* 5-Step Implementation Roadmap — Interactive Accordion with inline Results */}
+                  {/* 5-Step Implementation Roadmap */}
                   {cloneRoadmap.length > 0 && (
-                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-3">
+                    <div className={`border rounded-2xl p-6 space-y-4 ${th.card}`}>
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">5-Step Implementation Roadmap</h3>
-                          <p className="text-[10px] text-[#5E6577] mt-0.5">Click any step to reveal the expected result & success signals</p>
+                          <h3 className={`font-heading font-extrabold text-sm ${th.textPrimary}`}>5-Step Action Plan to Copy Their Success</h3>
+                          <p className={`text-[11px] ${th.textMuted} mt-0.5`}>Click any step to reveal the expected result &amp; success signals</p>
                         </div>
-                        <span className="text-[10px] font-mono text-[#5E6577]">{cloneRoadmap.length} steps</span>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-[10px] font-mono ${th.textMuted} font-bold`}>{cloneRoadmap.length} steps</span>
+                          <FeatureHelp 
+                            title="5-Step Action Plan"
+                            description="Step-by-step instructions to film your video matching this creator's quality standard. Click any step to see what to expect."
+                            align="right"
+                          />
+                        </div>
                       </div>
 
-                      {/* Connector timeline */}
-                      <div className="relative space-y-0">
+                      <div className="relative space-y-2.5">
                         {cloneRoadmap.map((step, sIdx) => {
                           const isOpen = expandedRoadmapStep === sIdx;
-                          const diffColor =
+                          const diffColor = isDark ? (
                             step.difficulty === 'Easy' ? { bg: 'bg-[#12281D]', border: 'border-[#1D4A33]', text: 'text-[#4ADE80]', dot: 'bg-[#4ADE80]' } :
                             step.difficulty === 'Hard' ? { bg: 'bg-[#2E181B]', border: 'border-[#5C2329]', text: 'text-[#F87171]', dot: 'bg-[#F87171]' } :
-                            { bg: 'bg-[#282114]', border: 'border-[#4D3A1B]', text: 'text-[#FBBF24]', dot: 'bg-[#FBBF24]' };
+                            { bg: 'bg-[#282114]', border: 'border-[#4D3A1B]', text: 'text-[#FBBF24]', dot: 'bg-[#FBBF24]' }
+                          ) : (
+                            step.difficulty === 'Easy' ? { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', dot: 'bg-emerald-500' } :
+                            step.difficulty === 'Hard' ? { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', dot: 'bg-rose-500' } :
+                            { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-500' }
+                          );
 
                           return (
-                            <div key={sIdx} className="relative pl-8">
-                              {/* Vertical line connector (not on last) */}
-                              {sIdx < cloneRoadmap.length - 1 && (
-                                <div className="absolute left-[13px] top-8 bottom-0 w-px bg-[#212533]" />
-                              )}
-
-                              {/* Step number dot */}
-                              <div className={`absolute left-0 top-3.5 w-7 h-7 rounded-full border flex items-center justify-center text-[10px] font-bold font-mono transition-all duration-200 ${
-                                isOpen
-                                  ? `${diffColor.bg} ${diffColor.border} ${diffColor.text}`
-                                  : 'bg-[#11131A] border-[#2B3042] text-[#5E6577]'
-                              }`}>
-                                {step.step || sIdx + 1}
-                              </div>
-
-                              {/* Step card */}
-                              <div className={`mb-2 rounded-lg border transition-all duration-200 overflow-hidden ${
-                                isOpen
-                                  ? 'border-[#2B3042] bg-[#11131A]'
-                                  : 'border-[#1C2030] bg-[#0F1118] hover:border-[#212533] hover:bg-[#11131A]'
-                              }`}>
-                                {/* Header row — always visible, click to toggle */}
-                                <button
-                                  type="button"
-                                  onClick={() => setExpandedRoadmapStep(isOpen ? null : sIdx)}
-                                  className="w-full text-left px-4 py-3 flex items-center justify-between gap-3 group"
-                                >
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                                      <span className="text-[10px] font-mono text-[#5E6577] uppercase shrink-0">Step {step.step || sIdx + 1}</span>
-                                      <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded border shrink-0 ${diffColor.bg} ${diffColor.border} ${diffColor.text}`}>
-                                        {step.difficulty || 'Medium'}
-                                      </span>
-                                      {step.time_estimate && (
-                                        <span className="text-[9px] font-mono text-[#5E6577] shrink-0">
-                                          ⏱ {step.time_estimate}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <span className="text-xs font-semibold text-[#E2E5EE] leading-snug block">
-                                      {step.action}
+                            <div key={sIdx} className={`border rounded-xl transition-all duration-200 overflow-hidden ${th.cardInner}`}>
+                              <button
+                                type="button"
+                                onClick={() => setExpandedRoadmapStep(isOpen ? null : sIdx)}
+                                className={`w-full text-left px-4 py-3.5 flex items-center justify-between gap-3 cursor-pointer ${th.cardHover}`}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                                    <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold shrink-0`}>Step {step.step || sIdx + 1}</span>
+                                    <span className={`font-mono text-[9px] px-2 py-0.5 rounded-full border font-bold shrink-0 ${diffColor.bg} ${diffColor.border} ${diffColor.text}`}>
+                                      {step.difficulty || 'Medium'}
                                     </span>
-                                    <span className="text-[11px] text-[#5E6577] italic mt-0.5 block">{step.why_it_works}</span>
-                                  </div>
-                                  <div className={`shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-all duration-200 ${
-                                    isOpen ? 'bg-[#252A38] border-[#31374A] text-[#E2E5EE]' : 'border-[#212533] text-[#5E6577] group-hover:border-[#2B3042] group-hover:text-[#8E95A5]'
-                                  }`}>
-                                    <svg className={`w-2.5 h-2.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                  </div>
-                                </button>
-
-                                {/* Expanded result panel */}
-                                {isOpen && (
-                                  <div className="px-4 pb-4 border-t border-[#1A1D28] space-y-3 pt-3">
-                                    {/* Expected Result */}
-                                    {step.expected_result && (
-                                      <div className="bg-[#0D0F14] border border-[#1E2230] rounded-lg p-3">
-                                        <div className="flex items-center gap-1.5 mb-1.5">
-                                          <div className={`w-1.5 h-1.5 rounded-full ${diffColor.dot}`} />
-                                          <span className="text-[10px] font-mono uppercase text-[#5E6577] tracking-wider">Expected Result</span>
-                                        </div>
-                                        <p className="text-xs text-[#E2E5EE] font-medium leading-relaxed">
-                                          {step.expected_result}
-                                        </p>
-                                      </div>
-                                    )}
-
-                                    {/* Success Signals checklist */}
-                                    {step.success_signals?.length > 0 && (
-                                      <div className="bg-[#0D0F14] border border-[#1E2230] rounded-lg p-3">
-                                        <span className="text-[10px] font-mono uppercase text-[#5E6577] tracking-wider block mb-2">
-                                          ✓ Success Signals — you are done when:
-                                        </span>
-                                        <div className="space-y-1.5">
-                                          {step.success_signals.map((signal, sgIdx) => (
-                                            <div key={sgIdx} className="flex items-start gap-2 text-xs">
-                                              <div className={`mt-0.5 w-4 h-4 rounded border shrink-0 flex items-center justify-center ${diffColor.bg} ${diffColor.border}`}>
-                                                <svg className={`w-2.5 h-2.5 ${diffColor.text}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                </svg>
-                                              </div>
-                                              <span className="text-[#8E95A5] leading-relaxed">{signal}</span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {/* Fallback if no enriched fields */}
-                                    {!step.expected_result && !step.success_signals?.length && (
-                                      <div className="bg-[#0D0F14] border border-[#1E2230] rounded-lg p-3">
-                                        <span className="text-[10px] font-mono uppercase text-[#5E6577] tracking-wider block mb-1">Why This Works</span>
-                                        <p className="text-xs text-[#8E95A5]">{step.why_it_works}</p>
-                                      </div>
+                                    {step.time_estimate && (
+                                      <span className={`text-[10px] font-mono ${th.textMuted} shrink-0`}>
+                                        ⏱ {step.time_estimate}
+                                      </span>
                                     )}
                                   </div>
-                                )}
-                              </div>
+                                  <span className={`text-xs font-bold ${th.textPrimary} leading-snug block`}>
+                                    {step.action}
+                                  </span>
+                                  <span className={`text-[11px] ${th.textMuted} mt-0.5 block italic`}>{step.why_it_works}</span>
+                                </div>
+                                <div className={`shrink-0 w-6 h-6 rounded-md border flex items-center justify-center transition-all ${th.btnSecondary}`}>
+                                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                                </div>
+                              </button>
+
+                              {isOpen && (
+                                <div className={`px-4 pb-4 border-t space-y-3 pt-3.5 ${th.border}`}>
+                                  {step.expected_result && (
+                                    <div className={`border rounded-xl p-3.5 ${isDark ? 'bg-[#090A0F]' : 'bg-white'}`}>
+                                      <div className="flex items-center gap-1.5 mb-1.5">
+                                        <div className={`w-2 h-2 rounded-full ${diffColor.dot}`} />
+                                        <span className={`text-[10px] font-mono uppercase ${th.textMuted} font-bold tracking-wider`}>Expected Result</span>
+                                      </div>
+                                      <p className={`text-xs ${th.textPrimary} font-semibold leading-relaxed`}>
+                                        {step.expected_result}
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {step.success_signals?.length > 0 && (
+                                    <div className={`border rounded-xl p-3.5 ${isDark ? 'bg-[#090A0F]' : 'bg-white'}`}>
+                                      <span className={`text-[10px] font-mono uppercase ${th.textMuted} font-bold tracking-wider block mb-2`}>
+                                        ✓ Success Signals — You are done when:
+                                      </span>
+                                      <div className="space-y-1.5">
+                                        {step.success_signals.map((signal, sgIdx) => (
+                                          <div key={sgIdx} className="flex items-start gap-2 text-xs">
+                                            <CheckCircle2 className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${diffColor.text}`} />
+                                            <span className={`${th.textSecondary} leading-relaxed`}>{signal}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -1124,30 +1553,41 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* Frame-by-Frame Scripts Table with Equipment */}
+                  {/* Frame-by-Frame Scripts Table */}
                   {blueprints.length > 0 && (
-                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-3">
-                      <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">Frame-by-Frame Shooting Script</h3>
+                    <div className={`border rounded-2xl p-6 space-y-4 ${th.card}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <FileText className="w-4 h-4 text-blue-500" />
+                          <h3 className={`font-heading font-extrabold text-sm ${th.textPrimary}`}>Scene-by-Scene Video Shooting Script</h3>
+                        </div>
+                        <FeatureHelp 
+                          title="Shooting Script Teleprompter"
+                          description="A scene-by-scene filming guide with shot angles, on-camera actions, spoken lines, and duration per scene."
+                          align="right"
+                        />
+                      </div>
+
                       {blueprints[0]?.shooting_script?.length > 0 && (
                         <div className="overflow-x-auto">
-                          <table className="w-full text-left text-xs border border-[#212533] rounded overflow-hidden">
-                            <thead className="bg-[#11131A] text-[#5E6577] font-mono text-[10px]">
+                          <table className={`w-full text-left text-xs border rounded-xl overflow-hidden ${th.border}`}>
+                            <thead className={`font-mono text-[10px] ${th.tableHead}`}>
                               <tr>
-                                <th className="p-2 border-b border-[#212533]">Scene</th>
-                                <th className="p-2 border-b border-[#212533]">Shot</th>
-                                <th className="p-2 border-b border-[#212533]">Action</th>
-                                <th className="p-2 border-b border-[#212533]">Dialogue / Caption</th>
-                                <th className="p-2 border-b border-[#212533]">Duration</th>
+                                <th className="p-3 border-b">Scene</th>
+                                <th className="p-3 border-b">Camera Shot</th>
+                                <th className="p-3 border-b">On-Screen Action</th>
+                                <th className="p-3 border-b">Dialogue / Voiceover</th>
+                                <th className="p-3 border-b">Duration</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-[#212533] bg-[#151821]">
+                            <tbody className="divide-y">
                               {blueprints[0].shooting_script.map((row, rIdx) => (
-                                <tr key={rIdx} className="hover:bg-[#1A1D28]">
-                                  <td className="p-2 font-mono text-[#8E95A5]">{row.scene}</td>
-                                  <td className="p-2 text-[#8E95A5]">{row.shot_type}</td>
-                                  <td className="p-2 text-[#8E95A5]">{row.action}</td>
-                                  <td className="p-2 text-[#E2E5EE] font-medium">{row.dialogue_or_caption}</td>
-                                  <td className="p-2 font-mono text-[#5E6577]">{row.duration_seconds}s</td>
+                                <tr key={rIdx} className={th.tableRow}>
+                                  <td className={`p-3 font-mono ${th.textMuted} font-bold`}>{row.scene}</td>
+                                  <td className={`p-3 ${th.textSecondary}`}>{row.shot_type}</td>
+                                  <td className={`p-3 ${th.textSecondary}`}>{row.action}</td>
+                                  <td className={`p-3 ${th.textPrimary} font-semibold`}>{row.dialogue_or_caption}</td>
+                                  <td className={`p-3 font-mono ${th.textMuted}`}>{row.duration_seconds}s</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -1155,12 +1595,12 @@ export default function App() {
                         </div>
                       )}
 
-                      {/* Required Equipment tags (Restored from app.py) */}
+                      {/* Required Equipment */}
                       {blueprints[0]?.equipment_needed?.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#212533]">
-                          <span className="text-[10px] font-mono text-[#5E6577] uppercase mr-1">Required Equipment:</span>
+                        <div className={`flex flex-wrap items-center gap-2 pt-3 border-t ${th.border}`}>
+                          <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold mr-1`}>Gear You Need:</span>
                           {blueprints[0].equipment_needed.map((eq, eIdx) => (
-                            <span key={eIdx} className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#11131A] border border-[#212533] text-[#8E95A5]">
+                            <span key={eIdx} className={`font-mono text-[11px] px-2.5 py-1 rounded-md border ${th.pillSecondary}`}>
                               {eq}
                             </span>
                           ))}
@@ -1169,40 +1609,48 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* 5 Niche Piracy Upgrade Concepts (Restored from app.py) */}
+                  {/* 5 Niche Piracy Upgrade Concepts */}
                   {piracyIdeas.length > 0 && (
-                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-3">
+                    <div className={`border rounded-2xl p-6 space-y-4 ${th.card}`}>
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                        <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">5 Niche Piracy Upgrade Concepts</h3>
-                        <span className="text-xs text-[#8E95A5]">Take competitor baselines and engineer 10x superior versions</span>
+                        <div>
+                          <h3 className={`font-heading font-extrabold text-sm ${th.textPrimary}`}>5 Ways to Beat Competitor Videos</h3>
+                          <span className={`text-xs ${th.textMuted}`}>Turn competitor baselines into superior viral uploads</span>
+                        </div>
+                        <FeatureHelp 
+                          title="Competitor Upgrade Concepts"
+                          description="Take video formats that already got millions of views for competitors, and upgrade them to make yours 10x more compelling."
+                          align="right"
+                        />
                       </div>
-                      <div className="space-y-3">
+
+                      <div className="space-y-3.5">
                         {piracyIdeas.map((idea, pIdx) => (
-                          <div key={pIdx} className="bg-[#11131A] border border-[#212533] rounded-lg p-4 text-xs space-y-2">
+                          <div key={pIdx} className={`border rounded-xl p-4.5 text-xs space-y-3 ${th.cardInner}`}>
                             <div className="flex items-center justify-between">
-                              <h4 className="font-semibold text-sm text-[#E2E5EE]">
+                              <h4 className={`font-bold text-sm ${th.textPrimary}`}>
                                 Upgrade #{idea.id || pIdx + 1}: {idea.your_upgrade_title}
                               </h4>
-                              <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#1D212D] text-[#8E95A5]">
+                              <span className={`font-mono text-[10px] px-2.5 py-0.5 rounded-full border ${th.pill}`}>
                                 {idea.estimated_views}
                               </span>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[#8E95A5]">
-                              <div className="bg-[#151821] p-2.5 rounded border border-[#212533]">
-                                <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-0.5">Competitor Baseline:</span>
-                                <p>{idea.competitor_did}</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className={`p-3.5 rounded-xl border ${isDark ? 'bg-[#090A0F]' : 'bg-white'}`}>
+                                <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>What the Competitor Did:</span>
+                                <p className={th.textSecondary}>{idea.competitor_did}</p>
                               </div>
-                              <div className="bg-[#151821] p-2.5 rounded border border-[#212533]">
-                                <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-0.5">Why Yours Outperforms:</span>
-                                <p>{idea.why_yours_wins}</p>
+                              <div className={`p-3.5 rounded-xl border ${isDark ? 'bg-[#090A0F]' : 'bg-white'}`}>
+                                <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>Why Your Version Wins:</span>
+                                <p className={th.textSecondary}>{idea.why_yours_wins}</p>
                               </div>
                             </div>
                             {idea.candidate_hooks?.length > 0 && (
-                              <div className="pt-2 border-t border-[#212533] space-y-1">
-                                <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Upgrade Hooks:</span>
+                              <div className={`pt-2.5 border-t space-y-2 ${th.border}`}>
+                                <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold block`}>Opening Lines:</span>
                                 {idea.candidate_hooks.map((phk, phIdx) => (
-                                  <div key={phIdx} className="flex items-center gap-2 text-[11px] text-[#E2E5EE]">
-                                    <span className="font-mono text-[9px] px-1 py-0.5 rounded bg-[#151821] text-[#8E95A5]">{phk.sid || `S${phIdx+1}`}</span>
+                                  <div key={phIdx} className={`flex items-center gap-2 text-xs ${th.textPrimary}`}>
+                                    <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded border ${th.pill}`}>{phk.sid || `S${phIdx+1}`}</span>
                                     <span>{phk.text}</span>
                                   </div>
                                 ))}
@@ -1213,9 +1661,9 @@ export default function App() {
                                     setHooksText(`Piracy Upgrade (${idea.your_upgrade_title}):\n${lines}`);
                                     setActiveTab('simulator');
                                   }}
-                                  className="mt-2 text-xs text-[#8E95A5] hover:text-[#E2E5EE] flex items-center gap-1 font-medium transition"
+                                  className="mt-2 text-xs font-semibold text-blue-500 hover:text-blue-400 flex items-center gap-1.5 cursor-pointer"
                                 >
-                                  Test 4 Piracy Hooks in Simulator <ArrowRight className="w-3 h-3" />
+                                  <span>Test these openers in Hook Tester</span> <ArrowRight className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             )}
@@ -1230,38 +1678,48 @@ export default function App() {
           )}
 
           {/* ─────────────────────────────────────────────────────────────── */}
-          {/* TAB 4: RETENTION FRICTION AUDIT                                 */}
+          {/* TAB 4: VIEWER COMPLAINTS & DROP-OFFS                            */}
           {/* ─────────────────────────────────────────────────────────────── */}
           {activeTab === 'friction' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {!intelData ? (
-                <div className="text-center py-16 text-[#5E6577] border border-dashed border-[#212533] rounded-xl">
-                  <ShieldAlert className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-xs">Analyze a creator to review audience criticisms and drop-off causes.</p>
+                <div className={`text-center py-20 border border-dashed rounded-2xl ${th.card} p-8 space-y-3`}>
+                  <ShieldAlert className="w-10 h-10 mx-auto text-rose-500 opacity-40" />
+                  <h3 className={`font-semibold text-sm ${th.textPrimary}`}>No Audience Feedback Scanned</h3>
+                  <p className={`text-xs ${th.textSecondary}`}>Analyze a creator to review real viewer complaints and drop-off reasons.</p>
                 </div>
               ) : (
                 <>
-                  <div className="bg-[#151821] border border-[#212533] rounded-xl p-5">
-                    <h3 className="font-heading font-semibold text-sm text-[#E2E5EE] mb-1">Viewer Drop-off Triggers &amp; Complaints</h3>
-                    <p className="text-xs text-[#8E95A5] mb-4">Mined from public feedback and comment sentiment patterns.</p>
+                  <div className={`border rounded-2xl p-6 space-y-4 ${th.card}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className={`font-heading font-extrabold text-sm ${th.textPrimary}`}>What Viewers Are Complaining About</h3>
+                        <p className={`text-xs ${th.textSecondary} mt-0.5`}>Mined from comment sentiment and viewer drop-off analytics.</p>
+                      </div>
+                      <FeatureHelp 
+                        title="Audience Criticisms"
+                        description="Real criticisms collected from comment sentiment. Highlights what annoys viewers so your videos can avoid the same friction."
+                        align="right"
+                      />
+                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                       {negativeReviews.map((rev, rIdx) => (
-                        <div key={rIdx} className="bg-[#11131A] border border-[#212533] rounded-lg p-3 text-xs">
-                          <div className="flex justify-between items-center mb-1.5">
-                            <span className="font-semibold text-[#E2E5EE]">{rev.criticism_category}</span>
-                            <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded border ${
+                        <div key={rIdx} className={`border rounded-xl p-4 text-xs space-y-2 ${th.cardInner}`}>
+                          <div className="flex justify-between items-center">
+                            <span className={`font-bold ${th.textPrimary}`}>{rev.criticism_category}</span>
+                            <span className={`font-mono text-[9px] px-2 py-0.5 rounded-full border font-bold ${
                               rev.frequency === 'Common'
-                                ? 'bg-[#2E181B] border-[#5C2329] text-[#F87171]'
-                                : 'bg-[#282114] border-[#4D3A1B] text-[#FBBF24]'
+                                ? 'bg-rose-500/10 border-rose-500/30 text-rose-500'
+                                : 'bg-amber-500/10 border-amber-500/30 text-amber-500'
                             }`}>
                               {rev.frequency}
                             </span>
                           </div>
                           {rev.audience_quote_example && (
-                            <p className="text-[#8E95A5] italic mb-1.5">"{rev.audience_quote_example}"</p>
+                            <p className={`${th.textSecondary} italic leading-relaxed`}>"{rev.audience_quote_example}"</p>
                           )}
-                          <span className="text-[10px] text-[#5E6577] block">Impact: {rev.impact_on_channel}</span>
+                          <span className={`text-[10px] ${th.textMuted} block font-medium`}>Channel Impact: {rev.impact_on_channel}</span>
                         </div>
                       ))}
                     </div>
@@ -1269,15 +1727,26 @@ export default function App() {
 
                   {/* Counter-hook solutions */}
                   {improvementSuggestions.length > 0 && (
-                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-5">
-                      <h3 className="font-heading font-semibold text-sm text-[#E2E5EE] mb-3">Counter-Hook Fixes</h3>
-                      <div className="space-y-2">
+                    <div className={`border rounded-2xl p-6 space-y-4 ${th.card}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <CheckCircle className="w-4 h-4 text-emerald-500" />
+                          <h3 className={`font-heading font-extrabold text-sm ${th.textPrimary}`}>How to Fix These Complaints in Your Videos</h3>
+                        </div>
+                        <FeatureHelp 
+                          title="Counter-Hook Fixes"
+                          description="Actionable ways to resolve audience complaints by changing your opening script and pacing."
+                          align="right"
+                        />
+                      </div>
+
+                      <div className="space-y-3">
                         {improvementSuggestions.map((imp, iIdx) => (
-                          <div key={iIdx} className="bg-[#11131A] border border-[#212533] rounded p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs">
-                            <div>
-                              <span className="text-[10px] font-mono text-[#5E6577] uppercase block">{imp.fix_title}</span>
-                              <p className="text-[#8E95A5] mt-0.5">{imp.fix_description}</p>
-                              <span className="text-[#E2E5EE] italic font-medium block mt-1">"{imp.hook_upgrade}"</span>
+                          <div key={iIdx} className={`border rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3.5 text-xs ${th.cardInner}`}>
+                            <div className="flex-1 space-y-1">
+                              <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold block`}>{imp.fix_title}</span>
+                              <p className={`${th.textSecondary} leading-relaxed`}>{imp.fix_description}</p>
+                              <span className={`${th.textPrimary} italic font-semibold block pt-0.5`}>"{imp.hook_upgrade}"</span>
                             </div>
                             <button
                               type="button"
@@ -1293,9 +1762,9 @@ export default function App() {
                                 setHooksText(`Counter-Hook Upgrade (${imp.fix_title}):\n${candLines}`);
                                 setActiveTab('simulator');
                               }}
-                              className="px-2.5 py-1 bg-[#252A38] hover:bg-[#2D3344] text-[#E2E5EE] border border-[#31374A] rounded text-xs whitespace-nowrap transition cursor-pointer"
+                              className={`px-3.5 py-1.5 border rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${th.btnSecondary}`}
                             >
-                              Test in Simulator →
+                              Test Fix in Hook Tester →
                             </button>
                           </div>
                         ))}
@@ -1308,42 +1777,50 @@ export default function App() {
           )}
 
           {/* ─────────────────────────────────────────────────────────────── */}
-          {/* TAB 5: HOOK SIMULATOR & PREDICTIVE MONETIZATION                 */}
+          {/* TAB 5: VIDEO HOOK TESTER & EARNINGS PREDICTOR                   */}
           {/* ─────────────────────────────────────────────────────────────── */}
           {activeTab === 'simulator' && (
-            <div className="space-y-4">
-              <div className="bg-[#151821] border border-[#212533] rounded-xl p-5">
-                <div className="flex justify-between items-center mb-3">
+            <div className="space-y-6">
+              <div className={`border rounded-2xl p-6 space-y-4 ${th.card}`}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <div>
-                    <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">Hook Stop-Scroll Simulator</h3>
-                    <p className="text-xs text-[#8E95A5]">Calibrate candidate hooks across simulated demographic personas.</p>
+                    <h3 className={`font-heading font-extrabold text-base ${th.textPrimary}`}>Video Hook Tester (3-Second Scroll Stopper)</h3>
+                    <p className={`text-xs ${th.textSecondary} mt-0.5`}>Calibrate candidate hooks across simulated audience demographics.</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setHooksText(
-                      "Creator: CarryMinati. Niche: Viral Roasts.\n" +
-                      "S1: I found the fakest gym influencer on Instagram and confronted him.\n" +
-                      "S2: Nobody noticed this millionaire YouTuber doing this in India...\n" +
-                      "S3: If you watch motivational podcasts, I have terrible news for you.\n" +
-                      "S4: This one video got 10 million views for the worst reason ever."
-                    )}
-                    className="text-xs px-2.5 py-1 bg-[#1A1D28] hover:bg-[#212533] text-[#8E95A5] hover:text-[#E2E5EE] border border-[#212533] rounded transition cursor-pointer"
-                  >
-                    Load Preset
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setHooksText(
+                        "Creator: CarryMinati. Niche: Viral Roasts.\n" +
+                        "S1: I found the fakest gym influencer on Instagram and confronted him.\n" +
+                        "S2: Nobody noticed this millionaire YouTuber doing this in India...\n" +
+                        "S3: If you watch motivational podcasts, I have terrible news for you.\n" +
+                        "S4: This one video got 10 million views for the worst reason ever."
+                      )}
+                      className={`text-xs px-3 py-1.5 border rounded-lg transition cursor-pointer ${th.btnSecondary}`}
+                    >
+                      Load Example Hooks
+                    </button>
+                    <FeatureHelp 
+                      title="Video Hook Simulator"
+                      description="Simulate how viewers react to the first 3 seconds of your video to predict scroll-stopping retention and revenue."
+                      tip="Hooks with scores above 4.0/5.0 have the highest probability of triggering algorithm recommendations."
+                      align="right"
+                    />
+                  </div>
                 </div>
 
                 <textarea
                   value={hooksText}
                   onChange={(e) => setHooksText(e.target.value)}
                   rows={4}
-                  placeholder="Paste candidate hooks (S1 to S4)..."
-                  className="w-full bg-[#11131A] border border-[#212533] focus:border-[#4F6382] rounded-md p-2.5 text-xs text-[#E2E5EE] font-mono outline-none mb-3"
+                  placeholder="Paste candidate hooks here (e.g. S1: Did you know... S2: Stop doing this...)..."
+                  className={`w-full rounded-xl p-3.5 text-xs font-mono outline-none border transition ${th.input}`}
                 />
 
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-xs text-[#8E95A5]">
-                    <span className="font-mono text-[11px]">Personas: {sampleSize}</span>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
+                  <div className={`flex items-center gap-3 text-xs ${th.textSecondary}`}>
+                    <span className="font-mono text-[11px] font-bold">Test Audience: {sampleSize} Personas</span>
                     <input
                       type="range"
                       min="10"
@@ -1351,7 +1828,7 @@ export default function App() {
                       step="5"
                       value={sampleSize}
                       onChange={(e) => setSampleSize(Number(e.target.value))}
-                      className="w-32 accent-[#4F6382] cursor-pointer"
+                      className={`w-36 cursor-pointer ${th.sliderTrack}`}
                     />
                   </div>
 
@@ -1359,104 +1836,107 @@ export default function App() {
                     type="button"
                     onClick={handleSimulate}
                     disabled={simulating || !hooksText.trim()}
-                    className="w-full sm:w-auto px-4 py-1.5 bg-[#252A38] hover:bg-[#2D3344] disabled:opacity-50 text-xs font-semibold text-[#E2E5EE] border border-[#31374A] rounded-md transition cursor-pointer"
+                    className={`w-full sm:w-auto px-6 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${th.btnPrimary} disabled:opacity-50`}
                   >
-                    {simulating ? 'Calibrating...' : 'Run Simulation'}
+                    {simulating ? 'Calibrating Test...' : 'Test These Opening Hooks'}
                   </button>
                 </div>
               </div>
 
               {/* Simulation Output */}
               {simResults && (
-                <div className="space-y-4">
-                  {/* Statistical Confidence Badge (Restored from app.py) */}
+                <div className="space-y-5">
+                  {/* Test Confidence Badge */}
                   {simResults.confidence && (
-                    <div className={`p-3 rounded-lg border text-xs flex items-center gap-2 ${
+                    <div className={`p-4 rounded-xl border text-xs flex items-center gap-2.5 ${
                       simResults.confidence[0] === 'LOW'
-                        ? 'bg-[#2E181B] border-[#5C2329] text-[#F87171]'
+                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-500'
                         : simResults.confidence[0] !== 'OK'
-                        ? 'bg-[#282114] border-[#4D3A1B] text-[#FBBF24]'
-                        : 'bg-[#12281D] border-[#1D4A33] text-[#4ADE80]'
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-500'
+                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
                     }`}>
                       <Check className="w-4 h-4 shrink-0" />
-                      <span>Statistical Confidence: <strong>{simResults.confidence[0]}</strong> — {simResults.confidence[1]}</span>
+                      <span>Test Confidence: <strong>{simResults.confidence[0]}</strong> — {simResults.confidence[1]}</span>
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-4">
-                      <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Predicted Earnings ({simResults.predictions.top_hook})</span>
-                      <div className="text-lg font-bold text-[#E2E5EE] mt-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div className={`border rounded-2xl p-5 space-y-2 ${th.card}`}>
+                      <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold block`}>
+                        Estimated Earnings ({simResults.predictions.top_hook})
+                      </span>
+                      <div className={`text-2xl font-extrabold ${th.textPrimary}`}>
                         ₹{simResults.predictions.tot_rev_min.toLocaleString()} – ₹{simResults.predictions.tot_rev_max.toLocaleString()}
-                        <span className="text-xs text-[#8E95A5] font-normal ml-2">(${simResults.predictions.tot_rev_usd_min.toLocaleString()} – ${simResults.predictions.tot_rev_usd_max.toLocaleString()})</span>
+                        <span className={`text-xs ${th.textMuted} font-normal ml-2`}>(${simResults.predictions.tot_rev_usd_min.toLocaleString()} – ${simResults.predictions.tot_rev_usd_max.toLocaleString()})</span>
                       </div>
-                      <div className="text-[11px] text-[#8E95A5] mt-1.5 space-y-0.5">
-                        <div>Views Potential: <strong className="text-[#E2E5EE]">{simResults.predictions.views_tier}</strong></div>
+                      <div className={`text-[11px] ${th.textSecondary} space-y-1 pt-1 font-medium`}>
+                        <div>Expected Views: <strong className={th.textPrimary}>{simResults.predictions.views_tier}</strong></div>
                         <div>AdSense Estimate: ₹{simResults.predictions.adsense_min.toLocaleString()} – ₹{simResults.predictions.adsense_max.toLocaleString()}</div>
                       </div>
                     </div>
 
-                    <div className="bg-[#151821] border border-[#212533] rounded-xl p-4">
-                      <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Viral Potential Index</span>
-                      <div className="text-lg font-bold text-[#E2E5EE] mt-1">
+                    <div className={`border rounded-2xl p-5 space-y-2 ${th.card}`}>
+                      <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold block`}>Viral Potential Index</span>
+                      <div className={`text-2xl font-extrabold text-blue-500`}>
                         {simResults.predictions.viral_index} / 100
                       </div>
-                      <div className="text-[11px] text-[#8E95A5] mt-1.5 space-y-0.5">
-                        <div>Tier: <strong className="text-[#E2E5EE]">{simResults.predictions.fame_label}</strong></div>
+                      <div className={`text-[11px] ${th.textSecondary} space-y-1 pt-1 font-medium`}>
+                        <div>Viral Tier: <strong className={th.textPrimary}>{simResults.predictions.fame_label}</strong></div>
                         <div>Follower Projection: {simResults.predictions.subs_gain}</div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Visual Hook Ranking Distribution Bars (Restored from app.py) */}
-                  <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 text-xs space-y-3">
-                    <h4 className="font-semibold text-sm text-[#E2E5EE]">Hook Stop-Scroll Visual Ranking</h4>
-                    <div className="space-y-3">
+                  {/* Visual Hook Ranking Distribution Bars */}
+                  <div className={`border rounded-2xl p-6 space-y-4 text-xs ${th.card}`}>
+                    <h4 className={`font-bold text-sm ${th.textPrimary}`}>Hook Retention Ranking</h4>
+
+                    <div className="space-y-3.5">
                       {simResults.items.map((it, idx) => {
                         const scorePct = Math.min(100, Math.max(10, (it.score / 5.0) * 100));
                         const bestPct = Math.round(it.best * 100);
                         const worstPct = Math.round(it.worst * 100);
                         return (
-                          <div key={idx} className="bg-[#11131A] border border-[#212533] rounded-lg p-3 space-y-2">
+                          <div key={idx} className={`border rounded-xl p-4 space-y-2.5 ${th.cardInner}`}>
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                              <div className="flex items-start gap-2">
-                                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#1D212D] text-[#8E95A5] font-bold shrink-0">{it.sid}</span>
-                                <span className="text-[#E2E5EE] font-medium">{it.hook_text}</span>
+                              <div className="flex items-start gap-2.5">
+                                <span className={`font-mono text-[10px] px-2 py-0.5 rounded-md font-extrabold border ${th.pill}`}>{it.sid}</span>
+                                <span className={`font-semibold ${th.textPrimary}`}>{it.hook_text}</span>
                               </div>
-                              <div className="font-mono text-xs text-[#E2E5EE] shrink-0">
-                                Rating: <strong className="text-sm">{it.score.toFixed(2)}</strong> / 5.0
+                              <div className={`font-mono text-xs ${th.textPrimary} shrink-0`}>
+                                Score: <strong className="text-sm font-extrabold">{it.score.toFixed(2)}</strong> / 5.0
                               </div>
                             </div>
 
                             {/* Stop-Scroll Rating Score Bar */}
                             <div className="space-y-1">
-                              <div className="flex justify-between text-[10px] font-mono text-[#5E6577]">
-                                <span>Retention Score</span>
+                              <div className={`flex justify-between text-[10px] font-mono ${th.textMuted}`}>
+                                <span>Attention-Grab Score</span>
                                 <span>{scorePct.toFixed(0)}%</span>
                               </div>
-                              <div className="w-full bg-[#151821] h-1.5 rounded-full overflow-hidden">
-                                <div className="bg-[#4F6382] h-full rounded-full" style={{ width: `${scorePct}%` }} />
+                              <div className={`w-full h-2 rounded-full overflow-hidden border ${th.progressTrack}`}>
+                                <div className={`h-full rounded-full ${th.progressBar}`} style={{ width: `${scorePct}%` }} />
                               </div>
                             </div>
 
-                            {/* Polarization Split (Best vs Worst) */}
-                            <div className="grid grid-cols-2 gap-2 pt-1">
+                            {/* Polarization Split */}
+                            <div className="grid grid-cols-2 gap-3 pt-1">
                               <div>
-                                <div className="flex justify-between text-[10px] font-mono text-[#5E6577] mb-0.5">
-                                  <span className="text-[#4ADE80]">Favorite Share</span>
+                                <div className={`flex justify-between text-[10px] font-mono ${th.textMuted} mb-1`}>
+                                  <span className="text-emerald-500 font-bold">Loved By</span>
                                   <span>{bestPct}%</span>
                                 </div>
-                                <div className="w-full bg-[#151821] h-1 rounded-full overflow-hidden">
-                                  <div className="bg-[#10B981] h-full rounded-full" style={{ width: `${bestPct}%` }} />
+                                <div className={`w-full h-1.5 rounded-full overflow-hidden border ${th.progressTrack}`}>
+                                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${bestPct}%` }} />
                                 </div>
                               </div>
                               <div>
-                                <div className="flex justify-between text-[10px] font-mono text-[#5E6577] mb-0.5">
-                                  <span className="text-[#F87171]">Drop-off Risk</span>
+                                <div className={`flex justify-between text-[10px] font-mono ${th.textMuted} mb-1`}>
+                                  <span className="text-rose-500 font-bold">Skipped By</span>
                                   <span>{worstPct}%</span>
                                 </div>
-                                <div className="w-full bg-[#151821] h-1 rounded-full overflow-hidden">
-                                  <div className="bg-[#F43F5E] h-full rounded-full" style={{ width: `${worstPct}%` }} />
+                                <div className={`w-full h-1.5 rounded-full overflow-hidden border ${th.progressTrack}`}>
+                                  <div className="bg-rose-500 h-full rounded-full" style={{ width: `${worstPct}%` }} />
                                 </div>
                               </div>
                             </div>
@@ -1466,29 +1946,29 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Detailed Ranking Data Table (Restored from app.py) */}
-                  <div className="bg-[#151821] border border-[#212533] rounded-xl p-4 text-xs overflow-x-auto">
-                    <h4 className="font-semibold text-[#E2E5EE] mb-2.5">Detailed Calibration Metrics</h4>
-                    <table className="w-full text-left text-xs border border-[#212533] rounded">
-                      <thead className="bg-[#11131A] text-[#5E6577] font-mono text-[10px]">
+                  {/* Detailed Ranking Data Table */}
+                  <div className={`border rounded-2xl p-6 text-xs overflow-x-auto ${th.card}`}>
+                    <h4 className={`font-bold ${th.textPrimary} mb-3`}>Detailed Calibration Metrics</h4>
+                    <table className={`w-full text-left text-xs border rounded-xl overflow-hidden ${th.border}`}>
+                      <thead className={`font-mono text-[10px] ${th.tableHead}`}>
                         <tr>
-                          <th className="p-2 border-b border-[#212533]">Hook ID</th>
-                          <th className="p-2 border-b border-[#212533]">Hook Text</th>
-                          <th className="p-2 border-b border-[#212533]">Rating</th>
-                          <th className="p-2 border-b border-[#212533]">Best %</th>
-                          <th className="p-2 border-b border-[#212533]">Worst %</th>
-                          <th className="p-2 border-b border-[#212533]">Clickbait</th>
+                          <th className="p-3 border-b">Hook ID</th>
+                          <th className="p-3 border-b">Opening Line</th>
+                          <th className="p-3 border-b">Rating</th>
+                          <th className="p-3 border-b">Loved %</th>
+                          <th className="p-3 border-b">Skipped %</th>
+                          <th className="p-3 border-b">Clickbait %</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#212533] bg-[#151821]">
+                      <tbody className="divide-y">
                         {simResults.items.map((r, rIdx) => (
-                          <tr key={rIdx} className="hover:bg-[#1A1D28]">
-                            <td className="p-2 font-mono text-[#8E95A5]">{r.sid}</td>
-                            <td className="p-2 text-[#E2E5EE]">{r.hook_text}</td>
-                            <td className="p-2 font-mono font-semibold text-[#E2E5EE]">{r.score.toFixed(2)}</td>
-                            <td className="p-2 font-mono text-[#4ADE80]">{(r.best * 100).toFixed(0)}%</td>
-                            <td className="p-2 font-mono text-[#F87171]">{(r.worst * 100).toFixed(0)}%</td>
-                            <td className="p-2 font-mono text-[#8E95A5]">{(r.clickbait * 100).toFixed(0)}%</td>
+                          <tr key={rIdx} className={th.tableRow}>
+                            <td className={`p-3 font-mono ${th.textMuted} font-bold`}>{r.sid}</td>
+                            <td className={`p-3 font-medium ${th.textPrimary}`}>{r.hook_text}</td>
+                            <td className={`p-3 font-mono font-extrabold ${th.textPrimary}`}>{r.score.toFixed(2)}</td>
+                            <td className="p-3 font-mono text-emerald-500 font-semibold">{(r.best * 100).toFixed(0)}%</td>
+                            <td className="p-3 font-mono text-rose-500 font-semibold">{(r.worst * 100).toFixed(0)}%</td>
+                            <td className={`p-3 font-mono ${th.textMuted}`}>{(r.clickbait * 100).toFixed(0)}%</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1500,101 +1980,124 @@ export default function App() {
           )}
 
           {/* ─────────────────────────────────────────────────────────────── */}
-          {/* TAB 6: REACH & COMMERCIALS                                      */}
+          {/* TAB 6: AUDIENCE SIZE & AD RATES                                 */}
           {/* ─────────────────────────────────────────────────────────────── */}
           {activeTab === 'reach' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {!intelData ? (
-                <div className="text-center py-16 text-[#5E6577] border border-dashed border-[#212533] rounded-xl">
-                  <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-xs">Analyze a creator in the console above to evaluate channel reach, audience demographics, and rate card benchmarks.</p>
+                <div className={`text-center py-20 border border-dashed rounded-2xl ${th.card} p-8 space-y-3`}>
+                  <BarChart3 className="w-10 h-10 mx-auto text-blue-500 opacity-40" />
+                  <h3 className={`font-semibold text-sm ${th.textPrimary}`}>No Audience Data Loaded</h3>
+                  <p className={`text-xs ${th.textSecondary}`}>Analyze a creator in the command bar above to evaluate reach, demographics, and sponsorship rates.</p>
                 </div>
               ) : (
                 <>
-                  {/* Platform Reach Metrics */}
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                    <div className="bg-[#151821] border border-[#212533] rounded-lg p-3">
-                      <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Combined Reach</span>
-                      <div className="text-base font-bold text-[#E2E5EE] mt-0.5">{metrics.total_reach || '45M+'}</div>
+                  {/* Platform Reach Metrics Strip */}
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
+                    <div className={`border rounded-xl p-4 ${th.card}`}>
+                      <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold block`}>Total Reach</span>
+                      <div className={`text-xl font-extrabold ${th.textPrimary} mt-1`}>{metrics.total_reach || '45M+'}</div>
                     </div>
-                    <div className="bg-[#151821] border border-[#212533] rounded-lg p-3">
-                      <span className="text-[10px] font-mono text-[#5E6577] uppercase block">YouTube Base</span>
-                      <div className="text-base font-bold text-[#E2E5EE] mt-0.5">{metrics.youtube_subscribers || '—'}</div>
+                    <div className={`border rounded-xl p-4 ${th.card}`}>
+                      <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold block`}>YouTube Base</span>
+                      <div className={`text-xl font-extrabold ${th.textPrimary} mt-1`}>{metrics.youtube_subscribers || '—'}</div>
                     </div>
-                    <div className="bg-[#151821] border border-[#212533] rounded-lg p-3">
-                      <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Instagram Base</span>
-                      <div className="text-base font-bold text-[#E2E5EE] mt-0.5">{metrics.instagram_followers || '—'}</div>
+                    <div className={`border rounded-xl p-4 ${th.card}`}>
+                      <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold block`}>Instagram Base</span>
+                      <div className={`text-xl font-extrabold ${th.textPrimary} mt-1`}>{metrics.instagram_followers || '—'}</div>
                     </div>
-                    <div className="bg-[#151821] border border-[#212533] rounded-lg p-3">
-                      <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Engagement</span>
-                      <div className="text-base font-bold text-[#E2E5EE] mt-0.5">{metrics.engagement_rate || '—'}</div>
+                    <div className={`border rounded-xl p-4 ${th.card}`}>
+                      <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold block`}>Engagement</span>
+                      <div className={`text-xl font-extrabold text-blue-500 mt-1`}>{metrics.engagement_rate || '—'}</div>
                     </div>
-                    <div className="bg-[#151821] border border-[#212533] rounded-lg p-3 col-span-2 sm:col-span-1">
-                      <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Cadence</span>
-                      <div className="text-xs font-semibold text-[#E2E5EE] mt-1">{metrics.youtube_cadence || 'Regular'}</div>
+                    <div className={`border rounded-xl p-4 col-span-2 sm:col-span-1 ${th.card}`}>
+                      <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold block`}>Upload Cadence</span>
+                      <div className={`text-xs font-bold ${th.textPrimary} mt-1.5`}>{metrics.youtube_cadence || 'Regular'}</div>
                     </div>
                   </div>
 
                   {/* Commercial Rate Card Estimates */}
-                  <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-4">
-                    <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">Commercial Rate Card Estimates</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                        <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">YouTube Dedicated Integration</span>
-                        <span className="text-sm font-semibold text-[#E2E5EE]">{rateCard.est_youtube_rate || '₹35L - ₹75L'}</span>
+                  <div className={`border rounded-2xl p-6 space-y-4 ${th.card}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <DollarSign className="w-4 h-4 text-emerald-500" />
+                        <h3 className={`font-heading font-extrabold text-sm ${th.textPrimary}`}>Sponsorship Price Guide (What Brands Pay)</h3>
                       </div>
-                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                        <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Instagram Dedicated Reel</span>
-                        <span className="text-sm font-semibold text-[#E2E5EE]">{rateCard.est_instagram_reel_rate || '₹12L - ₹25L'}</span>
+                      <FeatureHelp 
+                        title="Sponsorship Pricing Guide"
+                        description="Estimated prices brands pay to sponsor a dedicated YouTube video, an Instagram Reel, or an Instagram story series."
+                        align="right"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                      <div className={`border rounded-xl p-4 ${th.cardInner}`}>
+                        <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>Dedicated YouTube Video</span>
+                        <span className="text-lg font-extrabold text-emerald-500">{rateCard.est_youtube_rate || '₹35L - ₹75L'}</span>
                       </div>
-                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                        <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Instagram Story Series</span>
-                        <span className="text-sm font-semibold text-[#E2E5EE]">{rateCard.est_story_rate || '₹3L - ₹6L'}</span>
+                      <div className={`border rounded-xl p-4 ${th.cardInner}`}>
+                        <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>Instagram Dedicated Reel</span>
+                        <span className="text-lg font-extrabold text-emerald-500">{rateCard.est_instagram_reel_rate || '₹12L - ₹25L'}</span>
+                      </div>
+                      <div className={`border rounded-xl p-4 ${th.cardInner}`}>
+                        <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>Instagram Story Series</span>
+                        <span className="text-lg font-extrabold text-emerald-500">{rateCard.est_story_rate || '₹3L - ₹6L'}</span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs">
-                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3 space-y-2">
-                        <span className="text-[10px] font-mono text-[#5E6577] uppercase block">High Affinity Sponsor Sectors</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 text-xs">
+                      <div className={`border rounded-xl p-4 space-y-3 ${th.cardInner}`}>
+                        <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold block`}>Best Sponsor Types</span>
                         <div className="flex flex-wrap gap-1.5">
                           {rateCard.brand_affinity_niches?.map((nch, nIdx) => (
-                            <span key={nIdx} className="px-2 py-0.5 rounded bg-[#151821] border border-[#212533] text-[11px] text-[#8E95A5]">
+                            <span key={nIdx} className={`px-2.5 py-1 rounded-md border text-[11px] ${th.pillSecondary}`}>
                               {nch}
                             </span>
                           ))}
                         </div>
                         {rateCard.past_or_likely_sponsors?.length > 0 && (
-                          <div className="pt-2 border-t border-[#212533]">
-                            <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Recent Active Advertisers</span>
-                            <span className="text-[#E2E5EE] font-medium">{rateCard.past_or_likely_sponsors.join(', ')}</span>
+                          <div className={`pt-2.5 border-t ${th.border}`}>
+                            <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>Known Brand Sponsors:</span>
+                            <span className={`font-semibold ${th.textPrimary}`}>{rateCard.past_or_likely_sponsors.join(', ')}</span>
                           </div>
                         )}
                       </div>
 
-                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                        <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Strategic Value &amp; Conversion Pitch</span>
-                        <p className="text-[#8E95A5] leading-relaxed">{rateCard.why_brands_partner || 'Delivers high conversion resonance with youth audience.'}</p>
+                      <div className={`border rounded-xl p-4 ${th.cardInner}`}>
+                        <span className={`text-[10px] font-mono ${th.textMuted} uppercase font-bold block mb-1`}>Why Brands Love Sponsoring Them</span>
+                        <p className={`${th.textSecondary} leading-relaxed`}>{rateCard.why_brands_partner || 'Delivers high conversion resonance with youth audience.'}</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Audience Demographics Breakdown (Restored from app.py) */}
-                  <div className="bg-[#151821] border border-[#212533] rounded-xl p-5 space-y-4">
-                    <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">Audience Demographics Breakdown</h3>
+                  {/* Audience Demographics Breakdown */}
+                  <div className={`border rounded-2xl p-6 space-y-4 ${th.card}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <Users className="w-4 h-4 text-blue-500" />
+                        <h3 className={`font-heading font-extrabold text-sm ${th.textPrimary}`}>Who Watches This Creator (Demographics)</h3>
+                      </div>
+                      <FeatureHelp 
+                        title="Audience Demographics"
+                        description="Geographic breakdown of viewers, age cohort distribution, and gender split."
+                        align="right"
+                      />
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                       {/* Top Countries */}
-                      <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3 space-y-2">
-                        <span className="text-[10px] font-mono text-[#5E6577] uppercase block">Top Geographic Markets</span>
-                        <div className="space-y-1.5">
+                      <div className={`border rounded-xl p-4 space-y-3 ${th.cardInner}`}>
+                        <span className={`text-[10px] font-mono ${th.textMuted} uppercase block font-bold`}>Top Geographic Countries</span>
+                        <div className="space-y-2">
                           {demographics.top_countries?.map((c, cIdx) => (
-                            <div key={cIdx} className="space-y-0.5">
+                            <div key={cIdx} className="space-y-1">
                               <div className="flex justify-between text-[11px]">
-                                <span className="text-[#E2E5EE]">{c.country}</span>
-                                <span className="font-mono text-[#8E95A5]">{c.share}</span>
+                                <span className={`font-semibold ${th.textPrimary}`}>{c.country}</span>
+                                <span className={`font-mono ${th.textMuted}`}>{c.share}</span>
                               </div>
-                              <div className="w-full bg-[#151821] h-1 rounded-full overflow-hidden">
+                              <div className={`w-full h-1.5 rounded-full overflow-hidden border ${th.progressTrack}`}>
                                 <div
-                                  className="bg-[#4F6382] h-full rounded-full"
+                                  className={`h-full rounded-full ${th.progressBar}`}
                                   style={{ width: `${c.share || '20%'}` }}
                                 />
                               </div>
@@ -1604,14 +2107,14 @@ export default function App() {
                       </div>
 
                       {/* Age & Gender Demographics */}
-                      <div className="space-y-3">
-                        <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                          <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Primary Age Cohort</span>
-                          <span className="text-sm font-semibold text-[#E2E5EE]">{demographics.primary_age || '18-24 (Gen Z)'}</span>
+                      <div className="space-y-3.5">
+                        <div className={`border rounded-xl p-4 ${th.cardInner}`}>
+                          <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>Primary Age Group</span>
+                          <span className={`text-base font-extrabold ${th.textPrimary}`}>{demographics.primary_age || '18-24 (Gen Z)'}</span>
                         </div>
-                        <div className="bg-[#11131A] border border-[#212533] rounded-lg p-3">
-                          <span className="text-[10px] font-mono text-[#5E6577] uppercase block mb-1">Gender Skew</span>
-                          <span className="text-sm font-semibold text-[#E2E5EE]">{demographics.gender_skew || '76% Male / 24% Female'}</span>
+                        <div className={`border rounded-xl p-4 ${th.cardInner}`}>
+                          <span className={`text-[10px] font-mono ${th.textMuted} uppercase block mb-1 font-bold`}>Gender Split</span>
+                          <span className={`text-base font-extrabold ${th.textPrimary}`}>{demographics.gender_skew || '76% Male / 24% Female'}</span>
                         </div>
                       </div>
                     </div>
@@ -1625,60 +2128,60 @@ export default function App() {
 
       {/* ─── AUTHENTICATION MODAL ──────────────────────────────────────────── */}
       {authModalOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#151821] border border-[#2B3042] rounded-xl max-w-sm w-full p-5 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-heading font-semibold text-sm text-[#E2E5EE]">
-                {authMode === 'login' ? 'Connect Account' : 'Create Account'}
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-popover">
+          <div className={`border rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 ${th.modalBg}`}>
+            <div className="flex justify-between items-center pb-2 border-b border-white/10">
+              <h3 className={`font-heading font-extrabold text-sm ${th.textPrimary}`}>
+                {authMode === 'login' ? 'Sign In to Your Workspace' : 'Create Account'}
               </h3>
               <button
                 onClick={() => setAuthModalOpen(false)}
-                className="text-[#8E95A5] hover:text-[#E2E5EE] text-sm"
+                className={`${th.textMuted} hover:${th.textPrimary} text-sm cursor-pointer p-1 rounded-md`}
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleAuth} className="space-y-3 text-xs">
+            <form onSubmit={handleAuth} className="space-y-3.5 text-xs">
               <div>
-                <label className="block text-[10px] font-mono text-[#5E6577] uppercase mb-1">Username</label>
+                <label className={`block text-[10px] font-mono ${th.textMuted} uppercase mb-1 font-bold`}>Username</label>
                 <input
                   type="text"
                   value={authUsername}
                   onChange={(e) => setAuthUsername(e.target.value)}
                   placeholder="e.g. asuja"
-                  className="w-full bg-[#11131A] border border-[#212533] focus:border-[#4F6382] rounded p-2 text-[#E2E5EE] outline-none"
+                  className={`w-full rounded-xl p-3 outline-none border transition ${th.input}`}
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-mono text-[#5E6577] uppercase mb-1">PIN</label>
+                <label className={`block text-[10px] font-mono ${th.textMuted} uppercase mb-1 font-bold`}>Access PIN</label>
                 <input
                   type="password"
                   value={authPin}
                   onChange={(e) => setAuthPin(e.target.value)}
                   placeholder="3-4 digits"
-                  className="w-full bg-[#11131A] border border-[#212533] focus:border-[#4F6382] rounded p-2 text-[#E2E5EE] outline-none"
+                  className={`w-full rounded-xl p-3 outline-none border transition ${th.input}`}
                 />
               </div>
 
-              {authError && <div className="text-[11px] text-[#F28B82]">{authError}</div>}
+              {authError && <div className="text-[11px] text-rose-500 font-semibold">{authError}</div>}
 
               <button
                 type="submit"
-                className="w-full py-2 bg-[#252A38] hover:bg-[#2D3344] text-[#E2E5EE] font-medium rounded transition"
+                className={`w-full py-3 rounded-xl font-bold transition cursor-pointer ${th.btnPrimary}`}
               >
                 {authMode === 'login' ? 'Sign In' : 'Create Profile'}
               </button>
             </form>
 
-            <div className="mt-3 text-center">
+            <div className="text-center pt-1">
               <button
                 type="button"
                 onClick={() => {
                   setAuthMode(authMode === 'login' ? 'signup' : 'login');
                   setAuthError('');
                 }}
-                className="text-[11px] text-[#8E95A5] hover:text-[#E2E5EE]"
+                className={`text-[11px] ${th.textSecondary} hover:${th.textPrimary} cursor-pointer font-medium transition`}
               >
                 {authMode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
               </button>

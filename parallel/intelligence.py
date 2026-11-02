@@ -275,45 +275,70 @@ Rules:
 - Keep all descriptions under word limits. Return ONLY valid JSON."""
 
 
-_SYS_C = """You are a master viral hook engineer and niche content strategist.
-You write hooks that sound EXACTLY like the creator in question — same vocabulary, same energy, same cultural reference layer.
+_SYS_C = """You are a master viral hook engineer and elite niche creator strategist.
+You write content concepts and 3-second opening hooks that sound 100% authentic to the creator, deeply understand their exact audience demographics and cultural mindset, strategically out-position their benchmark rival, and capitalize on real niche controversies and audience reactions.
 
-Given the creator name, niche, their actual top video hooks as examples, and peer trending videos, return ONLY a valid JSON object:
+Given the creator dossier, audience demographics, benchmark rival analysis, real search trends, audience friction points, and proven upload hooks, return ONLY a valid JSON object matching this schema:
 {
   "content_suggestions": [
     {
       "id": 1,
-      "title": "string (specific filmable idea, max 12 words)",
-      "trending_topic": "string (the underlying cultural/niche trend this taps into)",
-      "why_it_works": "string (cite the specific psychological trigger, max 12 words)",
-      "estimated_views": "string (e.g. \U0001f525 5M - 12M)",
+      "title": "string (specific, filmable high-concept title in their niche, max 12 words)",
+      "trending_topic": "string (the exact timely controversy, product debate, or hot issue in THIS niche — NOT random generic internet topics)",
+      "why_it_works": "string (the psychological retention trigger, max 12 words)",
+      "estimated_views": "string (e.g. 🔥 3.5M - 8M)",
+      "target_audience_appeal": "string (why THIS specific demographic cohort cares, citing their age, vibe, or frustration, max 15 words)",
+      "audience_sentiment_reaction": "string (the exact emotion or comment reaction this provokes, e.g. 'Rage at hidden service charges' or 'Relief that someone exposed the scam', max 15 words)",
+      "benchmark_differentiation": "string (how this idea specifically exploits the benchmark rival's gap or weakness, max 15 words)",
       "reference_video": {
         "title": "string (title of real reference video)",
-        "url": "string (valid playable youtube or instagram reel url)",
+        "url": "string (valid playable YouTube or Instagram Reel URL from the niche)",
         "platform": "YouTube | Instagram",
         "creator": "string (channel or creator who proved this concept)",
-        "why_reference": "string (why this video benchmarks this concept, max 10 words)"
+        "why_reference": "string (why this benchmarks this concept, max 10 words)"
       },
       "candidate_hooks": [
-        {"sid": "S1", "text": "string — Incident/Stakes hook: MUST name a specific niche detail, gear, or location (max 12 words)"},
-        {"sid": "S2", "text": "string — Curiosity Gap hook: tease a niche secret or surprising fact (max 12 words)"},
-        {"sid": "S3", "text": "string — Emotional/Shock hook: use a real niche fear, win, or failure (max 12 words)"},
-        {"sid": "S4", "text": "string — Contrarian/Challenge hook: dispute a popular niche belief (max 12 words)"}
+        {
+          "sid": "S1",
+          "archetype": "Incident / Stakes",
+          "text": "string — Spoken opening hook (first 3s): immediate event naming concrete niche details like prices, brands, bike/gadget models, locations, or stakes (max 12 words)",
+          "hook_technique": "string (why this stops scroll for this audience, max 8 words)"
+        },
+        {
+          "sid": "S2",
+          "archetype": "Curiosity Gap",
+          "text": "string — Spoken opening hook (first 3s): tease a specific insider loophole, secret, or mechanism the audience debates in comments (max 12 words)",
+          "hook_technique": "string (why this stops scroll for this audience, max 8 words)"
+        },
+        {
+          "sid": "S3",
+          "archetype": "Audience Reaction / Shock",
+          "text": "string — Spoken opening hook (first 3s): channels the audience's exact emotional reaction, outrage, or collective shock on this topic (max 12 words)",
+          "hook_technique": "string (why this stops scroll for this audience, max 8 words)"
+        },
+        {
+          "sid": "S4",
+          "archetype": "Contrarian vs Benchmark",
+          "text": "string — Spoken opening hook (first 3s): directly disputes the benchmark rival's safe take or popular niche consensus (max 12 words)",
+          "hook_technique": "string (why this stops scroll for this audience, max 8 words)"
+        }
       ]
     }
   ]
 }
-Hook Engineering Rules (CRITICAL — every rule is enforced):
-1. NEVER write a generic hook. Every hook must contain at least ONE niche-specific noun, activity, brand, or cultural reference.
-   BAD (generic): "This changed everything for me."
-   GOOD (moto-vlogger): "My KTM Duke slid at 80kmph on NH-48. Here is what saved me."
-   GOOD (finance): "I put ₹50,000 into this IPO and lost it all in 4 minutes."
-   GOOD (comedy): "My dadi tried Instagram Reels for the first time. It did not go well."
-2. Write in the creator's proven tone. Mirror the style of their sample hooks provided in the prompt.
-3. Each of the 4 hooks (S1–S4) must use a DIFFERENT archetype as labelled above — no two hooks can use the same structure.
-4. Use real specifics: brand names, city names, community slang, rupee amounts, gear names, platform names.
-5. Provide exactly 5 high-potential content suggestions total.
-6. EVERY suggestion MUST have a valid, playable reference_video url.
+Hook & Topic Engineering Rules (CRITICAL — strictly enforced):
+1. ZERO GENERIC FLUFF — FORBIDDEN TEMPLATES:
+   - NEVER write generic filler hooks like: "This changed everything", "Nobody wanted me to test this", "Stop making this mistake", "I did X for 30 days", "The truth about X".
+   - Every single hook MUST contain at least one REAL proper noun, model, brand, rupee/dollar price, location, or cultural term specific to THIS niche (e.g., 'KTM 390 Adventure', 'Delhi-Mumbai Expressway', 'Electoral Bonds', '₹499 subscription', 'iPhone 16 battery', 'creatine monohydrate', 'Bigg Boss OTT').
+2. VOICE & CULTURAL MIRRORING:
+   - Match the creator's authentic vernacular, cadence, and language (e.g., natural colloquial Hinglish/Hindi for Indian creators like CarryMinati or Dhruv Rathee; technical precision for tech reviewers; adrenaline pacing for action creators).
+3. AUDIENCE DEMOGRAPHIC SPECIFICITY:
+   - Anchor each suggestion in the audience's actual age, cultural background, and attention span. If they are Gen Z college students, speak to their campus/financial/internet realities; if older professionals, speak to theirs.
+4. EXPLOIT THE BENCHMARK GAP:
+   - Suggestions and hooks must highlight why the viewer should watch THIS creator instead of their benchmark rival (e.g., raw unfiltered receipts vs the rival's diplomatic/safe sponsor-friendly video).
+5. REAL NICHE TRENDING TOPICS:
+   - Ground topics in the actual search findings and niche controversies provided — NEVER fabricate random topics from unrelated industries.
+6. Provide exactly 5 high-potential content suggestions with all 4 distinct hook archetypes each.
 7. Return ONLY valid JSON."""
 
 
@@ -368,7 +393,7 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
     detected_niche = niche.strip() if niche and niche.strip() else ""
 
     if not (FirecrawlApp and key and key.strip() and not key.startswith("paste")):
-        return web_results, creator_videos, niche_videos, detected_niche or "Digital Content Creation", []
+        return web_results, creator_videos, niche_videos, detected_niche or "Digital Content Creation", [], []
 
     name_lower = creator_name.lower()
     tokens = [t for t in creator_name.split() if not t.startswith("@")]
@@ -499,6 +524,27 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
             except Exception as e:
                 print(f"[intelligence] Negative review search note: {e}")
 
+        # ── Query 5: Niche Hot Topics, Cultural Debates & Audience Reactions ────
+        trending_snippets = []
+        primary_topic = (detected_niche or niche or "content").split("&")[0].split(",")[0].strip()
+        queries_trending = [
+            f"{creator_name} trending video topic controversy viral debate audience comments",
+            f"{primary_topic} viral trending topic debate 2024 OR 2025 reddit youtube",
+            f"{primary_topic} community debate audience reaction what people are saying viral discussion"
+        ]
+        for qt in queries_trending:
+            try:
+                res_trend = app.search(qt, limit=3)
+                if hasattr(res_trend, "web") and res_trend.web:
+                    for item in res_trend.web:
+                        t = getattr(item, "title", "")
+                        s = getattr(item, "description", "")
+                        u = getattr(item, "url", "")
+                        if t or s:
+                            trending_snippets.append({"title": t, "snippet": s, "url": u})
+            except Exception as e:
+                print(f"[intelligence] Trending search note: {e}")
+
     except Exception as e:
         print(f"[intelligence] Firecrawl search notice: {e}")
 
@@ -522,7 +568,9 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
             dedup_n.append(v)
 
     print(f"[intelligence] Firecrawl recon: {len(dedup_c)} creator uploads, {len(dedup_n)} peer uploads in '{detected_niche}'")
-    return web_results, dedup_c, dedup_n, detected_niche, negative_snippets if 'negative_snippets' in locals() else []
+    neg_res = negative_snippets if 'negative_snippets' in locals() else []
+    trend_res = trending_snippets if 'trending_snippets' in locals() else []
+    return web_results, dedup_c, dedup_n, detected_niche, neg_res, trend_res
 
 
 
@@ -530,7 +578,7 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
 #  NORMALIZATION & FALLBACK INTEGRITY
 # ─────────────────────────────────────────────────
 
-def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vids: list[dict], niche_vids: list[dict], detected_niche: str = "") -> dict:
+def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vids: list[dict], niche_vids: list[dict], detected_niche: str = "", comparison_creator: str = "", trending_snippets: list = None, negative_snippets: list = None) -> dict:
     """Guarantees zero '—' fields, working avatars, verified playable videos, and reference videos for every idea."""
     profile = intel.get("creator_profile", {})
     if not profile.get("name"):
@@ -1045,213 +1093,177 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                     }
                 ]
 
-    # Content Suggestions: GUARANTEE PLAYABLE REFERENCE VIDEO PER IDEA
+    # Content Suggestions: GUARANTEE PLAYABLE REFERENCE VIDEO PER IDEA & HYPER-GROUNDED 4-HOOK ARCHETYPES
     suggestions = intel.get("content_suggestions") or []
-    if not suggestions:
-        if "mrbeast" in name_lower:
-            suggestions = [
-                {
-                    "id": 1,
-                    "title": "Surviving 100 Hours In The World's Most Secure Vault",
-                    "trending_topic": "Extreme physical containment survival challenges",
-                    "why_it_works": "Extreme claustrophobia tension paired with ticking clock urgency.",
-                    "estimated_views": "🔥 35M - 60M",
-                    "reference_video": {
-                        "title": "50 Hours In Antarctica (Surviving The Cold)",
-                        "url": "https://www.youtube.com/watch?v=7IKab3HcfFk",
-                        "platform": "YouTube",
-                        "creator": "MrBeast / Survival Benchmark",
-                        "why_reference": "Benchmarks time-based endurance challenges with ticking visual countdown."
-                    },
-                    "candidate_hooks": [
-                        {"sid": "S1", "text": "They locked me inside a bank vault with 100 hours of air."},
-                        {"sid": "S2", "text": "If I leave this room before day 4, I lose $100,000."},
-                        {"sid": "S3", "text": "This vault was built to withstand a nuclear explosion."},
-                        {"sid": "S4", "text": "Hour 48: The temperature just dropped to freezing."}
-                    ]
-                },
-                {
-                    "id": 2,
-                    "title": "World's Most Expensive Laser Maze vs 100 Strangers",
-                    "trending_topic": "Giant obstacle courses with elimination stakes",
-                    "why_it_works": "Gamified elimination dynamics keep viewers guessing who wins next.",
-                    "estimated_views": "🔥 45M - 80M",
-                    "reference_video": {
-                        "title": "$456,000 Squid Game In Real Life!",
-                        "url": "https://www.youtube.com/watch?v=0e3GPea1Tyg",
-                        "platform": "YouTube",
-                        "creator": "Global Elimination Benchmark",
-                        "why_reference": "Proven mass-elimination set design that maximizes 3-second retention."
-                    },
-                    "candidate_hooks": [
-                        {"sid": "S1", "text": "Touch one red laser and you are instantly eliminated."},
-                        {"sid": "S2", "text": "We built a real Hollywood laser security grid."},
-                        {"sid": "S3", "text": "Only 3 people out of 100 made it past stage one."},
-                        {"sid": "S4", "text": "This obstacle cost $200,000 to build and lasts 60 seconds."}
-                    ]
-                },
-                {
-                    "id": 3,
-                    "title": "I Spent $1,000,000 To Clean The Dirtiest Beach On Earth",
-                    "trending_topic": "Massive environmental engineering & philanthropy",
-                    "why_it_works": "Combines awe-inspiring heavy machinery spectacle with genuine global goodwill.",
-                    "estimated_views": "🔥 25M - 50M",
-                    "reference_video": {
-                        "title": "Engineers vs Junkyard RC Car Death Match (Mark Rober)",
-                        "url": "https://www.youtube.com/watch?v=Xg1ro-zG7AM",
-                        "platform": "YouTube",
-                        "creator": "Mark Rober / TeamSeas",
-                        "why_reference": "Demonstrates heavy engineering spectacle with creative problem solving."
-                    },
-                    "candidate_hooks": [
-                        {"sid": "S1", "text": "This beach was buried under 50 tons of plastic trash."},
-                        {"sid": "S2", "text": "We brought 10 excavators to do the impossible in 24 hours."},
-                        {"sid": "S3", "text": "Watch what happens when you remove 1 million pounds of waste."},
-                        {"sid": "S4", "text": "The local mayor told us this would take 10 years."}
-                    ]
-                }
-            ]
+    demo = intel.get("audience_demographics") or {}
+    primary_age = demo.get("primary_age", "18-24 (Gen Z)")
+    audience_vibe = profile.get("audience_vibe", "Passionate, mobile-first community.")
+    core_niche = profile.get("core_niche", detected_niche or "Digital Content")
+    comp_target = comparison_creator.strip() if comparison_creator else ""
+
+    # Dynamic fallback generator if Call C returned empty or failed
+    if not suggestions or len(suggestions) < 5:
+        # Collect real topics and context from discovered search data
+        top_c_title = creator_vids[0]["title"] if creator_vids else f"{core_niche} Mastery"
+        top_peer_title = niche_vids[0]["title"] if niche_vids else f"Viral {core_niche} Formula"
+        top_trend = trending_snippets[0].get("title", f"Recent {core_niche} Controversy") if trending_snippets else f"The Big {core_niche} Debate"
+
+        # Construct 5 diverse, highly grounded niche concepts if missing
+        dynamic_pool = [
+            {
+                "title": f"Exposing The Worst Hidden Trap In {core_niche}",
+                "trending_topic": f"Commercial compromises and sponsored myths in {core_niche}",
+                "why_it_works": "Directly confronts audience skepticism, building unmatched transparency and credibility.",
+                "estimated_views": "🔥 3.5M - 7.5M",
+                "target_audience_appeal": f"Addresses {primary_age} viewers who are cynical about paid influencer praise.",
+                "audience_sentiment_reaction": "Relief and intense validation that someone called out the deceptive industry standard.",
+                "benchmark_differentiation": f"Shows unedited real data while {comp_target or 'competitors'} play it safe for brand deals.",
+                "reference_video": niche_vids[0] if niche_vids else {"title": top_peer_title, "url": "https://www.youtube.com/watch?v=0e3GPea1Tyg", "platform": "YouTube"},
+                "candidate_hooks": [
+                    {"sid": "S1", "archetype": "Incident / Stakes", "text": f"I bought the exact top-rated {core_niche} product everyone recommends. It failed in 10 minutes.", "hook_technique": "Names immediate product failure with visceral speed."},
+                    {"sid": "S2", "archetype": "Curiosity Gap", "text": f"The #1 rule in {core_niche} is actually a marketing lie invented by sponsors.", "hook_technique": "Open-loop mystery that challenges common wisdom."},
+                    {"sid": "S3", "archetype": "Audience Reaction / Shock", "text": f"You guys in the comments were 100% right about {core_niche}. It is worse than we thought.", "hook_technique": "Validates viewer comment theories immediately."},
+                    {"sid": "S4", "archetype": "Contrarian vs Benchmark", "text": f"{comp_target or 'Every other creator'} told you this works. Here is the unedited proof it does not.", "hook_technique": "Direct competitive contrast with immediate stakes."}
+                ]
+            },
+            {
+                "title": f"Putting {core_niche}'s Most Expensive Setup Against Zero Budget",
+                "trending_topic": f"High-stakes gear and budget contrast in {core_niche}",
+                "why_it_works": "Extreme resource contrast proves technique matters more than money, delighting budget viewers.",
+                "estimated_views": "🔥 4.2M - 9M",
+                "target_audience_appeal": f"Inspires {primary_age} creators and fans who cannot afford overpriced gear.",
+                "audience_sentiment_reaction": "Fascination and cheering for the underdog budget option to win.",
+                "benchmark_differentiation": f"Puts luxury and budget head-to-head with blind tests unlike {comp_target or 'rivals'}.",
+                "reference_video": niche_vids[1 % len(niche_vids)] if niche_vids else {"title": "Extreme Budget Challenge Benchmark", "url": "https://www.youtube.com/watch?v=7IKab3HcfFk", "platform": "YouTube"},
+                "candidate_hooks": [
+                    {"sid": "S1", "text": f"I put a ₹50,000 setup against a ₹500 thrift item in {core_niche}.", "archetype": "Incident / Stakes", "hook_technique": "Concrete price contrast stops the scroll instantly."},
+                    {"sid": "S2", "text": f"Can a blindfolded expert tell the difference between these two {core_niche} outputs?", "archetype": "Curiosity Gap", "hook_technique": "Gamified test hook with viewer participation."},
+                    {"sid": "S3", "text": f"The look on their face when the cheapest {core_niche} option won was priceless.", "archetype": "Audience Reaction / Shock", "hook_technique": "Emotional payoff teaser creates irresistible curiosity."},
+                    {"sid": "S4", "text": f"Stop saving up ₹1,00,000 for {core_niche} gear — watch this first.", "archetype": "Contrarian vs Benchmark", "hook_technique": "Direct pocketbook warning saves viewer money."}
+                ]
+            },
+            {
+                "title": f"Deconstructing The Biggest Drama & Controversy in {core_niche}",
+                "trending_topic": f"Recent viral community debate and audience fallout in {core_niche}",
+                "why_it_works": "Taps into active internet discussion with objective forensic breakdown.",
+                "estimated_views": "🔥 5M - 12M",
+                "target_audience_appeal": f"Engages {audience_vibe} who follow ongoing community debates.",
+                "audience_sentiment_reaction": "Heated debate and intense comment participation defending opposing sides.",
+                "benchmark_differentiation": f"Breaks down receipts, timeline, and forensic proof instead of emotional gossip.",
+                "reference_video": niche_vids[2 % len(niche_vids)] if niche_vids else {"title": "Investigative Breakdown Benchmark", "url": "https://www.youtube.com/watch?v=S7UM5lSgAg8", "platform": "YouTube"},
+                "candidate_hooks": [
+                    {"sid": "S1", "text": f"At 2:14 AM yesterday, the entire {core_niche} community blew up over this.", "archetype": "Incident / Stakes", "hook_technique": "Timestamp urgency implies breaking real-time news."},
+                    {"sid": "S2", "text": f"Everyone missed the single detail that proves who was lying in {core_niche}.", "archetype": "Curiosity Gap", "hook_technique": "Detective-style micro-clue hook."},
+                    {"sid": "S3", "text": f"The comments on this {core_niche} video are wild — here is what actually happened.", "archetype": "Audience Reaction / Shock", "hook_technique": "Directly references audience comment section frenzy."},
+                    {"sid": "S4", "text": f"{comp_target or 'The main media'} took their side. The actual contract tells the opposite story.", "archetype": "Contrarian vs Benchmark", "hook_technique": "Receipts-driven contrarian challenge."}
+                ]
+            },
+            {
+                "title": f"The 24-Hour Reality Check: Surviving The Hardest {core_niche} Challenge",
+                "trending_topic": f"High-difficulty endurance and extreme physical execution in {core_niche}",
+                "why_it_works": "Ticking-clock stakes and genuine vulnerability create peak watch time.",
+                "estimated_views": "🔥 6M - 14M",
+                "target_audience_appeal": f"Captivates {primary_age} viewers with authentic physical and mental hurdles.",
+                "audience_sentiment_reaction": "Nail-biting suspense and admiration for genuine commitment.",
+                "benchmark_differentiation": f"Zero cuts, real fatigue, and true struggle vs {comp_target or 'competitors'}' glossed-over clips.",
+                "reference_video": niche_vids[3 % len(niche_vids)] if niche_vids else {"title": "Endurance Challenge Benchmark", "url": "https://www.youtube.com/watch?v=9bqk6ZUsKyA", "platform": "YouTube"},
+                "candidate_hooks": [
+                    {"sid": "S1", "text": f"I have 24 hours to finish this {core_niche} milestone or delete this channel.", "archetype": "Incident / Stakes", "hook_technique": "Ultimate personal stakes with irreversible consequence."},
+                    {"sid": "S2", "text": f"Hour 17 of {core_niche}: My gear gave up, and we are 40km from civilization.", "archetype": "Curiosity Gap", "hook_technique": "Mid-crisis cold open hooks attention instantly."},
+                    {"sid": "S3", "text": f"I genuinely did not think this {core_niche} stunt would go this wrong.", "archetype": "Audience Reaction / Shock", "hook_technique": "Vulnerable admission of danger or error."},
+                    {"sid": "S4", "text": f"{comp_target or 'Most people'} fake this challenge with off-camera hotels. Not today.", "archetype": "Contrarian vs Benchmark", "hook_technique": "Calls out fake industry trends."}
+                ]
+            },
+            {
+                "title": f"Exposing What 99% Of People Get Wrong About {core_niche}",
+                "trending_topic": f"Debunking common amateur misconceptions in {core_niche}",
+                "why_it_works": "Contrarian educational value directly saves viewers time, embarrassment, and money.",
+                "estimated_views": "🔥 4M - 8M",
+                "target_audience_appeal": f"Perfect for {primary_age} beginners and enthusiasts eager for practical progress.",
+                "audience_sentiment_reaction": "Mind-blown realization and eagerness to share the video with friends.",
+                "benchmark_differentiation": f"Cuts straight to actionable mechanics without 15 minutes of sponsor fluff.",
+                "reference_video": niche_vids[4 % len(niche_vids)] if niche_vids else {"title": "Mastery Blueprint Benchmark", "url": "https://www.youtube.com/watch?v=Rqv89kZrqnU", "platform": "YouTube"},
+                "candidate_hooks": [
+                    {"sid": "S1", "text": f"If your {core_niche} routine takes more than 30 minutes, you are wasting 80% of your time.", "archetype": "Incident / Stakes", "hook_technique": "Specific quantitative challenge stops the scroll."},
+                    {"sid": "S2", "text": f"The hidden setting in {core_niche} that instantly fixes your results.", "archetype": "Curiosity Gap", "hook_technique": "Quick-fix insider secret triggers instant curiosity."},
+                    {"sid": "S3", "text": f"I showed this {core_niche} trick to a 10-year veteran and broke his brain.", "archetype": "Audience Reaction / Shock", "hook_technique": "Social proof of expert shock."},
+                    {"sid": "S4", "text": f"{comp_target or 'Every tutorial'} insists on Step 1. Science proves Step 1 is useless.", "archetype": "Contrarian vs Benchmark", "hook_technique": "Authoritative contrarian myth-busting."}
+                ]
+            }
+        ]
+
+        if not suggestions:
+            suggestions = dynamic_pool
         else:
-            suggestions = [
-                {
-                    "id": 1,
-                    "title": "Deconstructing Fake Fitness Influencers & Secret Diet Scams",
-                    "trending_topic": "Exposing social media fitness fake transformations",
-                    "why_it_works": "Massive public curiosity gap regarding deceptive social media standards.",
-                    "estimated_views": "🔥 8M - 15M",
-                    "reference_video": {
-                        "title": "STOP MAKING THESE INSTAGRAM REELS | CarryMinati",
-                        "url": "https://www.youtube.com/watch?v=oV8p3R6fXF8",
-                        "platform": "YouTube",
-                        "creator": "CarryMinati / Cringe Roasts",
-                        "why_reference": "Benchmarks satirical cultural criticism with instant meme pattern interrupts."
-                    },
-                    "candidate_hooks": [
-                        {"sid": "S1", "text": "I bought the exact diet plan of Instagram's fakest influencer."},
-                        {"sid": "S2", "text": "If your trainer tells you this, they are scamming you."},
-                        {"sid": "S3", "text": "This 22-year-old claims this workout built his entire physique."},
-                        {"sid": "S4", "text": "We sent a real doctor to inspect this viral health drink."}
-                    ]
-                },
-                {
-                    "id": 2,
-                    "title": "Living Like A Crypto Millionaire In Delhi For 24 Hours",
-                    "trending_topic": "Satirical luxury vs harsh reality parodies",
-                    "why_it_works": "Hilarious contrast between glamorous lifestyle claims and ground reality.",
-                    "estimated_views": "🔥 10M - 18M",
-                    "reference_video": {
-                        "title": "I Survived On $0.01 For 30 Days (Ryan Trahan)",
-                        "url": "https://www.youtube.com/watch?v=9bqk6ZUsKyA",
-                        "platform": "YouTube",
-                        "creator": "Ryan Trahan / Budget Challenges",
-                        "why_reference": "Benchmarks lifestyle contrast pacing with episodic micro-missions."
-                    },
-                    "candidate_hooks": [
-                        {"sid": "S1", "text": "I rented a supercar and tried to buy groceries in Old Delhi."},
-                        {"sid": "S2", "text": "Every crypto bro on Instagram tells this exact lie."},
-                        {"sid": "S3", "text": "Spending ₹10,00,000 in one afternoon to see if money buys happiness."},
-                        {"sid": "S4", "text": "The valet's face when I pulled up in this was priceless."}
-                    ]
-                },
-                {
-                    "id": 3,
-                    "title": "The Dark Reality Of Indian Coaching Institutes",
-                    "trending_topic": "Relatable student pressure & academic coaching culture",
-                    "why_it_works": "Directly impacts core 18-24 student audience with sharp emotional humor.",
-                    "estimated_views": "🔥 12M - 22M",
-                    "reference_video": {
-                        "title": "Angry Masterji - Part 15 (Bhuvan Bam)",
-                        "url": "https://www.youtube.com/watch?v=Rqv89kZrqnU",
-                        "platform": "YouTube",
-                        "creator": "BB Ki Vines / Student Comedy",
-                        "why_reference": "Proven relatable Indian student comedy formula with high shareability."
-                    },
-                    "candidate_hooks": [
-                        {"sid": "S1", "text": "Kota teachers teach everything except how to survive Kota."},
-                        {"sid": "S2", "text": "If you ever spent 14 hours in tuition, this is your story."},
-                        {"sid": "S3", "text": "The billboard vs the actual classroom inside the coaching center."},
-                        {"sid": "S4", "text": "Why every topper gives the exact same scripted interview."}
-                    ]
-                }
-            ]
+            while len(suggestions) < 5:
+                suggestions.append(dynamic_pool[len(suggestions) % len(dynamic_pool)])
 
-    # Verify each suggestion's reference video individually across YouTube & Instagram.
-    # If a reference video is dead/unavailable, assign one of the real verified peer videos from niche_vids!
-    # Guarantee at least 5 suggestions
-    while len(suggestions) < 5:
-        ext_idx = len(suggestions) + 1
-        nic = profile.get("core_niche", "Viral Content")
-        if ext_idx == 4:
-            suggestions.append({
-                "id": 4,
-                "title": f"Extreme 24-Hour {nic} Challenge vs Budget Setup",
-                "trending_topic": f"High stakes budget contrast in {nic}",
-                "why_it_works": "Visual contrast between zero resources and professional execution.",
-                "estimated_views": "🔥 6M - 12M",
-                "reference_video": {
-                    "title": f"Viral {nic} Challenge Benchmark",
-                    "url": "https://www.youtube.com/watch?v=0e3GPea1Tyg",
-                    "platform": "YouTube",
-                    "creator": "Top Niche Creator",
-                    "why_reference": "Benchmarks high retention challenge pacing."
-                },
-                "candidate_hooks": [
-                    {"sid": "S1", "text": f"I spent ₹500 vs ₹50,000 on {nic}. The winner makes zero sense."},
-                    {"sid": "S2", "text": f"Can you actually succeed in {nic} with just your phone?"},
-                    {"sid": "S3", "text": f"I asked 100 people to guess which {nic} clip cost ₹50,000."},
-                    {"sid": "S4", "text": f"The biggest lie in {nic} is that equipment matters."}
-                ]
-            })
-        elif ext_idx == 5:
-            suggestions.append({
-                "id": 5,
-                "title": f"Exposing The Most Dangerous Myth In {nic}",
-                "trending_topic": f"Debunking common misconceptions in {nic}",
-                "why_it_works": "Contrarian truth triggers curiosity and comment debates.",
-                "estimated_views": "🔥 8M - 16M",
-                "reference_video": {
-                    "title": f"Mythbusting {nic} Benchmark",
-                    "url": "https://www.youtube.com/watch?v=S7UM5lSgAg8",
-                    "platform": "YouTube",
-                    "creator": "Science / Spectacle Benchmark",
-                    "why_reference": "Benchmarks contrarian curiosity loops with hard evidence."
-                },
-                "candidate_hooks": [
-                    {"sid": "S1", "text": f"Stop doing this in {nic} — you are destroying your results."},
-                    {"sid": "S2", "text": f"Every major {nic} creator hides this one brutal truth."},
-                    {"sid": "S3", "text": f"I spent 30 days testing the worst advice in {nic}."},
-                    {"sid": "S4", "text": f"Why 99% of people fail in {nic} within the first week."}
-                ]
-            })
-
-    # Ensure every single suggestion has at least 4 robust candidate hooks
+    # Normalize each suggestion: Guarantee deep audience data, benchmark contrast, and 4 distinct hook archetypes
     for idx, s in enumerate(suggestions, start=1):
         s["id"] = idx
-        raw_hooks = s.get("candidate_hooks") or []
-        valid_hooks = [h for h in raw_hooks if isinstance(h, dict) and h.get("text")]
-        
-        # If fewer than 4 hooks returned, auto-generate distinct hook archetypes
-        title_hint = s.get("title", f"Idea #{idx}")
-        topic_hint = s.get("trending_topic", profile.get("core_niche", "content"))
-        default_archetypes = [
-            f"Nobody in {topic_hint} wanted me to test this, but here is what happened.",
-            f"If you watch {topic_hint} content, stop making this one mistake right now.",
-            f"I spent 7 days doing the exact opposite of what every {topic_hint} expert says.",
-            f"The real reason why everyone is secretly obsessed with {topic_hint}."
-        ]
-        while len(valid_hooks) < 4:
-            missing_i = len(valid_hooks)
-            valid_hooks.append({
-                "sid": f"S{missing_i+1}",
-                "text": default_archetypes[missing_i % len(default_archetypes)]
-            })
-        for h_idx, h in enumerate(valid_hooks, start=1):
-            h["sid"] = f"S{h_idx}"
-        s["candidate_hooks"] = valid_hooks[:5]
+        topic_hint = s.get("trending_topic") or f"{core_niche} Trends"
+        title_hint = s.get("title") or f"Idea #{idx}"
 
+        # Ensure audience & benchmark fields are present and specific
+        if not s.get("target_audience_appeal"):
+            s["target_audience_appeal"] = f"Crafted for {primary_age} {audience_vibe.lower()} who demand authentic, high-pace {core_niche} content."
+        if not s.get("audience_sentiment_reaction"):
+            s["audience_sentiment_reaction"] = f"Provokes passionate comment debates and viewer validation on {topic_hint}."
+        if not s.get("benchmark_differentiation"):
+            s["benchmark_differentiation"] = f"Delivers raw evidence and faster punchlines than {comp_target or 'competitors in this space'}."
+
+        # Ensure all 4 candidate hooks have authentic archetypes
+        raw_hooks = s.get("candidate_hooks") or []
+        archetype_defs = [
+            ("Incident / Stakes", "Immediate event naming concrete niche details, brands, or stakes (under 12 words)"),
+            ("Curiosity Gap", "Teases a specific insider loophole, secret, or mechanism (under 12 words)"),
+            ("Audience Reaction / Shock", "Channels viewer comments, emotional outrage, or collective shock (under 12 words)"),
+            ("Contrarian vs Benchmark", "Disputes the benchmark creator's safe narrative or common myth (under 12 words)")
+        ]
+
+        valid_hooks = []
+        for h in raw_hooks:
+            if isinstance(h, dict) and h.get("text"):
+                valid_hooks.append(h)
+
+        # Standardize and complement hooks
+        final_hooks = []
+        for h_i, (arch_name, arch_desc) in enumerate(archetype_defs, start=1):
+            sid = f"S{h_i}"
+            existing = next((h for h in valid_hooks if h.get("sid") == sid or h.get("archetype") == arch_name), None)
+            if existing and existing.get("text"):
+                h_text = existing["text"]
+                h_tech = existing.get("hook_technique", arch_desc[:40])
+            elif h_i - 1 < len(valid_hooks) and valid_hooks[h_i - 1].get("text"):
+                h_text = valid_hooks[h_i - 1]["text"]
+                h_tech = valid_hooks[h_i - 1].get("hook_technique", arch_desc[:40])
+            else:
+                # Dynamic non-generic archetype fallback
+                if h_i == 1:
+                    h_text = f"I tested the biggest {core_niche} claim live on camera — here is what broke."
+                    h_tech = "Immediate incident with concrete stakes."
+                elif h_i == 2:
+                    h_text = f"The hidden loophole in {core_niche} that nobody talks about in comments."
+                    h_tech = "Teases insider truth with irresistible curiosity."
+                elif h_i == 3:
+                    h_text = f"Everyone in the comments was furious about this {core_niche} update. Here is why."
+                    h_tech = "Channels viewer outrage and active sentiment."
+                else:
+                    h_text = f"{comp_target or 'The top creators'} claim this works. The actual receipts say no."
+                    h_tech = "Direct competitive challenge with evidence."
+
+            final_hooks.append({
+                "sid": sid,
+                "archetype": arch_name,
+                "text": h_text,
+                "hook_technique": h_tech
+            })
+
+        s["candidate_hooks"] = final_hooks
+
+        # Verify reference video
         ref = s.get("reference_video") or {}
         ref_url = ref.get("url", "")
-
         is_verified = False
         if ref_url and ("youtube.com" in ref_url or "youtu.be" in ref_url):
             check = verify_youtube_video(ref_url)
@@ -1268,20 +1280,19 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
             ref["platform"] = "TikTok"
             is_verified = True
 
-        # If reference video wasn't verified or missing, use a real peer niche video from Firecrawl!
         if not is_verified and niche_vids:
             peer_pick = niche_vids[(idx - 1) % len(niche_vids)]
-            ref["title"] = peer_pick.get("title", f"Proven {profile.get('core_niche')} Benchmark")
+            ref["title"] = peer_pick.get("title", f"Proven {core_niche} Benchmark")
             ref["url"] = peer_pick.get("url", "")
             ref["platform"] = peer_pick.get("platform", "Instagram" if "instagram" in peer_pick.get("url", "") else "YouTube")
             ref["creator"] = "Trending Niche Creator"
-            ref["why_reference"] = f"Demonstrates proven {profile.get('core_niche')} retention and hook pacing."
+            ref["why_reference"] = f"Demonstrates proven {core_niche} retention and hook pacing."
             is_verified = True
 
         ref["verified"] = is_verified
         s["reference_video"] = ref
 
-        intel["content_suggestions"] = suggestions
+    intel["content_suggestions"] = suggestions
 
     # ── Negative Reviews & Improvement Suggestions Normalization ────────────
     neg_reviews = intel.get("negative_reviews") or []
@@ -1417,7 +1428,7 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
     comp_avatar_url = get_creator_avatar(comparison_creator) if comparison_creator and comparison_creator.strip() else ""
 
     # 2. Multi-Platform Firecrawl Recon (Instagram & YouTube)
-    raw_results, creator_vids, niche_vids, detected_niche, negative_snippets = search_creator_footprint(creator_name, niche)
+    raw_results, creator_vids, niche_vids, detected_niche, negative_snippets, trending_snippets = search_creator_footprint(creator_name, niche)
 
     c_lines = [f"- [{v.get('platform')}] {v.get('title')}: {v.get('url')}" for v in creator_vids]
     c_text = "\n".join(c_lines) if c_lines else f"Official video uploads and reels by {creator_name}."
@@ -1468,8 +1479,7 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
     except Exception as e:
         print(f"[intelligence] Call B notice: {e}")
 
-    # 5. Call C: Suggestions WITH Reference Video for every single idea (max_tokens=1600, ~3.5s)
-    # Build creator's actual hook examples to ground niche-specific hook generation
+    # 5. Call C: High-Precision Suggestions Grounded in Audience, Benchmark & Trends
     creator_hook_examples = ""
     if creator_vids:
         hook_lines = []
@@ -1479,8 +1489,62 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
             if title or hook:
                 hook_lines.append(f"  - Video: '{title}' | Opening Hook: '{hook}'")
         if hook_lines:
-            creator_hook_examples = "Creator's Real Opening Hooks (mirror this tone & vocabulary):\n" + "\n".join(hook_lines) + "\n\n"
-        # Memory continuity: inject previous user findings so suggestions build upon past data without duplicating
+            creator_hook_examples = "CREATOR'S PROVEN OPENING HOOKS (mirror this exact voice, vernacular, and cadence):\n" + "\n".join(hook_lines) + "\n\n"
+
+    # Profile & Audience Demographics Context from Call A
+    prof = part_a.get("creator_profile", {}) if isinstance(part_a, dict) else {}
+    demo = part_a.get("audience_demographics", {}) if isinstance(part_a, dict) else {}
+    tone = prof.get("tone_and_style", f"Engaging, high-retention delivery tailored for {detected_niche}.")
+    audience_vibe = prof.get("audience_vibe", f"Passionate {detected_niche} community.")
+    primary_age = demo.get("primary_age", "18-24 (Gen Z)")
+    gender_skew = demo.get("gender_skew", "Balanced")
+    location = prof.get("location", "Global")
+
+    audience_context = (
+        f"AUDIENCE DEMOGRAPHICS & PSYCHOLOGY:\n"
+        f"- Target Age Cohort: {primary_age}\n"
+        f"- Gender Skew: {gender_skew}\n"
+        f"- Geographic Culture: {location}\n"
+        f"- Audience Persona & Mindset: {audience_vibe}\n"
+        f"- Creator's Proven Delivery Rhythm & Tone: {tone}\n\n"
+    )
+
+    # Benchmark Rival / Competitor Analysis from Call B
+    benchmarks_context = ""
+    comps = part_b.get("competitor_benchmarking", []) if isinstance(part_b, dict) else []
+    if comparison_creator and comparison_creator.strip():
+        matched_comp = next((c for c in comps if comparison_creator.strip().lower() in c.get("creator_name", "").lower()), None)
+        if matched_comp:
+            benchmarks_context = (
+                f"BENCHMARK RIVAL TO EXPLOIT & BEAT: '{matched_comp.get('creator_name')}'\n"
+                f"- Rival's Main Strength: {matched_comp.get('main_strength')}\n"
+                f"- Rival's Critical Vulnerability/Content Gap: {matched_comp.get('critical_gap')}\n"
+                f"- Strategic Retention Angle for {creator_name}: {matched_comp.get('retention_takeaway')}\n\n"
+            )
+        else:
+            benchmarks_context = f"BENCHMARK RIVAL TO EXPLOIT & BEAT: '{comparison_creator.strip()}' in {detected_niche}. Tailor ideas to out-maneuver their content style and win over their viewers.\n\n"
+    elif comps:
+        top_comp = comps[0]
+        benchmarks_context = (
+            f"PRIMARY BENCHMARK COMPETITOR IN NICHE: '{top_comp.get('creator_name')}'\n"
+            f"- Competitor Strength: {top_comp.get('main_strength')}\n"
+            f"- Competitor Vulnerability/Gap: {top_comp.get('critical_gap')}\n"
+            f"- How {creator_name} Outperforms Them: {top_comp.get('retention_takeaway')}\n\n"
+        )
+
+    # Discovered Live Trends & Community Debates from Query 5
+    trending_context = ""
+    if trending_snippets:
+        t_lines = [f"  - [{t.get('title', '')}]: {t.get('snippet', '')[:140]}" for t in trending_snippets[:4]]
+        trending_context = "LIVE DISCOVERED NICHE TOPICS, CONTROVERSIES & DEBATES:\n" + "\n".join(t_lines) + "\n\n"
+
+    # Audience Complaints & Sentiment from Query 4
+    complaints_context = ""
+    if negative_snippets:
+        c_lines = [f"  - [{n.get('title', '')}]: {n.get('snippet', '')[:140]}" for n in negative_snippets[:3]]
+        complaints_context = "AUDIENCE COMPLAINTS & VIEWER FATIGUE POINTS IN THIS NICHE:\n" + "\n".join(c_lines) + "\n\n"
+
+    # Memory continuity
     prev_context = ""
     if previous_findings and previous_findings.get("total_past_runs", 0) > 0:
         prev_ideas = previous_findings.get("previous_content_ideas", [])[:6]
@@ -1496,14 +1560,20 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
         )
 
     prompt_c = (
-        f"Creator: {creator_name}\n"
-        f"Niche: {detected_niche}\n\n"
+        f"Target Creator: {creator_name}\n"
+        f"Detected Niche: {detected_niche}\n\n"
+        f"{audience_context}"
+        f"{benchmarks_context}"
+        f"{trending_context}"
+        f"{complaints_context}"
         f"{prev_context}"
         f"{creator_hook_examples}"
         f"Peer Trending Videos in this Niche (by OTHER creators):\n{n_text}\n\n"
-        f"Generate 5 high-potential viral content ideas specifically tailored to {detected_niche} and this creator's exact tone. "
-        f"For EVERY idea, provide a real reference video from this niche (Instagram Reel or YouTube video).\n\n"
-        
+        f"TASK:\n"
+        f"Synthesize 5 viral, non-generic content concepts that directly capitalize on the discovered niche trends, "
+        f"resonate with the specific psychology and reaction of the {primary_age} audience, out-position the benchmark rival, "
+        f"and provide 4 distinct, authentic opening hook styles (Incident/Stakes, Curiosity Gap, Audience Reaction/Shock, Contrarian vs Benchmark) for every single concept. "
+        f"For EVERY concept, provide a real reference video from this niche.\n\n"
     )
     part_c = {}
     try:
@@ -1552,4 +1622,4 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
             "avatar_url": comp_avatar_url
         }
 
-    return _normalize_intel(result, creator_name, avatar_url, creator_vids, niche_vids, detected_niche)
+    return _normalize_intel(result, creator_name, avatar_url, creator_vids, niche_vids, detected_niche, comparison_creator=comparison_creator, trending_snippets=trending_snippets, negative_snippets=negative_snippets)
