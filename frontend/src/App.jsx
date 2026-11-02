@@ -1907,15 +1907,22 @@ export default function App() {
                 <div className="space-y-5">
                   {/* Test Confidence Badge */}
                   {simResults.confidence && (
-                    <div className={`p-4 rounded-xl border text-xs flex items-center gap-2.5 ${
-                      simResults.confidence[0] === 'LOW'
-                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-500'
-                        : simResults.confidence[0] !== 'OK'
-                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-500'
-                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
-                    }`}>
-                      <Check className="w-4 h-4 shrink-0" />
-                      <span>Test Confidence: <strong>{simResults.confidence[0]}</strong> — {simResults.confidence[1]}</span>
+                    <div className="space-y-2">
+                      <div className={`p-4 rounded-xl border text-xs flex items-center gap-2.5 ${
+                        simResults.confidence[0] === 'LOW'
+                          ? 'bg-rose-500/10 border-rose-500/30 text-rose-500'
+                          : simResults.confidence[0] !== 'OK'
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-500'
+                          : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
+                      }`}>
+                        <Check className="w-4 h-4 shrink-0" />
+                        <span>Test Confidence: <strong>{simResults.confidence[0]}</strong> — {simResults.confidence[1]}</span>
+                      </div>
+                      {simResults.confidence[0] === 'UNCALIBRATED' && (
+                        <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 text-amber-400 text-xs flex items-center justify-between">
+                          <span>🔬 <strong>Audience Calibration Required:</strong> Click <em>&quot;Post to Real Audience ↗&quot;</em> below to gather real human reactions and calibrate persona rankings.</span>
+                        </div>
+                      )}
                     </div>
                   )}
 

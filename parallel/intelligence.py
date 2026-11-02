@@ -76,6 +76,47 @@ def get_creator_avatar(creator_name: str) -> str:
 #  MULTI-PLATFORM VIDEO VERIFICATION (YouTube oEmbed & Socials)
 # ─────────────────────────────────────────────────
 
+
+def fetch_transcript_hook(url: str, max_duration: float = 15.0) -> str:
+    """
+    Fetches the first ~15 seconds of spoken transcript from a YouTube video or short.
+    Extracts the true spoken hook rather than relying solely on the title.
+    Returns empty string if transcript is disabled or video is unavailable.
+    """
+    if not url:
+        return ""
+    m = re.search(r"(?:v=|/shorts/|youtu\.be/)([a-zA-Z0-9_-]{11})", url)
+    if not m:
+        return ""
+    video_id = m.group(1)
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+        ytt = YouTubeTranscriptApi()
+        try:
+            chunks = ytt.fetch(video_id)
+        except Exception:
+            transcript_list = ytt.list(video_id)
+            transcript = transcript_list.find_transcript(["en", "en-US", "en-GB", "hi"])
+            chunks = transcript.fetch()
+
+        words = []
+        t_end = 0.0
+        for chunk in chunks:
+            raw_t = getattr(chunk, "text", None) or (chunk.get("text") if isinstance(chunk, dict) else "")
+            start = getattr(chunk, "start", 0.0) or (chunk.get("start", 0.0) if isinstance(chunk, dict) else 0.0)
+            duration = getattr(chunk, "duration", 0.0) or (chunk.get("duration", 0.0) if isinstance(chunk, dict) else 0.0)
+            clean = re.sub(r"[\u266a\u266b♪♫♩♬\[\]]", "", str(raw_t)).strip()
+            clean = " ".join(clean.split())
+            if clean:
+                words.append(clean)
+            t_end = float(start) + float(duration)
+            if t_end >= max_duration:
+                break
+        hook_text = " ".join(words).strip()
+        return hook_text[:250] if hook_text else ""
+    except Exception:
+        return ""
+
 def verify_youtube_video(url: str) -> dict | None:
     """
     Checks if a YouTube URL is actually playable using the free oEmbed API.
@@ -188,6 +229,18 @@ def _verify_video_list(videos: list[dict], creator_name_lower: str = "", exclude
             v["verified"] = True
             v.setdefault("platform", "Video")
             verified.append(v)
+
+    # Concurrently ground YouTube videos with real spoken transcripts (first 15 seconds)
+    yt_items = [v for v in verified if v.get("platform") == "YouTube"]
+    if yt_items:
+        try:
+            with ThreadPoolExecutor(max_workers=min(4, len(yt_items))) as tx_ex:
+                hooks = list(tx_ex.map(lambda v: fetch_transcript_hook(v.get("url", "")), yt_items))
+            for v, hook in zip(yt_items, hooks):
+                if hook:
+                    v["spoken_hook"] = hook
+        except Exception:
+            pass
 
     return verified
 

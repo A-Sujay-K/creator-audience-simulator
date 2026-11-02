@@ -3,6 +3,9 @@ from concurrent.futures import ThreadPoolExecutor
 from .llm import ask_json, MODEL_FAST
 from .schemas import PanelAnswer
 
+ANCHOR_SID = "S_ANCHOR"
+ANCHOR_TEXT = "Hey guys, welcome back to the channel, make sure to like and subscribe before we begin."
+
 SYSTEM = """You role-play ONE real, impatient viewer scrolling short-form video feeds (Reels/Shorts/TikTok).
 Stay strictly in character based on your age, city tier, and interests.
 BE BRUTALLY REALISTIC AND SKEPTICAL:
@@ -43,17 +46,42 @@ Return ONLY valid JSON matching this schema:
   ]
 }"""
 
+def _clean_anchor_evaluation(ev: dict, valid_sids: set[str]) -> dict:
+    """Strips the calibration anchor and debiases ratings to ground purely on candidates."""
+    ratings = ev.get("ratings", [])
+    clean_ratings = [r for r in ratings if r.get("sid") in valid_sids]
+    if clean_ratings:
+        ev["ratings"] = clean_ratings
+    
+    if ev.get("best") not in valid_sids and clean_ratings:
+        best_r = max(clean_ratings, key=lambda r: r.get("stop_scroll", 1))
+        ev["best"] = best_r.get("sid")
+        
+    if ev.get("worst") not in valid_sids and clean_ratings:
+        worst_r = min(clean_ratings, key=lambda r: r.get("stop_scroll", 5))
+        ev["worst"] = worst_r.get("sid")
+        
+    if ev.get("felt_clickbait") and ev.get("clickbait_sid") not in valid_sids:
+        ev["felt_clickbait"] = False
+        ev["clickbait_sid"] = None
+        
+    return ev
+
 def prompt(p, study):
     order = study.stimuli[:]
     random.Random(p.pid).shuffle(order) # kills position bias
     lines = "\n".join(f"{s.sid}: \"{s.text}\"" for s in order)
+    lines += f"\n{ANCHOR_SID}: \"{ANCHOR_TEXT}\""
     return (
         f"VIEWER PROFILE:\n"
         f"You are {p.age_band} years old, living in a {p.city_tier} city, interested in {p.interest}, "
         f"scrolling about {p.scroll_time} a day on your phone while distracted.\n"
         f"Your relationship to this creator: {p.relationship.replace('_', ' ')}.\n\n"
-        f"You are rapidly scrolling through your {study.platform} feed and see these {len(order)} candidate openings:\n"
+        f"You are rapidly scrolling through your {study.platform} feed and see candidate openings:\n"
         f"{lines}\n\n"
+        f"CALIBRATION ANCHOR:\n"
+        f"{ANCHOR_SID} is a generic cliché filler opening. Real viewers swipe past it in 0.5s (MUST score 1).\n"
+        f"Use {ANCHOR_SID} as your bottom floor baseline. Score all candidate openings relative to this.\n\n"
         f"Rate each opening ruthlessly. Would you actually stop scrolling for this?\n"
         'Return ONLY JSON: {"ratings":[{"sid":"S1","stop_scroll":1-5}, ...], "best":"S?", "worst":"S?", '
         '"felt_clickbait":true|false, "clickbait_sid":"S?" or null, "note":"one brutal, honest sentence on why"}'
@@ -67,9 +95,12 @@ def check(a, study):
         raise ValueError("bad clickbait_sid")
 
 def answer(p, study, tries=3):
+    valid_sids = {s.sid for s in study.stimuli}
     for _ in range(tries):
         try:
-            a = PanelAnswer(**ask_json(SYSTEM, prompt(p, study), MODEL_FAST, max_tokens=250))
+            raw = ask_json(SYSTEM, prompt(p, study), MODEL_FAST, max_tokens=250)
+            cleaned = _clean_anchor_evaluation(raw, valid_sids)
+            a = PanelAnswer(**cleaned)
             check(a, study)
             return a
         except Exception:
@@ -77,22 +108,27 @@ def answer(p, study, tries=3):
     return None
 
 def answer_batch(persona_chunk: list, study, tries=2) -> dict[str, PanelAnswer]:
-    """Evaluates a batch of personas in a single high-throughput LLM call."""
+    """Evaluates a batch of personas in a single high-throughput LLM call with negative anchor debiasing."""
     if not persona_chunk:
         return {}
 
+    valid_sids = {s.sid for s in study.stimuli}
     stim_lines = "\n".join(f"{s.sid}: \"{s.text}\"" for s in study.stimuli)
+    stim_lines += f"\n{ANCHOR_SID}: \"{ANCHOR_TEXT}\""
     p_lines = [
         f"- [PID: {p.pid}] {p.age_band}yo, {p.city_tier} city, into {p.interest}, scrolls {p.scroll_time}/day, {p.relationship.replace('_', ' ')}."
         for p in persona_chunk
     ]
     user_prompt = (
         f"CANDIDATE OPENINGS ({study.platform}):\n{stim_lines}\n\n"
+        f"CALIBRATION ANCHOR:\n"
+        f"{ANCHOR_SID} is a generic filler opening. Real viewers swipe past it in 0.5s (MUST score 1).\n"
+        f"Anchor your scoring floor at {ANCHOR_SID}. Score candidate openings relative to it.\n\n"
         f"AUDIENCE PANEL ({len(persona_chunk)} viewers):\n" + "\n".join(p_lines) + "\n\n"
         f"Provide independent, ruthless evaluations for ALL {len(persona_chunk)} viewers. Return ONLY valid JSON."
     )
 
-    token_budget = min(3500, max(500, len(persona_chunk) * 120 + 200))
+    token_budget = min(4000, max(600, len(persona_chunk) * 190 + 350))
 
     for _ in range(tries):
         try:
@@ -103,7 +139,8 @@ def answer_batch(persona_chunk: list, study, tries=2) -> dict[str, PanelAnswer]:
                 pid = ev.get("pid")
                 if pid:
                     try:
-                        ans = PanelAnswer(**ev)
+                        clean_ev = _clean_anchor_evaluation(ev, valid_sids)
+                        ans = PanelAnswer(**clean_ev)
                         check(ans, study)
                         results[pid] = ans
                     except Exception:

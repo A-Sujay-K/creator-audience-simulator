@@ -6,18 +6,30 @@ from sklearn.linear_model import Ridge
 
 HIST = Path("data/history.jsonl")
 META = Path("data/meta.json")
-FEATS = lambda t: [len(t.split()), int(any(c.isdigit() for c in t)), int("?" in t), int(" you" in t.lower())]
+
+FEATS = lambda t: [
+    len(t.split()),                                                     # word count
+    int(any(c.isdigit() for c in t)),                                   # numeric specificity
+    int("?" in t),                                                      # question hook
+    int(" you" in t.lower() or t.lower().startswith("you")),            # direct address
+    int(any(w in t.lower() for w in ["stop", "mistake", "ruined", "wrong", "hate", "never", "don't", "avoid"])),  # negative alarm
+    int(any(w in t.lower() for w in ["secret", "nobody", "hidden", "truth", "exposed", "hack", "trick"])),       # curiosity gap
+    int(any(c in t for c in ["$", "₹", "£", "%"])),                     # financial / value symbol
+    sum(1 for w in t.split() if w and w[0].isupper()),                  # capitalized word density
+]
 
 def spearman(a, b):
     return float(pd.Series(list(a)).rank().corr(pd.Series(list(b)).rank()))
 
 def rank_fidelity(pred_mean: pd.Series, real: pd.DataFrame, n_boot=2000, seed=0):
-    """pred_mean: index=sid. real: rows=respondents, columns=sid (1-5 ratings)."""
     sids = [s for s in pred_mean.index if s in real.columns]
-    if not sids:
-        return {"spearman": 0.0, "ci": (0.0, 0.0), "top_pick_match": False, "n_real": 0}
+    if not sids or len(real) == 0:
+        return {"spearman": 0.0, "ci": [0.0, 0.0], "top_pick_match": False, "n_real": 0}
     p = pred_mean[sids].values
     point = spearman(p, real[sids].mean().values)
+    if len(real) < 2:
+        return {"spearman": point, "ci": [float(point), float(point)], "n_real": len(real),
+                "top_match": bool(sids[int(np.argmax(p))] == real[sids].mean().idxmax())}
     rng = np.random.default_rng(seed)
     boots = []
     for _ in range(n_boot):
@@ -76,7 +88,13 @@ def confidence(div, meta):
     if div["rating_std"] < 0.6 or div["best_entropy"] < 0.35:
         return "LOW", "Personas rate almost identically (diversity collapse)."
     last = meta.get("last")
-    if not last: return "UNCALIBRATED", "No panel check yet for this audience. Treat the ranking as a hypothesis."
-    if last["ci"][0] <= 0: return "LOW", "The last panel check could not be told apart from a random ranking."
-    if last.get("n_real", 0) < 15: return "MODERATE", "Small panel, so the accuracy estimate is itself noisy."
-    return "OK", "The ranking has agreed with real panels."
+    if not last:
+        return "UNCALIBRATED", "No panel check yet for this audience. Treat the ranking as a hypothesis."
+    n_real = last.get("n_real", 0)
+    if n_real < 5:
+        return "UNCALIBRATED", f"Panel too small ({n_real} real respondent{'s' if n_real != 1 else ''}). Need ≥ 5 real responses to calibrate."
+    if last.get("ci", [0, 0])[0] <= 0:
+        return "LOW", "The last panel check could not be told apart from a random ranking."
+    if n_real < 15:
+        return "MODERATE", f"Moderate panel ({n_real} real responses); accuracy estimate is directional."
+    return "OK", f"High confidence: validated against {n_real} real human panel responses."

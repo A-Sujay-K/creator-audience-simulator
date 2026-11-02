@@ -55,7 +55,8 @@ Rules:
 def get_style_dna(creator_name: str, niche: str, creator_videos: list, niche_trending: list) -> dict:
     """Generate a creator's style DNA card for replication."""
     vids_text = "\n".join(
-        f"  [{v.get('platform')}] {v.get('title')} — Hook: '{v.get('opening_hook', '')}'"
+        f"  [{v.get('platform')}] {v.get('title')}"
+        + (f" — Real Spoken Opening: \"{v['spoken_hook']}\"" if v.get("spoken_hook") else f" — Hook: \"{v.get('opening_hook', '')}\"")
         for v in (creator_videos or [])[:4]
     )
     trend_text = "\n".join(
@@ -454,7 +455,8 @@ def generate_unified_clone_dossier(creator_name: str, niche: str, creator_vids: 
     Guarantees non-empty robust results via automatic fallback merge.
     """
     vids_text = "\n".join(
-        f"  - [{v.get('platform', 'Video')}] {v.get('title', '')} (Hook: {v.get('opening_hook', '')})"
+        f"  - [{v.get('platform', 'Video')}] {v.get('title', '')} "
+        + (f"(Real Spoken Opening: \"{v['spoken_hook']}\")" if v.get("spoken_hook") else f"(Hook: {v.get('opening_hook', '')})")
         for v in (creator_vids or [])[:4]
     )
 
