@@ -4,9 +4,9 @@ from .personas import run_round
 from .analysis import ratings_df, item_table, segment_view, diversity, bias_flags
 from .fidelity import load_history, fit_calibrator, with_scores, load_meta, confidence
 
-def run_study(text, n=150, seed=7):
+def run_study(text, n=150, seed=7, workers=6):
     study = compile_study(text)
-    pairs = run_round(build_society("config/society.yaml", n, seed), study)
+    pairs = run_round(build_society("config/society.yaml", n, seed), study, workers=workers)
     df = ratings_df(pairs)
     items = with_scores(item_table(df, study), fit_calibrator(load_history()))
     div = diversity(df, len(study.stimuli))

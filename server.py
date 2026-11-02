@@ -276,52 +276,53 @@ def api_hook_simulate(req: HookTestRequest):
         top_hook_name = str(top_row["sid"])
         top_hook_content = str(top_row["hook_text"])
 
+        # Scientific Relative Velocity & Incremental Value Modeling
+        # Grounded in creator baseline multiplier rather than arbitrary flat views
         if top_score >= 4.2:
-            views_tier = "2.5M – 5.0M Views"
-            min_v, max_v = 2_500_000, 5_000_000
+            views_tier = "3.0x – 5.0x Baseline Velocity (Breakout)"
             fame_label = "Ultra Viral Breakout (Top 3% of Niche)"
-            subs_gain = "+25,000 – 50,000 Followers"
+            subs_gain = "+300% – 500% Follower Inflow vs Avg"
             algo_prob = "95% Push Likelihood"
+            min_v, max_v = 300_000, 750_000
+            sponsor_min, sponsor_max = 45_000, 120_000
         elif top_score >= 3.6:
-            views_tier = "1.0M – 2.5M Views"
-            min_v, max_v = 1_000_000, 2_500_000
+            views_tier = "1.6x – 2.5x Baseline Velocity (Category Uplift)"
             fame_label = "Strong Category Performer (Top 15%)"
-            subs_gain = "+10,000 – 25,000 Followers"
+            subs_gain = "+150% – 250% Follower Inflow vs Avg"
             algo_prob = "84% Push Likelihood"
+            min_v, max_v = 160_000, 350_000
+            sponsor_min, sponsor_max = 20_000, 50_000
         elif top_score >= 3.0:
-            views_tier = "300K – 1.0M Views"
-            min_v, max_v = 300_000, 1_000_000
+            views_tier = "0.9x – 1.2x Baseline Velocity (Standard)"
             fame_label = "Steady Baseline Retention"
-            subs_gain = "+3,000 – 10,000 Followers"
-            algo_prob = "65% Push Likelihood"
+            subs_gain = "Nominal Baseline Inflow"
+            algo_prob = "62% Push Likelihood"
+            min_v, max_v = 90_000, 150_000
+            sponsor_min, sponsor_max = 8_000, 20_000
         else:
-            views_tier = "100K – 300K Views"
-            min_v, max_v = 100_000, 300_000
-            fame_label = "High Drop-off Risk"
-            subs_gain = "< 3,000 Followers"
-            algo_prob = "35% Push Likelihood"
+            views_tier = "0.3x – 0.6x Baseline Velocity (High Drop-off)"
+            fame_label = "High Drop-off Risk (< 3s Swipe)"
+            subs_gain = "Sub-baseline / Minimal Inflow"
+            algo_prob = "28% Push Likelihood"
+            min_v, max_v = 30_000, 70_000
+            sponsor_min, sponsor_max = 0, 8_000
 
         if top_clickbait > 0.15:
-            penalty = 1.0 - (top_clickbait * 0.8)
+            penalty = 1.0 - (top_clickbait * 0.7)
             min_v = int(min_v * penalty)
             max_v = int(max_v * penalty)
+            sponsor_min = int(sponsor_min * penalty)
+            sponsor_max = int(sponsor_max * penalty)
 
-        adsense_min = int((min_v / 1000) * 28)
-        adsense_max = int((max_v / 1000) * 42)
-
-        if top_score >= 4.0:
-            sponsor_min, sponsor_max = 60_000, 150_000
-        elif top_score >= 3.5:
-            sponsor_min, sponsor_max = 30_000, 60_000
-        else:
-            sponsor_min, sponsor_max = 12_000, 30_000
+        adsense_min = int((min_v / 1000) * 30)
+        adsense_max = int((max_v / 1000) * 50)
 
         tot_rev_min = adsense_min + sponsor_min
         tot_rev_max = adsense_max + sponsor_max
-        tot_rev_usd_min = int(tot_rev_min / 84)
-        tot_rev_usd_max = int(tot_rev_max / 84)
+        tot_rev_usd_min = int(tot_rev_min / 86)
+        tot_rev_usd_max = int(tot_rev_max / 86)
 
-        viral_index = int(min(98, max(30, (top_score / 5.0) * 82 + (top_best * 20) - (top_worst * 15) - (top_clickbait * 20))))
+        viral_index = int(min(98, max(25, (top_score / 5.0) * 80 + (top_best * 25) - (top_worst * 20) - (top_clickbait * 25))))
 
         items_list = items_df.to_dict(orient="records")
         for item in items_list:

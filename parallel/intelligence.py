@@ -418,6 +418,16 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
                 web_results.append({"title": t, "url": u, "snippet": s})
                 snippet_texts.append(f"{t} {s}")
 
+        # Extract verified metric hints from search snippets (subscribers & followers)
+        all_snips = " ".join(snippet_texts)
+        yt_hint = re.search(r'([0-9]+(?:\.[0-9]+)?\s*[KMBkmb])\s*(?:subscribers|subs)', all_snips, re.IGNORECASE)
+        ig_hint = re.search(r'([0-9]+(?:\.[0-9]+)?\s*[KMBkmb])\s*followers', all_snips, re.IGNORECASE)
+        detected_metrics_hint = {}
+        if yt_hint:
+            detected_metrics_hint["youtube_subscribers"] = yt_hint.group(1).upper().replace(" ", "")
+        if ig_hint:
+            detected_metrics_hint["instagram_followers"] = ig_hint.group(1).upper().replace(" ", "")
+
         full_bio_text = " ".join(snippet_texts).lower()
 
         # Dynamic niche detection if not explicitly supplied
@@ -467,25 +477,15 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
             except Exception as e:
                 print(f"[intelligence] Own video search note: {e}")
 
-        # ── Query 3: Peer/Competitor Videos in the SAME Niche ───────────────────
-        if "mrbeast" in name_lower:
-            peer_queries = [
-                "Mark Rober engineering site:youtube.com/watch",
-                "Ryan Trahan challenge site:youtube.com/watch"
-            ]
-        elif "carry" in name_lower:
-            peer_queries = [
-                "Ashish Chanchlani vines site:youtube.com/watch",
-                "Bhuvan Bam BB Ki Vines site:youtube.com/watch"
-            ]
-        else:
-            primary_topic = detected_niche.split("&")[0].split(",")[0].strip()
-            peer_queries = [
-                f"{primary_topic} reels site:instagram.com/reel",
-                f"{primary_topic} viral site:instagram.com/reel",
-                f"{primary_topic} review OR vlog OR tutorial site:youtube.com/watch -top10 -top25 -compilation -ranking -stars",
-                f"{primary_topic} site:youtube.com/shorts -top10 -top25 -compilation"
-            ]
+        # ── Query 3: Peer/Competitor Videos in the SAME Niche (Dynamic) ─────────
+        primary_topic = (detected_niche or niche or "content").split("&")[0].split(",")[0].strip()
+        peer_queries = [
+            f"{primary_topic} reels site:instagram.com/reel",
+            f"{primary_topic} viral site:instagram.com/reel",
+            f"{primary_topic} creator channel site:youtube.com/watch -top10 -top25 -compilation -ranking",
+            f"{primary_topic} site:youtube.com/shorts -top10 -top25 -compilation",
+            f"{clean_name} similar creators {primary_topic} site:youtube.com/watch"
+        ]
 
         for pq in peer_queries:
             try:
@@ -570,7 +570,8 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
     print(f"[intelligence] Firecrawl recon: {len(dedup_c)} creator uploads, {len(dedup_n)} peer uploads in '{detected_niche}'")
     neg_res = negative_snippets if 'negative_snippets' in locals() else []
     trend_res = trending_snippets if 'trending_snippets' in locals() else []
-    return web_results, dedup_c, dedup_n, detected_niche, neg_res, trend_res
+    metrics_hint = detected_metrics_hint if 'detected_metrics_hint' in locals() else {}
+    return web_results, dedup_c, dedup_n, detected_niche, neg_res, trend_res, metrics_hint
 
 
 
@@ -578,7 +579,7 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
 #  NORMALIZATION & FALLBACK INTEGRITY
 # ─────────────────────────────────────────────────
 
-def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vids: list[dict], niche_vids: list[dict], detected_niche: str = "", comparison_creator: str = "", trending_snippets: list = None, negative_snippets: list = None) -> dict:
+def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vids: list[dict], niche_vids: list[dict], detected_niche: str = "", comparison_creator: str = "", trending_snippets: list = None, negative_snippets: list = None, metrics_hint: dict = None, raw_results: list = None) -> dict:
     """Guarantees zero '—' fields, working avatars, verified playable videos, and reference videos for every idea."""
     profile = intel.get("creator_profile", {})
     if not profile.get("name"):
@@ -591,28 +592,68 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
         profile["tone_and_style"] = f"Engaging, authentic delivery tailored for {profile.get('core_niche')} enthusiasts."
     if not profile.get("audience_vibe"):
         profile["audience_vibe"] = "Active, mobile-first community passionate about real-world visual content."
+    # Dynamic Location Detection from Crawled Footprint
     if not profile.get("location"):
-        profile["location"] = "India" if any(w in creator_name.lower() for w in ["carry", "ashish", "bhuvan", "round2hell", "dhawan", "aakash"]) else "United States"
+        all_snips_text = " ".join([r.get("snippet", "") + " " + r.get("title", "") for r in (raw_results or [])]).lower()
+        if any(c in all_snips_text for c in ["india", "mumbai", "delhi", "bengaluru", "hindi", "hyderabad", "kolkata"]):
+            detected_loc = "India"
+        elif any(c in all_snips_text for c in ["united states", "usa", "los angeles", "new york", "california", "texas"]):
+            detected_loc = "United States"
+        elif any(c in all_snips_text for c in ["united kingdom", "london", "uk", "manchester"]):
+            detected_loc = "United Kingdom"
+        elif any(c in all_snips_text for c in ["canada", "toronto", "vancouver"]):
+            detected_loc = "Canada"
+        elif any(c in all_snips_text for c in ["australia", "sydney", "melbourne"]):
+            detected_loc = "Australia"
+        else:
+            detected_loc = "Global / Multi-Region"
+        profile["location"] = detected_loc
+
     profile["avatar_url"] = avatar_url or profile.get("avatar_url", "")
     intel["creator_profile"] = profile
 
-    # Platform Metrics
+    # Platform Metrics: Grounded in Crawled Snippets + Tier-Calibrated Benchmarks
     metrics = intel.get("platform_metrics") or intel.get("metrics") or {}
-    name_lower = creator_name.lower()
-    if "mrbeast" in name_lower:
-        yt_subs = metrics.get("youtube_subscribers") or "310M"
-        ig_foll = metrics.get("instagram_followers") or "61.2M"
-        reach = metrics.get("total_reach") or "371.2M"
-    elif "carry" in name_lower:
-        yt_subs = metrics.get("youtube_subscribers") or "45.2M"
-        ig_foll = metrics.get("instagram_followers") or "21.6M"
-        reach = metrics.get("total_reach") or "66.8M"
-    else:
-        yt_subs = metrics.get("youtube_subscribers") or "15.0M"
-        ig_foll = metrics.get("instagram_followers") or "8.5M"
-        reach = metrics.get("total_reach") or f"{yt_subs} + {ig_foll}"
+    tier_label = profile.get("tier", "Mid (100K-1M)")
 
-    eng = metrics.get("engagement_rate") or "7.8%"
+    # 1. Use real verified snippet hints if extracted from search results
+    hints = metrics_hint or {}
+    crawled_yt = hints.get("youtube_subscribers")
+    crawled_ig = hints.get("instagram_followers")
+
+    # 2. Use LLM parsed metrics from Call A if available and plausible
+    llm_yt = metrics.get("youtube_subscribers")
+    llm_ig = metrics.get("instagram_followers")
+
+    # 3. Grounded fallback by creator scale tier (never default 15M to unknown creators)
+    if crawled_yt:
+        yt_subs = crawled_yt
+    elif llm_yt and any(k in llm_yt.lower() for k in ["k", "m"]):
+        yt_subs = llm_yt
+    elif "Mega" in tier_label:
+        yt_subs = "10M+ (Tier Benchmark)"
+    elif "Macro" in tier_label:
+        yt_subs = "1M - 5M (Tier Benchmark)"
+    elif "Mid" in tier_label:
+        yt_subs = "100K - 1M (Tier Benchmark)"
+    else:
+        yt_subs = "< 100K (Emerging Tier)"
+
+    if crawled_ig:
+        ig_foll = crawled_ig
+    elif llm_ig and any(k in llm_ig.lower() for k in ["k", "m"]):
+        ig_foll = llm_ig
+    elif "Mega" in tier_label:
+        ig_foll = "5M+ (Tier Benchmark)"
+    elif "Macro" in tier_label:
+        ig_foll = "500K - 2M (Tier Benchmark)"
+    elif "Mid" in tier_label:
+        ig_foll = "50K - 500K (Tier Benchmark)"
+    else:
+        ig_foll = "< 50K (Emerging Tier)"
+
+    reach = metrics.get("total_reach") or f"{yt_subs} / {ig_foll}"
+    eng = metrics.get("engagement_rate") or "5.4%"
     cat_med = metrics.get("category_median_engagement") or "3.2%"
     yt_cad = metrics.get("youtube_cadence") or "1-2 videos/month"
     ig_cad = metrics.get("instagram_cadence") or "Daily Reels/Stories"
@@ -627,51 +668,69 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
         "instagram_cadence": ig_cad,
     }
 
-    # Rate Card
+    # Rate Card & Sponsor Projections Grounded in CPM Standards by Tier & Currency
     rc = intel.get("rate_card_and_sponsors") or {}
-    if "mrbeast" in name_lower:
-        rc["est_youtube_rate"] = rc.get("est_youtube_rate") or "$500,000 - $1,000,000"
-        rc["est_instagram_reel_rate"] = rc.get("est_instagram_reel_rate") or "$150,000 - $300,000"
-        rc["est_story_rate"] = rc.get("est_story_rate") or "$50,000 - $100,000"
-        rc["brand_affinity_niches"] = rc.get("brand_affinity_niches") or ["Consumer Tech", "Global FMCG", "Gaming"]
-        rc["past_or_likely_sponsors"] = rc.get("past_or_likely_sponsors") or ["Shopify", "Brawl Stars", "Feastables"]
-        rc["why_brands_partner"] = rc.get("why_brands_partner") or "Massive global reach with unmatched viral retention."
-    else:
-        if not rc.get("est_youtube_rate"):
-            rc["est_youtube_rate"] = "₹35L - ₹75L ($45K - $90K)"
-        if not rc.get("est_instagram_reel_rate"):
-            rc["est_instagram_reel_rate"] = "₹12L - ₹25L ($15K - $30K)"
-        if not rc.get("est_story_rate"):
-            rc["est_story_rate"] = "₹3L - ₹6L ($3.5K - $7.5K)"
-        if not rc.get("brand_affinity_niches"):
-            rc["brand_affinity_niches"] = ["Mobile Gaming", "Fintech/Trading", "Consumer Electronics"]
-        if not rc.get("past_or_likely_sponsors"):
-            rc["past_or_likely_sponsors"] = ["Winzo", "Binomo", "Samsung"]
-        if not rc.get("why_brands_partner"):
-            rc["why_brands_partner"] = "High conversion with mobile-first youth demographic."
+    is_india = "india" in str(profile.get("location", "")).lower()
+
+    if "Mega" in tier_label:
+        yt_rate = "₹40L - ₹1.2Cr ($50K - $150K)" if is_india else "$50,000 - $150,000"
+        ig_rate = "₹15L - ₹45L ($18K - $55K)" if is_india else "$20,000 - $60,000"
+        story_rate = "₹3L - ₹10L ($4K - $12K)" if is_india else "$5,000 - $15,000"
+    elif "Macro" in tier_label:
+        yt_rate = "₹8L - ₹25L ($10K - $30K)" if is_india else "$10,000 - $35,000"
+        ig_rate = "₹3L - ₹10L ($4K - $12K)" if is_india else "$4,000 - $12,000"
+        story_rate = "₹80K - ₹2.5L ($1K - $3K)" if is_india else "$1,000 - $3,500"
+    elif "Mid" in tier_label:
+        yt_rate = "₹1.5L - ₹6L ($2K - $7.5K)" if is_india else "$2,000 - $8,000"
+        ig_rate = "₹60K - ₹2.5L ($800 - $3K)" if is_india else "$800 - $3,500"
+        story_rate = "₹20K - ₹60K ($250 - $750)" if is_india else "$300 - $1,000"
+    else:  # Micro (< 100K)
+        yt_rate = "₹25K - ₹1L ($300 - $1.2K)" if is_india else "$400 - $1,500"
+        ig_rate = "₹15K - ₹50K ($200 - $600)" if is_india else "$200 - $700"
+        story_rate = "₹5K - ₹15K ($70 - $200)" if is_india else "$100 - $300"
+
+    rc["est_youtube_rate"] = rc.get("est_youtube_rate") or yt_rate
+    rc["est_instagram_reel_rate"] = rc.get("est_instagram_reel_rate") or ig_rate
+    rc["est_story_rate"] = rc.get("est_story_rate") or story_rate
+
+    # Dynamic niche brand affinity
+    core_n = profile.get("core_niche", "Content Creation")
+    if not rc.get("brand_affinity_niches"):
+        rc["brand_affinity_niches"] = [f"{core_n} Brands", "Consumer Tech", "Direct-to-Consumer Lifestyle"]
+    if not rc.get("past_or_likely_sponsors"):
+        rc["past_or_likely_sponsors"] = [f"Premium {core_n} Brands", "Relevant Category Sponsors"]
+    if not rc.get("why_brands_partner"):
+        rc["why_brands_partner"] = f"Authentic community trust and high engagement within the {core_n} audience."
     intel["rate_card_and_sponsors"] = rc
 
-    # Demographics
+    # Demographics Grounded in Detected Location
     demo = intel.get("audience_demographics") or {}
     if not demo.get("top_countries"):
-        if "mrbeast" in name_lower:
+        if is_india:
             demo["top_countries"] = [
-                {"country": "United States", "share": "44%"},
-                {"country": "United Kingdom", "share": "14%"},
-                {"country": "India", "share": "12%"},
-                {"country": "Canada", "share": "6%"}
+                {"country": "India", "share": "64%"},
+                {"country": "United Arab Emirates", "share": "8%"},
+                {"country": "United States", "share": "6%"},
+                {"country": "United Kingdom", "share": "4%"}
+            ]
+        elif "United Kingdom" in profile.get("location", ""):
+            demo["top_countries"] = [
+                {"country": "United Kingdom", "share": "52%"},
+                {"country": "United States", "share": "22%"},
+                {"country": "Ireland", "share": "8%"},
+                {"country": "Australia", "share": "5%"}
             ]
         else:
             demo["top_countries"] = [
-                {"country": "India", "share": "45%"},
-                {"country": "United States", "share": "20%"},
-                {"country": "United Kingdom", "share": "6%"},
-                {"country": "Canada", "share": "4%"}
+                {"country": "United States", "share": "48%"},
+                {"country": "United Kingdom", "share": "14%"},
+                {"country": "Canada", "share": "9%"},
+                {"country": "Australia", "share": "6%"}
             ]
     if not demo.get("primary_age"):
         demo["primary_age"] = "18-24 (Gen Z)"
     if not demo.get("gender_skew"):
-        demo["gender_skew"] = "76% Male / 24% Female"
+        demo["gender_skew"] = "68% Male / 32% Female"
     intel["audience_demographics"] = demo
 
     # ── Creator's OWN Videos Integrity Check ─────────────────────────────────
@@ -695,67 +754,32 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
             })
 
     if not valid_c_list:
-        if "mrbeast" in name_lower:
-            valid_c_list = [
-                {
-                    "id": 1,
-                    "platform": "YouTube",
-                    "title": "$456,000 Squid Game In Real Life!",
-                    "views": "680M+ Views",
-                    "url": "https://www.youtube.com/watch?v=0e3GPea1Tyg",
-                    "opening_hook": "I recreated every single set from Squid Game in real life!",
-                    "why_it_went_viral": "Immediate spectacle scale shown in the first 1.5 seconds.",
-                    "adapt_hook_template": "Establish astronomical physical stakes immediately before the title card."
-                },
-                {
-                    "id": 2,
-                    "platform": "YouTube",
-                    "title": "50 Hours In Antarctica (Surviving The Cold)",
-                    "views": "210M+ Views",
-                    "url": "https://www.youtube.com/watch?v=7IKab3HcfFk",
-                    "opening_hook": "We just landed in Antarctica and have 50 hours to survive.",
-                    "why_it_went_viral": "High sensory environment with ticking countdown clock urgency.",
-                    "adapt_hook_template": "State the extreme location + ticking survival countdown immediately."
-                }
-            ]
-        elif "carry" in name_lower:
-            valid_c_list = [
-                {
-                    "id": 1,
-                    "platform": "YouTube",
-                    "title": "YALGAAR - CARRYMINATI X Wily Frenzy",
-                    "views": "340M+ Views",
-                    "url": "https://www.youtube.com/watch?v=zzwRbKI2pn4",
-                    "opening_hook": "Aggressive vocal pattern interrupt over rising industrial beat.",
-                    "why_it_went_viral": "Raw emotional defiance and explosive cinematic production.",
-                    "adapt_hook_template": "Begin with intense confrontational monologue before drop."
-                },
-                {
-                    "id": 2,
-                    "platform": "YouTube",
-                    "title": "STOP MAKING THESE INSTAGRAM REELS | CarryMinati",
-                    "views": "48M+ Views",
-                    "url": "https://www.youtube.com/watch?v=oV8p3R6fXF8",
-                    "opening_hook": "If you do this in 2026, unfollow me right now.",
-                    "why_it_went_viral": "Instant audience polarization and relatable cringe critique.",
-                    "adapt_hook_template": "Challenge an everyday audience habit in the first 2 seconds."
-                }
-            ]
-        else:
-            is_insta = any(k in name_lower for k in ["the_", "@", "insta", "incredi"])
-            plat = "Instagram" if is_insta else "YouTube"
-            valid_c_list = [
-                {
-                    "id": 1,
-                    "platform": plat,
-                    "title": f"Signature {profile.get('core_niche')} Upload by {creator_name}",
-                    "views": "1.2M+ Reach",
-                    "url": f"https://www.instagram.com/{creator_name.split()[-1].lstrip('@')}/" if plat == "Instagram" else "https://www.youtube.com/",
-                    "opening_hook": "High-impact visual opener capturing immediate curiosity.",
-                    "why_it_went_viral": "Curated cinematic pacing tailored to loyal followers.",
-                    "adapt_hook_template": "Establish instant visual contrast before narrative context."
-                }
-            ]
+        is_insta = any(k in creator_name.lower() for k in ["the_", "@", "insta", "reels"])
+        plat = "Instagram" if is_insta else "YouTube"
+        core_n = profile.get("core_niche", "Content Creation")
+        clean_handle = creator_name.split()[-1].lstrip("@")
+        valid_c_list = [
+            {
+                "id": 1,
+                "platform": plat,
+                "title": f"Top Signature {core_n} Release by {creator_name}",
+                "views": "High Audience Reach",
+                "url": f"https://www.instagram.com/{clean_handle}/" if plat == "Instagram" else f"https://www.youtube.com/results?search_query={creator_name.replace(' ', '+')}",
+                "opening_hook": f"Immediate pattern-interrupt visual hook opening {core_n} theme.",
+                "why_it_went_viral": f"Strong authentic audience rapport and compelling opening pace in {core_n}.",
+                "adapt_hook_template": "Cut directly to the central tension or surprise within the first 1.5 seconds."
+            },
+            {
+                "id": 2,
+                "platform": plat,
+                "title": f"Viral Short-Form {core_n} Breakout by {creator_name}",
+                "views": "Category Trending",
+                "url": f"https://www.instagram.com/{clean_handle}/" if plat == "Instagram" else f"https://www.youtube.com/results?search_query={creator_name.replace(' ', '+')}+shorts",
+                "opening_hook": "Contrarian statement disputing popular community consensus.",
+                "why_it_went_viral": "High comment polarization and rapid replay rate.",
+                "adapt_hook_template": "State the boldest takeaway first, then present the supporting proof."
+            }
+        ]
     intel["creator_videos"] = valid_c_list
 
     # ── Niche Trending Videos Integrity Check (MUST BE FROM OTHER CREATORS) ─
@@ -809,289 +833,82 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
     for idx, item in enumerate(cleaned_n_list, 1):
         item["id"] = idx
 
-    # 3. Fallback only if absolutely zero peer videos could be retrieved
+    # 3. Dynamic Peer Trending Fallback grounded in niche
     if not cleaned_n_list:
-        if "mrbeast" in name_lower:
-            cleaned_n_list = [
-                {
-                    "id": 1,
-                    "platform": "YouTube",
-                    "title": "I Engineered The Perfect First Date (Mark Rober)",
-                    "views": "42M+ Views",
-                    "url": "https://www.youtube.com/watch?v=S7UM5lSgAg8",
-                    "opening_hook": "Can you actually engineer the perfect first date?",
-                    "why_it_went_viral": "Science meets real human emotion with hilarious stakes.",
-                    "adapt_hook_template": "Ask an absurd engineering question and show the process."
-                },
-                {
-                    "id": 2,
-                    "platform": "YouTube",
-                    "title": "I Survived On $0.01 For 30 Days (Ryan Trahan)",
-                    "views": "42M+ Views",
-                    "url": "https://www.youtube.com/watch?v=9bqk6ZUsKyA",
-                    "opening_hook": "I have one penny and 30 days to cross America.",
-                    "why_it_went_viral": "Zero-budget underdog journey with relentless mini-goals.",
-                    "adapt_hook_template": "Start with absurdly low resources and a massive impossible finish line."
-                }
-            ]
-        elif "carry" in name_lower:
-            cleaned_n_list = [
-                {
-                    "id": 1,
-                    "platform": "YouTube",
-                    "title": "BB Ki Vines - Angry Masterji (Bhuvan Bam)",
-                    "views": "65M+ Views",
-                    "url": "https://www.youtube.com/watch?v=Rqv89kZrqnU",
-                    "opening_hook": "Rapid multi-character argument bursting within first 2 seconds.",
-                    "why_it_went_viral": "Relatable classroom nostalgia and rapid-fire punchline rhythm.",
-                    "adapt_hook_template": "Cut between conflicting characters within the first 1.5 seconds."
-                },
-                {
-                    "id": 2,
-                    "platform": "YouTube",
-                    "title": "Lockdown With Parivar (Ashish Chanchlani)",
-                    "views": "38M+ Views",
-                    "url": "https://www.youtube.com/watch?v=61xbuz0_Y6I",
-                    "opening_hook": "Every Indian family goes through this during lockdown.",
-                    "why_it_went_viral": "Shared cultural pain-point magnified through energetic caricatures.",
-                    "adapt_hook_template": "Highlight a universal cultural annoyance in the first sentence."
-                }
-            ]
-        else:
-            cleaned_n_list = [
-                {
-                    "id": 1,
-                    "platform": "Instagram",
-                    "title": f"Cinematic {profile.get('core_niche')} Short",
-                    "views": "850K+ Views",
-                    "url": "https://www.instagram.com/reel/De1gjRwhpWm/",
-                    "opening_hook": "Immediate pattern interrupt showing high-energy motion first.",
-                    "why_it_went_viral": "Instant curiosity loop and rapid short-form rhythm.",
-                    "adapt_hook_template": "Show the surprising outcome within the first 1.5 seconds."
-                },
-                {
-                    "id": 2,
-                    "platform": "YouTube",
-                    "title": f"Viral {profile.get('core_niche')} Deep Dive",
-                    "views": "1.4M+ Views",
-                    "url": "https://www.youtube.com/watch?v=Bz_Wm6-B7IA",
-                    "opening_hook": "Questioning common assumptions within the first 3 seconds.",
-                    "why_it_went_viral": "High storytelling immersion and dynamic b-roll pacing.",
-                    "adapt_hook_template": "Challenge an established niche belief in the first line."
-                }
-            ]
+        core_n = profile.get("core_niche", detected_niche or "Content Creation")
+        cleaned_n_list = [
+            {
+                "id": 1,
+                "platform": "YouTube",
+                "title": f"Proven Viral {core_n} Benchmark Video",
+                "views": "Category Trending",
+                "url": f"https://www.youtube.com/results?search_query=viral+{core_n.replace(' ', '+')}",
+                "opening_hook": f"Immediate visual tension introducing high-stakes {core_n} debate.",
+                "why_it_went_viral": f"Captures high-retention audience curiosity within the first 2 seconds.",
+                "adapt_hook_template": "Establish instant visual contrast before narrative context."
+            },
+            {
+                "id": 2,
+                "platform": "Instagram",
+                "title": f"Top Short-Form {core_n} Reel Benchmark",
+                "views": "Viral Wave",
+                "url": f"https://www.instagram.com/explore/tags/{core_n.replace(' ', '').lower()}/",
+                "opening_hook": "Unconventional method shown before explaining the problem.",
+                "why_it_went_viral": "Rapid pacing and high shareability among core community members.",
+                "adapt_hook_template": "Show the surprising outcome within the first 1.5 seconds."
+            }
+        ]
     intel["niche_trending_videos"] = cleaned_n_list
 
-    # Competitor Benchmarking Fallback
+    # Competitor Benchmarking Fallback: Grounded in Discovered Peer Creators + Dynamic Synthesis
     if not intel.get("competitor_benchmarking"):
-        if "mrbeast" in name_lower:
-            intel["competitor_benchmarking"] = [
-                {
-                    "competitor_name": "Mark Rober",
-                    "recent_content_focus": "Engineering spectacle & science challenges",
-                    "their_strength": "High family trust & educational goodwill",
-                    "their_gap": "Long upload gaps (months)",
-                    "how_to_beat_them": "Deliver faster episodic challenges with interactive community voting."
-                },
-                {
-                    "competitor_name": "Ryan Trahan",
-                    "recent_content_focus": "Underdog travel survival series",
-                    "their_strength": "High emotional audience connection",
-                    "their_gap": "Lower budget visual spectacle",
-                    "how_to_beat_them": "Blend huge spectacle budgets with intimate 1-on-1 human storytelling."
-                }
-            ]
-        else:
-            # ── Niche-aware competitor fallback ──────────────────────────────
-            niche_key = (detected_niche or profile.get("core_niche", "")).lower()
+        core_n = profile.get("core_niche", detected_niche or "Content Creation")
+        benchmarks = []
 
-            if any(k in niche_key for k in ["motovlog", "motorcycle", "moto", "bike", "royal enfield", "ktm", "touring"]):
-                intel["competitor_benchmarking"] = [
-                    {
-                        "competitor_name": "Mridul Madhok (RideWithMridul)",
-                        "recent_content_focus": "Long-distance Himalayan motorcycle tours",
-                        "their_strength": "Loyal touring community with scenic cinematography",
-                        "their_gap": "Infrequent uploads and limited gear deep-dives",
-                        "how_to_beat_them": "Combine cinematic touring footage with weekly gear breakdowns."
-                    },
-                    {
-                        "competitor_name": "ThrottleThings",
-                        "recent_content_focus": "Royal Enfield reviews and off-road tests",
-                        "their_strength": "Strong technical review credibility",
-                        "their_gap": "Limited storytelling and lifestyle integration",
-                        "how_to_beat_them": "Blend technical depth with compelling personal travel narratives."
-                    }
-                ]
-            elif any(k in niche_key for k in ["fitness", "gym", "workout", "bodybuilding", "trainer", "health"]):
-                intel["competitor_benchmarking"] = [
-                    {
-                        "competitor_name": "Nikhil Fit (FitMuscle TV)",
-                        "recent_content_focus": "Home workouts and transformation challenges",
-                        "their_strength": "High consistency and motivational energy",
-                        "their_gap": "Generic advice without personalization",
-                        "how_to_beat_them": "Offer personalized programs with measurable transformation proof."
-                    },
-                    {
-                        "competitor_name": "Tarun Gill",
-                        "recent_content_focus": "Supplement reviews and bodybuilding science",
-                        "their_strength": "Deep technical credibility in Indian fitness space",
-                        "their_gap": "Dense jargon that alienates beginners",
-                        "how_to_beat_them": "Break complex fitness science into engaging short-form videos."
-                    }
-                ]
-            elif any(k in niche_key for k in ["tech", "gadget", "smartphone", "unboxing", "review", "consumer"]):
-                intel["competitor_benchmarking"] = [
-                    {
-                        "competitor_name": "Trakin Tech",
-                        "recent_content_focus": "Budget smartphone comparisons and buying guides",
-                        "their_strength": "Mass-market reach with clear value propositions",
-                        "their_gap": "Shallow depth on flagship and premium segments",
-                        "how_to_beat_them": "Dominate flagship in-depth teardowns with better production quality."
-                    },
-                    {
-                        "competitor_name": "Geekyranjit",
-                        "recent_content_focus": "Detailed gadget reviews with benchmark tests",
-                        "their_strength": "Trusted detailed review methodology",
-                        "their_gap": "Lower entertainment value and dry presentation style",
-                        "how_to_beat_them": "Match technical depth with cinematic storytelling and humor hooks."
-                    }
-                ]
-            elif any(k in niche_key for k in ["food", "street food", "recipe", "cooking", "restaurant", "culinary"]):
-                intel["competitor_benchmarking"] = [
-                    {
-                        "competitor_name": "Food Ranger (Trevor James)",
-                        "recent_content_focus": "Authentic street food tours across Asia",
-                        "their_strength": "Strong emotional connection with raw food experiences",
-                        "their_gap": "Limited local language engagement with Indian audience",
-                        "how_to_beat_them": "Cover hyper-local Indian street food with cultural storytelling."
-                    },
-                    {
-                        "competitor_name": "Indian Food Ranger (Nikunj Vasoya)",
-                        "recent_content_focus": "Indian street food vlogs and restaurant hunts",
-                        "their_strength": "Strong Hindi-speaking local audience rapport",
-                        "their_gap": "Production quality lags behind international creators",
-                        "how_to_beat_them": "Elevate cinematic quality while retaining authentic street-level energy."
-                    }
-                ]
-            elif any(k in niche_key for k in ["gaming", "gameplay", "esports", "minecraft", "bgmi", "pubg", "valorant"]):
-                intel["competitor_benchmarking"] = [
-                    {
-                        "competitor_name": "Scout (Tanmay Singh)",
-                        "recent_content_focus": "BGMI competitive gameplay and live tournaments",
-                        "their_strength": "Top-tier mechanical skill with massive esports fanbase",
-                        "their_gap": "Content mainly appeals to hardcore gamers only",
-                        "how_to_beat_them": "Create beginner-friendly challenge content alongside high-skill clips."
-                    },
-                    {
-                        "competitor_name": "Mortal (Naman Mathur)",
-                        "recent_content_focus": "BGMI highlights, vlogs, and collaboration content",
-                        "their_strength": "Strong personal brand beyond gaming",
-                        "their_gap": "Reduced upload frequency since going semi-professional",
-                        "how_to_beat_them": "Fill the consistency gap with daily engaging gameplay plus personality content."
-                    }
-                ]
-            elif any(k in niche_key for k in ["finance", "crypto", "stock", "investing", "money", "business"]):
-                intel["competitor_benchmarking"] = [
-                    {
-                        "competitor_name": "Pranjal Kamra (Finology)",
-                        "recent_content_focus": "Stock market fundamentals and personal finance",
-                        "their_strength": "High trust authority in Indian retail investing",
-                        "their_gap": "Conservative pace; avoids trending market events",
-                        "how_to_beat_them": "React to live market events faster with clear data visualizations."
-                    },
-                    {
-                        "competitor_name": "CA Rachana Ranade",
-                        "recent_content_focus": "Beginner-friendly stock market and IPO education",
-                        "their_strength": "Professional credibility with approachable teaching style",
-                        "their_gap": "Limited short-form content for Gen Z mobile-first audience",
-                        "how_to_beat_them": "Translate complex finance into 60-second reels without oversimplifying."
-                    }
-                ]
-            elif any(k in niche_key for k in ["photography", "filmmaker", "camera", "drone", "visual", "cinematic"]):
-                intel["competitor_benchmarking"] = [
-                    {
-                        "competitor_name": "Peter McKinnon",
-                        "recent_content_focus": "Cinematic travel photography and camera tutorials",
-                        "their_strength": "Best-in-class production quality and tutorial clarity",
-                        "their_gap": "Mainly targets Western audience; limited Indian context",
-                        "how_to_beat_them": "Apply Hollywood-grade cinematic techniques to Indian landscapes."
-                    },
-                    {
-                        "competitor_name": "Unmesh Dinda (PiXimperfect)",
-                        "recent_content_focus": "Advanced Photoshop and photo editing tutorials",
-                        "their_strength": "Global reach with deep technical editing expertise",
-                        "their_gap": "Purely editing-focused; no field or outdoor shooting content",
-                        "how_to_beat_them": "Combine on-location shooting storytelling with deep post-production breakdowns."
-                    }
-                ]
-            elif any(k in niche_key for k in ["fashion", "beauty", "makeup", "skincare", "outfit", "style", "grooming"]):
-                intel["competitor_benchmarking"] = [
-                    {
-                        "competitor_name": "Komal Pandey",
-                        "recent_content_focus": "Bold experimental fashion and styling lookbooks",
-                        "their_strength": "Strong aspirational identity and brand collaborations",
-                        "their_gap": "Limited coverage of budget-friendly fashion for Tier 2 cities",
-                        "how_to_beat_them": "Bridge aspirational styling with accessible affordable fashion alternatives."
-                    },
-                    {
-                        "competitor_name": "Mumbiker Nikhil",
-                        "recent_content_focus": "Lifestyle, fashion, and travel crossover content",
-                        "their_strength": "Strong male lifestyle audience with high engagement",
-                        "their_gap": "Fashion content secondary to travel; not deeply styled",
-                        "how_to_beat_them": "Establish dedicated fashion-first identity while leveraging lifestyle crossover."
-                    }
-                ]
-            elif any(k in niche_key for k in ["comedy", "roast", "parody", "satire", "sketch", "entertainment", "vines"]):
-                intel["competitor_benchmarking"] = [
-                    {
-                        "competitor_name": "Triggered Insaan",
-                        "recent_content_focus": "Daily reaction and gaming commentary",
-                        "their_strength": "High posting frequency and strong Gen Z connection",
-                        "their_gap": "Predictable formula and repetitive pacing",
-                        "how_to_beat_them": "Produce higher cinematic quality parody sketches with unpredictable twists."
-                    },
-                    {
-                        "competitor_name": "Ashish Chanchlani",
-                        "recent_content_focus": "High-production situational comedy",
-                        "their_strength": "Iconic ensemble cast chemistry",
-                        "their_gap": "Very infrequent uploads",
-                        "how_to_beat_them": "Capture real-time internet trends within 48 hours while topic is hot."
-                    }
-                ]
-            elif any(k in niche_key for k in ["travel", "vlog", "adventure", "explore", "backpack"]):
-                intel["competitor_benchmarking"] = [
-                    {
-                        "competitor_name": "Mumbiker Nikhil",
-                        "recent_content_focus": "Luxury travel vlogs and lifestyle content",
-                        "their_strength": "Premium aspirational lifestyle brand with high engagement",
-                        "their_gap": "Expensive production limits relatable budget travel content",
-                        "how_to_beat_them": "Offer raw, authentic adventure travel with cinematic storytelling."
-                    },
-                    {
-                        "competitor_name": "Sourav Joshi Vlogs",
-                        "recent_content_focus": "Daily life and family travel vlogs",
-                        "their_strength": "Massive daily-upload consistency with family-friendly appeal",
-                        "their_gap": "Production quality sacrificed for upload speed",
-                        "how_to_beat_them": "Produce fewer but cinematic travel episodes that reward dedicated watching."
-                    }
-                ]
-            else:
-                intel["competitor_benchmarking"] = [
-                    {
-                        "competitor_name": f"Top {profile.get('core_niche', 'Niche')} Creator",
-                        "recent_content_focus": f"High-frequency {profile.get('core_niche', 'niche')} content",
-                        "their_strength": "Established audience trust and consistent posting",
-                        "their_gap": "Formulaic content lacking creative differentiation",
-                        "how_to_beat_them": "Introduce a unique creative angle with superior production value."
-                    },
-                    {
-                        "competitor_name": f"Emerging {profile.get('core_niche', 'Niche')} Creator",
-                        "recent_content_focus": f"Trend-reactive {profile.get('core_niche', 'niche')} shorts",
-                        "their_strength": "High-velocity trend adaptation and short-form virality",
-                        "their_gap": "Lacks depth and long-form storytelling capability",
-                        "how_to_beat_them": "Combine short-form trend hooks with deeper long-form series payoff."
-                    }
-                ]
+        # 1. Direct Head-to-Head Comparison Creator if requested by user
+        if comparison_creator and comparison_creator.strip():
+            benchmarks.append({
+                "competitor_name": comparison_creator.strip(),
+                "recent_content_focus": f"Core {core_n} uploads and formats",
+                "their_strength": "Established viewer familiarity and recognizable format pacing",
+                "their_gap": "Predictable framing that leaves room for sharper pattern interrupts",
+                "how_to_beat_them": f"Out-pace them with tighter 3-second stakes and stronger visual hooks."
+            })
+
+        # 2. Add real peer creators discovered from web recon
+        discovered_peer_names = []
+        for nv in (niche_vids or []):
+            author = nv.get("author") or nv.get("channel") or ""
+            if author and author.lower() not in creator_name.lower() and author not in discovered_peer_names:
+                discovered_peer_names.append(author)
+                benchmarks.append({
+                    "competitor_name": author,
+                    "recent_content_focus": f"Trending {core_n} content",
+                    "their_strength": "High posting consistency and established niche trust",
+                    "their_gap": "Slower opening hooks with lower curiosity gaps",
+                    "how_to_beat_them": "Hook viewers in the first 2 seconds with immediate incident framing."
+                })
+            if len(benchmarks) >= 2:
+                break
+
+        # 3. Dynamic Archetype Competitors tailored to this creator's actual niche
+        if len(benchmarks) < 2:
+            benchmarks.append({
+                "competitor_name": f"Dominant {core_n} Category Leader",
+                "recent_content_focus": f"Mainstream {core_n} formats and safe sponsor-friendly videos",
+                "their_strength": "High family trust and established distribution reach",
+                "their_gap": "Safe, generic presentation without aggressive retention hooks",
+                "how_to_beat_them": "Use polarizing, curiosity-driven opening lines that challenge safe consensus."
+            })
+            benchmarks.append({
+                "competitor_name": f"High-Velocity {core_n} Emerging Rival",
+                "recent_content_focus": f"Rapid-fire short-form {core_n} reels and shorts",
+                "their_strength": "Fast editing pace and rapid visual transitions",
+                "their_gap": "Shallow substance leading to high mid-video drop-off",
+                "how_to_beat_them": "Combine fast-paced hook hooks with genuine payoff and depth."
+            })
+
+        intel["competitor_benchmarking"] = benchmarks[:3]
 
     # Content Suggestions: GUARANTEE PLAYABLE REFERENCE VIDEO PER IDEA & HYPER-GROUNDED 4-HOOK ARCHETYPES
     suggestions = intel.get("content_suggestions") or []
@@ -1294,74 +1111,30 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
 
     intel["content_suggestions"] = suggestions
 
-    # ── Negative Reviews & Improvement Suggestions Normalization ────────────
+    # ── Negative Reviews & Improvement Suggestions: Grounded in Niche Realities ───
     neg_reviews = intel.get("negative_reviews") or []
     if not neg_reviews:
-        name_lower = creator_name.lower()
-        if "mrbeast" in name_lower:
-            neg_reviews = [
-                {
-                    "criticism_category": "Over-stimulation & Sensory Fatigue",
-                    "frequency": "Common",
-                    "audience_quote_example": "Pacing is too fast, constant shouting makes it hard to feel emotionally connected.",
-                    "impact_on_channel": "Viewer fatigue among older demographics."
-                },
-                {
-                    "criticism_category": "Predictable Formulaic Challenge Arcs",
-                    "frequency": "Occasional",
-                    "audience_quote_example": "Every video feels like the exact same high-budget containment test.",
-                    "impact_on_channel": "Diminishing marginal virality per dollar spent."
-                },
-                {
-                    "criticism_category": "Staged or Scripted Perception",
-                    "frequency": "Occasional",
-                    "audience_quote_example": "Some contestant reactions feel coached or overly dramatic.",
-                    "impact_on_channel": "Erosion of authenticity in high-stakes moments."
-                }
-            ]
-        elif "carry" in name_lower:
-            neg_reviews = [
-                {
-                    "criticism_category": "Inconsistent Upload Schedule",
-                    "frequency": "Common",
-                    "audience_quote_example": "Disappears for 4 months at a time, momentum stalls between drops.",
-                    "impact_on_channel": "Subscriber decay and lost algorithmic traction."
-                },
-                {
-                    "criticism_category": "Over-reliance on Screaming & Shouting",
-                    "frequency": "Occasional",
-                    "audience_quote_example": "Volume spikes replace clever comedic punchlines in some sketches.",
-                    "impact_on_channel": "Headphone users drop off in the first 15 seconds."
-                },
-                {
-                    "criticism_category": "Dated Tropes & Repetitive Caricatures",
-                    "frequency": "Rare",
-                    "audience_quote_example": "Revisiting old character archetypes that audience has outgrown.",
-                    "impact_on_channel": "Lower replay value for older audience cohorts."
-                }
-            ]
-        else:
-            core_nic = profile.get("core_niche", "Content Creation")
-            neg_reviews = [
-                {
-                    "criticism_category": "Pacing Drop in the Middle 40%",
-                    "frequency": "Common",
-                    "audience_quote_example": "Great hook in first 5 seconds, but the explanation drags on too long.",
-                    "impact_on_channel": "Audience drops off before the mid-video CTA."
-                },
-                {
-                    "criticism_category": "Thumbnail / Title Expectation Gap",
-                    "frequency": "Occasional",
-                    "audience_quote_example": "Thumbnail promised an extreme conclusion that was barely shown.",
-                    "impact_on_channel": "High clickbait penalty and lower watch time."
-                },
-                {
-                    "criticism_category": "Repetitive B-Roll and Transitions",
-                    "frequency": "Occasional",
-                    "audience_quote_example": f"Uses the same background music and visual cuts across multiple {core_nic} videos.",
-                    "impact_on_channel": "Format familiarity leading to skip behaviors."
-                }
-            ]
+        core_nic = profile.get("core_niche", detected_niche or "Content Creation")
+        neg_reviews = [
+            {
+                "criticism_category": "Pacing Drop in the Middle 40%",
+                "frequency": "Common",
+                "audience_quote_example": "Great hook in first 5 seconds, but the explanation drags on too long.",
+                "impact_on_channel": "Audience drops off before the mid-video CTA."
+            },
+            {
+                "criticism_category": "Thumbnail / Hook Expectation Gap",
+                "frequency": "Occasional",
+                "audience_quote_example": "Opening promised an extreme conclusion that was barely paid off.",
+                "impact_on_channel": "High clickbait penalty and lower watch time."
+            },
+            {
+                "criticism_category": "Repetitive Formula & Predictable Beats",
+                "frequency": "Occasional",
+                "audience_quote_example": f"Uses the same predictable narrative rhythm across multiple {core_nic} uploads.",
+                "impact_on_channel": "Viewer fatigue leading to early swipe behaviors."
+            }
+        ]
     intel["negative_reviews"] = neg_reviews
 
     imp_suggs = intel.get("improvement_suggestions") or []
@@ -1428,7 +1201,7 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
     comp_avatar_url = get_creator_avatar(comparison_creator) if comparison_creator and comparison_creator.strip() else ""
 
     # 2. Multi-Platform Firecrawl Recon (Instagram & YouTube)
-    raw_results, creator_vids, niche_vids, detected_niche, negative_snippets, trending_snippets = search_creator_footprint(creator_name, niche)
+    raw_results, creator_vids, niche_vids, detected_niche, negative_snippets, trending_snippets, metrics_hint = search_creator_footprint(creator_name, niche)
 
     c_lines = [f"- [{v.get('platform')}] {v.get('title')}: {v.get('url')}" for v in creator_vids]
     c_text = "\n".join(c_lines) if c_lines else f"Official video uploads and reels by {creator_name}."
@@ -1622,4 +1395,4 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
             "avatar_url": comp_avatar_url
         }
 
-    return _normalize_intel(result, creator_name, avatar_url, creator_vids, niche_vids, detected_niche, comparison_creator=comparison_creator, trending_snippets=trending_snippets, negative_snippets=negative_snippets)
+    return _normalize_intel(result, creator_name, avatar_url, creator_vids, niche_vids, detected_niche, comparison_creator=comparison_creator, trending_snippets=trending_snippets, negative_snippets=negative_snippets, metrics_hint=metrics_hint, raw_results=raw_results)
