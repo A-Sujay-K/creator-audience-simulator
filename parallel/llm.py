@@ -21,17 +21,23 @@ MODEL_SMART = os.getenv("MODEL_SMART", "openai/gpt-oss-120b")
 _client = Groq(api_key=os.getenv("GROQ_API_KEY", "NOT_SET"))
 MAX_RETRIES = 6
 
-_RATE_LOCK = threading.Lock()
-_last_call_ts = 0.0
-_MIN_INTERVAL = 0.8
+_TS_LOCK = threading.Lock()
+_call_timestamps: list[float] = []
+_MAX_RPM = 50  # Dynamic window allowing parallel bursts up to 50 calls/min
 
 def _throttle():
-    global _last_call_ts
-    with _RATE_LOCK:
-        wait = _MIN_INTERVAL - (time.time() - _last_call_ts)
-        if wait > 0:
-            time.sleep(wait)
-        _last_call_ts = time.time()
+    """Sliding-window rate limiter allowing full concurrency without serial mutex sleep."""
+    with _TS_LOCK:
+        now = time.time()
+        while _call_timestamps and _call_timestamps[0] < now - 60.0:
+            _call_timestamps.pop(0)
+
+        if len(_call_timestamps) >= _MAX_RPM:
+            sleep_needed = 60.0 - (now - _call_timestamps[0]) + 0.1
+            if sleep_needed > 0:
+                time.sleep(sleep_needed)
+
+        _call_timestamps.append(time.time())
 
 def ask_json(
     system: str,
