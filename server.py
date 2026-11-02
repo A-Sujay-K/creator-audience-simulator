@@ -9,11 +9,14 @@ import json
 import time
 from pathlib import Path
 from typing import Optional, List, Dict, Any
+import logging
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel
+
+logger = logging.getLogger("parallel.server")
 
 from parallel.pipeline import run_study, brief_text, summary_text
 from parallel.panel import load_panel
@@ -32,6 +35,21 @@ from parallel.suggestions import find_similar_creators, resolve_misspelled_creat
 from parallel.intelligence import generate_creator_intelligence
 
 app = FastAPI(title="Parallel API & Creator OS", version="2.4.0")
+
+# ─── Input Sanitization ───────────────────────────────────────────────────────
+import html as _html
+
+def _sanitize_text(text: str, max_len: int = 200) -> str:
+    """Strip HTML tags and control characters from user-supplied text inputs."""
+    if not text:
+        return text
+    # Remove HTML tags
+    clean = re.sub(r"<[^>]+>", "", text)
+    # Remove script: / javascript: / data: URIs
+    clean = re.sub(r"(?i)(script|javascript|data|vbscript):", "", clean)
+    # Strip control characters except newline/tab
+    clean = re.sub(r"[--]", "", clean)
+    return clean.strip()[:max_len]
 
 app.add_middleware(
     CORSMiddleware,
@@ -197,12 +215,12 @@ def api_spellfix(query: str = Query(...)):
 
 @app.post("/api/intel/analyze")
 def api_analyze(req: AnalyzeRequest):
-    creator = req.creator_name.strip()
+    creator = _sanitize_text(req.creator_name.strip())
     if not creator:
         raise HTTPException(status_code=400, detail="Creator name is required.")
     
-    comp_creator = req.comparison_creator.strip() if req.comparison_creator else ""
-    niche = req.niche.strip() if req.niche else ""
+    comp_creator = _sanitize_text(req.comparison_creator.strip() if req.comparison_creator else "")
+    niche = _sanitize_text(req.niche.strip() if req.niche else "")
     username = req.username.strip().lower() if req.username else ""
 
     prev_findings = {}
@@ -422,6 +440,10 @@ if assets_dir.exists():
 
 @app.get("/{full_path:path}")
 def serve_spa(full_path: str):
+    # Never return index.html for missing /api endpoints
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail=f"API endpoint '/{full_path}' not found.")
+
     # If the request matches a file in dist (like favicon.svg), serve it
     file_path = _DIST_DIR / full_path
     if full_path and file_path.is_file():

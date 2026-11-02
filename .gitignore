@@ -18,3 +18,8 @@ data/
 # Editor
 .vscode/
 *.swp
+
+# Cosmitude Bridge admin data files (contain credentials & PII)
+*_Admin.txt
+HookLab_*.txt
+ParallelProduction_*.txt

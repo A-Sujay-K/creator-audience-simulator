@@ -3,10 +3,12 @@ import yaml
 from .schemas import Persona
 
 RELATIONSHIP_WEIGHTS = {
-    "stranger": 3.0,
-    "casual_follower": 1.5,
-    "subscriber": 1.5,
-    "superfan": 0.7,
+    # Weights reflect cold-audience psychology: strangers are hardest to hook,
+    # superfans are already warm. Matches society.yaml relationship keys exactly.
+    "stranger": 3.0,         # Cold audience — hardest to stop-scroll; highest weight
+    "casual_follower": 1.5,  # Aware but not committed
+    "superfan": 0.7,         # Already warm; lower marginal hook pressure
+    # Note: "subscriber" key intentionally removed — not in society.yaml
 }
 
 def _draw(rng, dist):

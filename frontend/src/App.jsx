@@ -2040,6 +2040,54 @@ export default function App() {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Post-Tester Action: Directly Post ParallelHookStudy to Users */}
+                  <div className={`border rounded-2xl p-5 ${th.card} flex flex-col sm:flex-row items-center justify-between gap-4 border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent`}>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-400 uppercase tracking-wide">
+                          Live Audience Deployment
+                        </span>
+                        <span className="text-[10px] text-zinc-400 font-mono">ParallelHookStudy Protocol</span>
+                      </div>
+                      <h4 className={`font-bold text-sm ${th.textPrimary}`}>
+                        Deploy ParallelHookStudy to Real Users
+                      </h4>
+                      <p className={`text-xs ${th.textSecondary}`}>
+                        Automatically dispatch these tested hooks to real panel members on Cosmitude Bridge to verify simulation accuracy with ground truth human ratings.
+                      </p>
+                      {panelSendResult === 'success' && (
+                        <div className="text-xs text-emerald-400 font-semibold pt-1 flex items-center gap-1.5">
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          <span>Successfully posted ParallelHookStudy to live user panel!</span>
+                        </div>
+                      )}
+                      {panelSendResult === 'error' && (
+                        <div className="text-xs text-rose-400 font-semibold pt-1 flex items-center gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          <span>Failed to post to panel. Ensure server and Bridge collector are active.</span>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSendToPanel}
+                      disabled={sendingToPanel || !hooksText.trim()}
+                      className="shrink-0 px-5 py-3 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 disabled:opacity-50"
+                    >
+                      {sendingToPanel ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Deploying Study...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="w-3.5 h-3.5" />
+                          <span>Post ParallelHookStudy to Users ↗</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

@@ -26,7 +26,13 @@ _call_timestamps: list[float] = []
 _MAX_RPM = 50  # Dynamic window allowing parallel bursts up to 50 calls/min
 
 def _throttle():
-    """Sliding-window rate limiter allowing full concurrency without serial mutex sleep."""
+    """Sliding-window rate limiter: calculates sleep outside the lock to avoid deadlock.
+    
+    CRITICAL FIX: time.sleep() must NOT be called while holding _TS_LOCK.
+    If sleep is inside the lock, all threads block waiting for it — defeating
+    the purpose of a concurrent rate limiter and causing deadlocks under load.
+    """
+    sleep_needed = 0.0
     with _TS_LOCK:
         now = time.time()
         while _call_timestamps and _call_timestamps[0] < now - 60.0:
@@ -34,10 +40,12 @@ def _throttle():
 
         if len(_call_timestamps) >= _MAX_RPM:
             sleep_needed = 60.0 - (now - _call_timestamps[0]) + 0.1
-            if sleep_needed > 0:
-                time.sleep(sleep_needed)
 
         _call_timestamps.append(time.time())
+
+    # Sleep OUTSIDE the lock so other threads can proceed concurrently
+    if sleep_needed > 0:
+        time.sleep(sleep_needed)
 
 def ask_json(
     system: str,
