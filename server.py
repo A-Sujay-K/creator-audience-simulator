@@ -372,6 +372,47 @@ def api_calibrate(req: CalibrateRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class HookStudyRequest(BaseModel):
+    hooks_text: str          # raw textarea content "S1: ...\nS2: ...\nS3: ...\nS4: ..."
+    concept_title: str = ""  # optional override
+    creator_tone: str = ""   # optional override
+    username: str = ""       # optional, for context
+
+@app.post("/api/panel/send-hook-study")
+def api_send_hook_study(req: HookStudyRequest):
+    """Parse S1-S4 from hooks_text and post as ParallelHookStudy to Bridge Panel set."""
+    import re as _re
+    from parallel.bridge_client import send_hook_study
+
+    lines = req.hooks_text.strip().splitlines()
+    hooks: dict = {}
+    for line in lines:
+        m = _re.match(r'S([1-4]):\s*(.+)', line.strip(), _re.IGNORECASE)
+        if m:
+            hooks[f"S{m.group(1)}"] = m.group(2).strip()
+
+    if len(hooks) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide at least S1 and S2 hooks in 'S1: ...' format."
+        )
+
+    # Extract concept title / tone from first line if not explicitly provided
+    first_line = lines[0] if lines else ""
+    concept = req.concept_title or first_line
+    tone = req.creator_tone or "Creator's Style"
+
+    result = send_hook_study(
+        concept_title=concept,
+        creator_tone=tone,
+        s1=hooks.get("S1", ""),
+        s2=hooks.get("S2", ""),
+        s3=hooks.get("S3", ""),
+        s4=hooks.get("S4", ""),
+        target_set="Panel"
+    )
+    return result
+
 # ─── STATIC ASSETS & SPA ROUTING ──────────────────────────────────────────────
 # Mount static assets if compiled React build exists
 assets_dir = _DIST_DIR / "assets"

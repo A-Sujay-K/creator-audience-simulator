@@ -151,6 +151,8 @@ export default function App() {
   const [sampleSize, setSampleSize] = useState(15);
   const [simulating, setSimulating] = useState(false);
   const [simResults, setSimResults] = useState(null);
+  const [sendingToPanel, setSendingToPanel] = useState(false);
+  const [panelSendResult, setPanelSendResult] = useState(null);
 
   // User Auth State
   const [user, setUser] = useState(null);
@@ -386,6 +388,30 @@ export default function App() {
       clearInterval(intervalId);
       setLoading(false);
       setStatusText('');
+    }
+  };
+
+
+  const handleSendToPanel = async () => {
+    if (!hooksText.trim()) return;
+    setSendingToPanel(true);
+    setPanelSendResult(null);
+    try {
+      const res = await fetch('/api/panel/send-hook-study', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hooks_text: hooksText,
+          concept_title: '',
+          creator_tone: '',
+          username: user || ''
+        })
+      });
+      setPanelSendResult(res.ok ? 'success' : 'error');
+    } catch (e) {
+      setPanelSendResult('error');
+    } finally {
+      setSendingToPanel(false);
     }
   };
 
@@ -1841,6 +1867,39 @@ export default function App() {
                     {simulating ? 'Calibrating Test...' : 'Test These Opening Hooks'}
                   </button>
                 </div>
+              </div>
+
+
+              {/* Send to Real Audience Panel */}
+              <div className={`border rounded-2xl p-5 space-y-3 ${th.card}`}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div>
+                    <h4 className={`font-heading font-extrabold text-sm ${th.textPrimary}`}>
+                      Send to Real Audience Panel
+                    </h4>
+                    <p className={`text-xs ${th.textSecondary} mt-0.5`}>
+                      Post these hooks to the Cosmitude Bridge Panel for real human audience ratings.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSendToPanel}
+                    disabled={sendingToPanel || !hooksText.trim()}
+                    className={`shrink-0 px-5 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${th.btnPrimary} disabled:opacity-50`}
+                  >
+                    {sendingToPanel ? 'Sending to Panel...' : 'Post to Real Audience ↗'}
+                  </button>
+                </div>
+                {panelSendResult === 'success' && (
+                  <div className="text-xs text-emerald-500 font-semibold p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                    Hooks posted to Bridge Panel! Audience members will rate them in the Cosmitude app.
+                  </div>
+                )}
+                {panelSendResult === 'error' && (
+                  <div className="text-xs text-rose-500 font-semibold p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
+                    Failed to post. Check that the collector agent is running and the server is up.
+                  </div>
+                )}
               </div>
 
               {/* Simulation Output */}
