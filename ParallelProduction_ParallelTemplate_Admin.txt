@@ -1,0 +1,1274 @@
+{
+  "ErrorCode": 5000,
+  "ErrorMessage": [
+    {
+      "ErrorCode": 1009,
+      "ErrorMessage": [
+        "2743437326124061599535601"
+      ]
+    },
+    {
+      "ErrorCode": 1019,
+      "ErrorMessage": []
+    },
+    {
+      "ErrorCode": 1010,
+      "ErrorMessage": []
+    },
+    {
+      "ErrorCode": 1008,
+      "ErrorMessage": []
+    },
+    {
+      "ErrorCode": 1156,
+      "ErrorMessage": []
+    },
+    {
+      "ErrorCode": 1166,
+      "ErrorMessage": []
+    },
+    {
+      "ErrorCode": 1110,
+      "ErrorMessage": {
+        "2743437326124061599535601": {
+          "UserName": "@users1amsvhwo2",
+          "FirstName": "Akarsh Sujay Kumar",
+          "LastName": "",
+          "DefaultForumAcceptance": true,
+          "UserUUID": "1ef1ea71-368d-46b6-9445-a4806a0b8eef",
+          "CountryCode": "274343",
+          "MobileNumber": "7326124061599535601",
+          "ForumCount": 0,
+          "UserProfilePicture": ""
+        }
+      }
+    },
+    {
+      "ErrorCode": 1112,
+      "ErrorMessage": []
+    }
+  ],
+  "ForumID": "c3c39aaf-8de7-40b8-a744-b410543d6a58",
+  "ForumName": "ParallelProduction",
+  "ForumAdmins": [
+    "2743437326124061599535601"
+  ],
+  "UserAliasAndRealNames": [
+    "@users1amsvhwo2"
+  ],
+  "AdminFlow": {
+    "ParallelTemplate_ParallelUserDossier": {
+      "FID": "231d3606-14bc-6a02-da7c-dab9573d3d1a",
+      "Formats": [
+        "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a"
+      ],
+      "flowColour": "#64E8E8",
+      "FlowImage": "Default"
+    },
+    "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a": {
+      "row1": {
+        "1": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "Username",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_2",
+              "Type": "INPUT"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_1",
+          "tag": {
+            "tagString": "1",
+            "tagInt": 1
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "2": {
+          "type": "INPUT",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_2",
+          "tag": {
+            "tagString": "2",
+            "tagInt": 2
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row2": {
+        "3": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "CreatorName",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_4",
+              "Type": "INPUT"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_3",
+          "tag": {
+            "tagString": "3",
+            "tagInt": 3
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "4": {
+          "type": "INPUT",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_4",
+          "tag": {
+            "tagString": "4",
+            "tagInt": 4
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row3": {
+        "5": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "TargetNiche",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_6",
+              "Type": "INPUT"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_5",
+          "tag": {
+            "tagString": "5",
+            "tagInt": 5
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "6": {
+          "type": "INPUT",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_6",
+          "tag": {
+            "tagString": "6",
+            "tagInt": 6
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row4": {
+        "7": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "FullDossierJSON",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_8",
+              "Type": "INPUT"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_7",
+          "tag": {
+            "tagString": "7",
+            "tagInt": 7
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "8": {
+          "type": "INPUT",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_8",
+          "tag": {
+            "tagString": "8",
+            "tagInt": 8
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      }
+    },
+    "ParallelTemplate_ParallelHookStudy": {
+      "FID": "88c26fd7-3eab-670d-7892-ab78542479a2",
+      "Formats": [
+        "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2"
+      ],
+      "flowColour": "#64E8E8",
+      "FlowImage": "Default"
+    },
+    "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2": {
+      "row1": {
+        "1": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "ConceptTitle",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_2",
+              "Type": "INPUT"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_1",
+          "tag": {
+            "tagString": "1",
+            "tagInt": 1
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "2": {
+          "type": "INPUT",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_2",
+          "tag": {
+            "tagString": "2",
+            "tagInt": 2
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row2": {
+        "3": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "CreatorTone",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_4",
+              "Type": "INPUT"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_3",
+          "tag": {
+            "tagString": "3",
+            "tagInt": 3
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "4": {
+          "type": "INPUT",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_4",
+          "tag": {
+            "tagString": "4",
+            "tagInt": 4
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row3": {
+        "5": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "Hook_S1_Incident",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_6",
+              "Type": "INPUT"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_5",
+          "tag": {
+            "tagString": "5",
+            "tagInt": 5
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "6": {
+          "type": "INPUT",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_6",
+          "tag": {
+            "tagString": "6",
+            "tagInt": 6
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row4": {
+        "7": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "Hook_S2_Curiosity ",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_8",
+              "Type": "INPUT"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_7",
+          "tag": {
+            "tagString": "7",
+            "tagInt": 7
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "8": {
+          "type": "INPUT",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_8",
+          "tag": {
+            "tagString": "8",
+            "tagInt": 8
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row5": {
+        "9": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "Hook_S3_Shock",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_10",
+              "Type": "INPUT"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_9",
+          "tag": {
+            "tagString": "9",
+            "tagInt": 9
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "10": {
+          "type": "INPUT",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_10",
+          "tag": {
+            "tagString": "10",
+            "tagInt": 10
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row6": {
+        "11": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "Hook_S4_Contrarian",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_12",
+              "Type": "INPUT"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_11",
+          "tag": {
+            "tagString": "11",
+            "tagInt": 11
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "12": {
+          "type": "INPUT",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_12",
+          "tag": {
+            "tagString": "12",
+            "tagInt": 12
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      }
+    },
+    "FlowsMediaCount": {
+      "ParallelTemplate_ParallelUserDossier": {
+        "ImageCount": 0,
+        "VideoCount": 0,
+        "DocumentCount": 0,
+        "TextCount": 0
+      },
+      "ParallelTemplate_ParallelHookStudy": {
+        "ImageCount": 0,
+        "VideoCount": 0,
+        "DocumentCount": 0,
+        "TextCount": 0
+      }
+    },
+    "AdminFlowList": {
+      "0": "ParallelTemplate_ParallelUserDossier",
+      "1": "ParallelTemplate_ParallelHookStudy"
+    },
+    "ParallelTemplate": [
+      "ParallelTemplate_ParallelUserDossier",
+      "ParallelTemplate_ParallelHookStudy"
+    ],
+    "EnableAdminFlow": {
+      "ParallelTemplate_ParallelUserDossier": "True",
+      "ParallelTemplate_ParallelHookStudy": "True"
+    }
+  },
+  "UserFlow": {
+    "ParallelTemplate_ParallelHookRating": {
+      "FID": "fa18cb57-1aed-33af-a91f-4015577554c5",
+      "Formats": [
+        "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5"
+      ],
+      "flowColour": "#64E8E8",
+      "FlowImage": "Default"
+    },
+    "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5": {
+      "row1": {
+        "1": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "AgeBand ",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_2",
+              "Type": "DDM"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_1",
+          "tag": {
+            "tagString": "1",
+            "tagInt": 1
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "2": {
+          "type": "DDM",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {
+            "18-20": "",
+            "21-24": "",
+            "25-30": "",
+            "31+": ""
+          },
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_2",
+          "tag": {
+            "tagString": "2",
+            "tagInt": 2
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row2": {
+        "3": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "Relationship ",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_4",
+              "Type": "DDM"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_3",
+          "tag": {
+            "tagString": "3",
+            "tagInt": 3
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "4": {
+          "type": "DDM",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {
+            "Stranger": "",
+            "CasualFollower": "",
+            "Superfan": ""
+          },
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_4",
+          "tag": {
+            "tagString": "4",
+            "tagInt": 4
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row3": {
+        "5": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "S1 ",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_6",
+              "Type": "DDM"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_5",
+          "tag": {
+            "tagString": "5",
+            "tagInt": 5
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "6": {
+          "type": "DDM",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {
+            "1": "",
+            "2": "",
+            "3": "",
+            "4": ""
+          },
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_6",
+          "tag": {
+            "tagString": "6",
+            "tagInt": 6
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row4": {
+        "7": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "S2",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_8",
+              "Type": "DDM"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_7",
+          "tag": {
+            "tagString": "7",
+            "tagInt": 7
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "8": {
+          "type": "DDM",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {
+            "1": "",
+            "2": "",
+            "3": "",
+            "4": "",
+            "5": ""
+          },
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_8",
+          "tag": {
+            "tagString": "8",
+            "tagInt": 8
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row5": {
+        "9": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "S3",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_10",
+              "Type": "DDM"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_9",
+          "tag": {
+            "tagString": "9",
+            "tagInt": 9
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "10": {
+          "type": "DDM",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {
+            "1": "",
+            "2": "",
+            "3": "",
+            "4": "",
+            "5": ""
+          },
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_10",
+          "tag": {
+            "tagString": "10",
+            "tagInt": 10
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row6": {
+        "11": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "S4",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_12",
+              "Type": "DDM"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_11",
+          "tag": {
+            "tagString": "11",
+            "tagInt": 11
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "12": {
+          "type": "DDM",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {
+            "1": "",
+            "2": "",
+            "3": "",
+            "4": "",
+            "5": ""
+          },
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_12",
+          "tag": {
+            "tagString": "12",
+            "tagInt": 12
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row7": {
+        "13": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "BestHook",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_14",
+              "Type": "DDM"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_13",
+          "tag": {
+            "tagString": "13",
+            "tagInt": 13
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "14": {
+          "type": "DDM",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {
+            "S1": "",
+            "S2": "",
+            "S3": "",
+            "S4": "",
+            "S5": ""
+          },
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_14",
+          "tag": {
+            "tagString": "14",
+            "tagInt": 14
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row8": {
+        "15": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "WorstHook",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_16",
+              "Type": "DDM"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_15",
+          "tag": {
+            "tagString": "15",
+            "tagInt": 15
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "16": {
+          "type": "DDM",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {
+            "S1": "",
+            "S2": "",
+            "S3": "",
+            "S4": "",
+            "S5": ""
+          },
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_16",
+          "tag": {
+            "tagString": "16",
+            "tagInt": 16
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row9": {
+        "17": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "FeltClickbait",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_18",
+              "Type": "DDM"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_17",
+          "tag": {
+            "tagString": "17",
+            "tagInt": 17
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "18": {
+          "type": "DDM",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {
+            "Yes": "",
+            "No": ""
+          },
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_18",
+          "tag": {
+            "tagString": "18",
+            "tagInt": 18
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      },
+      "row10": {
+        "19": {
+          "type": "LABEL",
+          "width": 275,
+          "height": 41,
+          "Name": "FeedbackWhy",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [
+            {
+              "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_20",
+              "Type": "TEXTAREA"
+            }
+          ],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_19",
+          "tag": {
+            "tagString": "19",
+            "tagInt": 19
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        },
+        "20": {
+          "type": "TEXTAREA",
+          "width": 275,
+          "height": 41,
+          "Name": "",
+          "ImageID": "",
+          "Options": {},
+          "fontsize": "16",
+          "fontfamily": "initial",
+          "fontstyle": "normal",
+          "color": "#000000",
+          "background": "#EAEAFF",
+          "border": "#000000",
+          "Associated": [],
+          "ID": "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_20",
+          "tag": {
+            "tagString": "20",
+            "tagInt": 20
+          },
+          "style": "width:275px;height:41px;color:#000000;background:#EAEAFF;border:#000000;font-size:16px;font-family:initial;font-style:normal",
+          "onclick": ""
+        }
+      }
+    },
+    "FlowsMediaCount": {
+      "ParallelTemplate_ParallelHookRating": {
+        "ImageCount": 0,
+        "VideoCount": 0,
+        "DocumentCount": 0,
+        "TextCount": 0
+      }
+    },
+    "UserFlowList": {
+      "0": "ParallelTemplate_ParallelHookRating"
+    },
+    "ParallelTemplate": [
+      "ParallelTemplate_ParallelHookRating"
+    ],
+    "EnableUserFlow": {
+      "ParallelTemplate_ParallelHookRating": "True"
+    }
+  },
+  "Language": [],
+  "Report": {
+    "ParallelTemplate_Report_ParallelUserDossier_Admin_231d3606-14bc-6a02-da7c-dab9573d3d1a": {
+      "ReportID": "fdccca72-3f85-490d-82e9-38d8262fa445",
+      "UserUUID": "1ef1ea71-368d-46b6-9445-a4806a0b8eef",
+      "ReportName": "ParallelTemplate_Report_ParallelUserDossier_Admin_231d3606-14bc-6a02-da7c-dab9573d3d1a",
+      "FlowName": "ParallelTemplate_ParallelUserDossier",
+      "StartDate": 1793600743303,
+      "EndDate": "100",
+      "ReportStatus": "true",
+      "FID": "231d3606-14bc-6a02-da7c-dab9573d3d1a",
+      "FieldsList": [
+        "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_Username",
+        "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_CreatorName",
+        "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_TargetNiche",
+        "ParallelTemplate_ParallelUserDossier_Main-231d3606-14bc-6a02-da7c-dab9573d3d1a_FullDossierJSON"
+      ],
+      "ReportDescription": "Default report"
+    },
+    "ParallelTemplate_Report_ParallelHookStudy_Admin_88c26fd7-3eab-670d-7892-ab78542479a2": {
+      "ReportID": "27cbfcaf-0353-424d-b6d3-95a786d2ce2b",
+      "UserUUID": "1ef1ea71-368d-46b6-9445-a4806a0b8eef",
+      "ReportName": "ParallelTemplate_Report_ParallelHookStudy_Admin_88c26fd7-3eab-670d-7892-ab78542479a2",
+      "FlowName": "ParallelTemplate_ParallelHookStudy",
+      "StartDate": 1793601102890,
+      "EndDate": "100",
+      "ReportStatus": "true",
+      "FID": "88c26fd7-3eab-670d-7892-ab78542479a2",
+      "FieldsList": [
+        "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_ConceptTitle",
+        "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_CreatorTone",
+        "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_Hook_S1_Incident",
+        "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_Hook_S2_Curiosity ",
+        "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_Hook_S3_Shock",
+        "ParallelTemplate_ParallelHookStudy_Main-88c26fd7-3eab-670d-7892-ab78542479a2_Hook_S4_Contrarian"
+      ],
+      "ReportDescription": "Default report"
+    },
+    "ParallelTemplate_Report_ParallelHookRating_User_fa18cb57-1aed-33af-a91f-4015577554c5": {
+      "ReportID": "ba1ed911-334c-4593-ac12-58d86b42ed39",
+      "UserUUID": "1ef1ea71-368d-46b6-9445-a4806a0b8eef",
+      "ReportName": "ParallelTemplate_Report_ParallelHookRating_User_fa18cb57-1aed-33af-a91f-4015577554c5",
+      "FlowName": "ParallelTemplate_ParallelHookRating",
+      "StartDate": 1793601947950,
+      "EndDate": "100",
+      "ReportStatus": "true",
+      "FID": "fa18cb57-1aed-33af-a91f-4015577554c5",
+      "FieldsList": [
+        "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_AgeBand ",
+        "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_Relationship ",
+        "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_S1 ",
+        "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_S2",
+        "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_S3",
+        "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_S4",
+        "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_BestHook",
+        "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_WorstHook",
+        "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_FeltClickbait",
+        "ParallelTemplate_ParallelHookRating_Main-fa18cb57-1aed-33af-a91f-4015577554c5_FeedbackWhy"
+      ],
+      "ReportDescription": "Default report"
+    }
+  },
+  "EnableFlow": {
+    "ParallelTemplate_ParallelUserDossier": "True",
+    "ParallelTemplate_ParallelHookStudy": "True",
+    "ParallelTemplate_ParallelHookRating": "True"
+  },
+  "Template": "ParallelTemplate",
+  "TemplateID": "b5ce3f2d-25ff-58d4-9faa-c81f4756aee4",
+  "ChatDisplay": false,
+  "ForumCreator": "2743437326124061599535601"
+}

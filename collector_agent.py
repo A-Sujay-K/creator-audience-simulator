@@ -1,43 +1,43 @@
-#Start of bot code
-
-#HookLab_Real
-#HookLab
+# Start of bot code
+# ParallelProduction
+# ParallelTemplate
 
 import time
 import json
 import requests
 import base64
-from datetime import datetime
-import calendar
 import uuid
-from threading import Thread
-import queue as Queue
 import sys
-from sys import platform
 import os
 
 Sessionid = ''
 username = ''
 MobileNumber = ''
-forumID = '6cb2364b-d36a-4598-aa44-37218fd4688b'
+forumID = os.getenv('BRIDGE_FORUM_ID', 'c3c39aaf-8de7-40b8-a744-b410543d6a58')
+botUserName = os.getenv('BRIDGE_DEVICE_USER', '@uuidacd3f7aa35cf474ba37f23e4b1528643')
+serverID = os.getenv('BRIDGE_SERVER_ID', 'c9b6722d-5dbf-4b4f-a28e-692b4d26c1cf-7870eb8e-2f45-458a-9a70-d6b2d71ee871')
+templateID = 'b5ce3f2d-25ff-58d4-9faa-c81f4756aee4'
+adminFile = 'ParallelProduction_ParallelTemplate_Admin.txt'
 
-# ── Local API endpoints ────────────────────────────────────────────────────
+# ── Local API endpoints ───────────────────────────────────────────────────────
 API = "http://localhost:8000"
+
 
 def go():
     try:
+        print(f"[Bot] Starting ParallelCollector for forum: {forumID}")
         login()
-        
         while True:
             clienntSync()
             time.sleep(10)
+    except KeyboardInterrupt:
+        print("\n[Bot] Collector stopped by user.")
     except Exception as e:
-        print (e)
+        print(f"[Bot] Fatal error: {e}")
         return e
 
-#------------------------------------------
-#Login
-#------------------------------------------
+
+# ── Login ─────────────────────────────────────────────────────────────────────
 
 def login():
     try:
@@ -46,38 +46,39 @@ def login():
         global MobileNumber
         global forumID
         tempJson = {
-        "MACAddress": 'Bridge-Web',
-        "UserName":'@uuidbfe6cd30b6394766b18026c407a7be6e',
-        "Password":base64.b64decode('Q29zbWl0dWRlQnJpZGdlRGV2aWNl').decode('UTF-8'),
-        "ServerID":'c9b6722d-5dbf-4b4f-a28e-692b4d26c1cf-7870eb8e-2f45-458a-9a70-d6b2d71ee871'
+            "MACAddress": 'Bridge-Web',
+            "UserName": botUserName,
+            "Password": base64.b64decode('Q29zbWl0dWRlQnJpZGdlRGV2aWNl').decode('UTF-8'),
+            "ServerID": serverID
         }
         headers = {'Content-Type': 'application/json'}
-        variab =json.dumps(tempJson)
-        response = requests.post('https://ca.cosmitude.com/' + 'loginForDevice', data=variab,headers=headers, timeout=600)
+        variab = json.dumps(tempJson)
+        response = requests.post('https://ca.cosmitude.com/loginForDevice', data=variab, headers=headers, timeout=600)
         strData = str(response.text)
         respJson = json.loads(strData)
         Sessionid = respJson['ErrorMessage']['SessionID']
-        countryCode = MobileNumber = respJson['ErrorMessage']['CountryCode']
-        MobileNumber = countryCode+respJson['ErrorMessage']['MobileNumber']
+        countryCode = respJson['ErrorMessage'].get('CountryCode', '')
+        MobileNumber = countryCode + respJson['ErrorMessage'].get('MobileNumber', '')
+        print(f"[Bot] Logged in successfully. Mobile: {MobileNumber}")
         getForumDetails()
     except Exception as e:
-        print (e)
+        print(f"[Bot] Login error: {e}")
         return e
 
-#------------------------------------------
-#Forum Details
-#------------------------------------------ 
+
+# ── Forum Details ─────────────────────────────────────────────────────────────
+
 def getForumDetails():
     try:
         tempJson = {
-        "MACAddress": 'Bridge-Web',
-        "ForumID":forumID,
-        "SessionID":Sessionid,
-        "ServerID":'c9b6722d-5dbf-4b4f-a28e-692b4d26c1cf-7870eb8e-2f45-458a-9a70-d6b2d71ee871'
+            "MACAddress": 'Bridge-Web',
+            "ForumID": forumID,
+            "SessionID": Sessionid,
+            "ServerID": serverID
         }
         headers = {'Content-Type': 'application/json'}
-        variab =json.dumps(tempJson)
-        response = requests.post('https://ca.cosmitude.com/' + 'getRequestedForumDetails', data=variab,headers=headers, timeout=600)
+        variab = json.dumps(tempJson)
+        response = requests.post('https://ca.cosmitude.com/getRequestedForumDetails', data=variab, headers=headers, timeout=600)
         if response.status_code == 200:
             responseStr = str(response.text)
             respJson = json.loads(responseStr)
@@ -88,115 +89,80 @@ def getForumDetails():
                 for singleForum in forumDetails:
                     singleForumDetails = singleForum[forumID]
                     saveForumDetails = singleForumDetails['NewForumJsonData']
-                    with open('HookLab_Real_HookLab_Admin.txt', 'w') as f:
-                        json.dump(saveForumDetails, f)
+                    with open(adminFile, 'w', encoding='utf-8') as f:
+                        json.dump(saveForumDetails, f, indent=2)
+                print(f"[Bot] Forum template details saved to {adminFile} [OK]")
     except Exception as e:
-        print (e)
+        print(f"[Bot] getForumDetails error: {e}")
         return e
 
-#------------------------------------------
-#Client Sync
-#------------------------------------------
+
+# ── Client Sync ───────────────────────────────────────────────────────────────
 
 def clienntSync():
     try:
         clientSyncJson = {
-        "SessionID":Sessionid,
-        "MACAddress":'Bridge-Web',
-        "ServerID":'c9b6722d-5dbf-4b4f-a28e-692b4d26c1cf-7870eb8e-2f45-458a-9a70-d6b2d71ee871',
-        "ServerName":'Bridge'
+            "SessionID": Sessionid,
+            "MACAddress": 'Bridge-Web',
+            "ServerID": serverID,
+            "ServerName": 'Bridge'
         }
         headers = {'Content-Type': 'application/json'}
-        variab =json.dumps(clientSyncJson)
-        response = requests.post('https://ca.cosmitude.com/' + 'syncUserData', data=variab,headers=headers, timeout=600)
+        variab = json.dumps(clientSyncJson)
+        response = requests.post('https://ca.cosmitude.com/syncUserData', data=variab, headers=headers, timeout=600)
         strData = str(response.text)
         dataRead = json.loads(strData)
-        print(dataRead['ErrorMessage'])
-        syncData = dataRead['ErrorMessage']['Admin']
-        if syncData.count:
+        syncData = dataRead.get('ErrorMessage', {}).get('Admin', [])
+        
+        if syncData:
             for data in syncData:
                 if 'Bridge' in data:
                     bridgeData = data['Bridge']
-                    flowName = bridgeData ['FlowID']
-                    mNumber = bridgeData ['MobileNumber']
+                    flowName = bridgeData.get('FlowID', '')
+                    mNumber = bridgeData.get('MobileNumber', '')
 
-                    #<YOUR CODE STARTS HERE>
-
-                    # ── Step 1: Always log the raw data (needed for Test S2) ──
+                    # ── Step 1: Log incoming flow ──
                     print(f"[sync] Incoming flow: {flowName}")
-                    print(f"[sync] Bridge data: {json.dumps(bridgeData)[:2000]}")
 
-                    # ── Step 2: Always forward every bridge to the ingest service ──
+                    # ── Step 2: Always forward incoming bridge to local ingest service ──
                     try:
                         requests.post(
                             API + "/ingest",
                             json={"forum": forumID, "flow": flowName, "bridge": bridgeData},
                             timeout=5
                         )
-                        print("[sync] Forwarded to ingest service ✓")
+                        print("[sync] Forwarded to ingest service (data/real.jsonl) [OK]")
                     except Exception as e:
                         print(f"[sync] Ingest service not reachable: {e}")
 
-                    # ── Step 3: When YOU submit SendBrief → bot sends Brief to Panel ──
-                    if flowName.endswith("SendBrief") and MobileNumber != mNumber:
-                        try:
-                            brief = requests.get(API + "/brief", timeout=5).text
-                            print(f"[sync] Sending brief to Panel set...")
-                            sendBridgeToSet(bridgeData, 'Brief', brief, 'Panel')
-                            print("[sync] Brief sent to Panel ✓")
-                        except Exception as e:
-                            print(f"[sync] Failed to send brief: {e}")
-
-                    # ── Step 4: When YOU submit SendReport → bot posts PredictionReport ──
-                    elif flowName.endswith("SendReport") and MobileNumber != mNumber:
-                        try:
-                            summary = requests.get(API + "/summary", timeout=5).text
-                            print(f"[sync] Sending prediction report...")
-                            sendBridge(bridgeData, 'PredictionReport', summary)
-                            print("[sync] PredictionReport sent ✓")
-                        except Exception as e:
-                            print(f"[sync] Failed to send report: {e}")
-
-                    #<YOUR CODE ENDS HERE>
-
                 elif 'UpdatedTemplateJson' in data:
                     templateForAdmin = data['UpdatedTemplateJson']
-                    forumIDCheck = templateForAdmin['ForumID']
+                    forumIDCheck = templateForAdmin.get('ForumID')
                     if forumIDCheck == forumID:
-                        with open('HookLab_Real_HookLab_Admin.txt', 'w') as f:
-                            json.dump(templateForAdmin, f)
+                        with open(adminFile, 'w', encoding='utf-8') as f:
+                            json.dump(templateForAdmin, f, indent=2)
+                        print("[sync] UpdatedTemplateJson saved [OK]")
     except Exception as e:
-        print (e)
+        print(f"[sync] error: {e}")
 
 
+# ── Send Bridge Helpers ───────────────────────────────────────────────────────
 
-# ── Send bridge helpers ────────────────────────────────────────────────────
-
-def sendBridge(bridgeData, replyFlow, replyText):
+def sendBridgeToSet(flowName, replyData, fid, setName="Panel"):
     try:
-        TemplateID = bridgeData.get('TemplateID', '1cb23b30-2ecf-5bab-fb40-bde82a3335b9')
-        ForumID    = bridgeData.get('ForumID', forumID)
-        full_flow  = f"HookLab_{replyFlow}"
-        field_key  = 'HookLab_PredictionReport_Main-46818f41-b2a0-3faf-84e8-ddcf313e928d_2'
-        FID        = '46818f41-b2a0-3faf-84e8-ddcf313e928d'
-
-        replyData = {
-            field_key: base64.b64encode(replyText.encode('utf-8')).decode('utf-8')
-        }
-
         payload = {
-            "ForumID":          ForumID,
+            "ForumID":          forumID,
             "SessionID":        Sessionid,
             "MACAddress":       'Bridge-Web',
             "Time":             str(int(time.time() * 1000)),
             "ScheduledDateTime": "now",
             "ScheduledBoolean": 0,
-            "FlowID":           full_flow,
+            "FlowID":           flowName,
             "EnableChat":       1,
             "FlowType":         "Custom",
             "BridgeForward":    0,
-            "TemplateID":       TemplateID,
-            "TextCount":        1,
+            "TemplateID":       templateID,
+            "TextCount":        len(replyData),
             "ImageCount":       0,
             "InvoiceID":        "",
             "DocumentCount":    0,
@@ -205,67 +171,25 @@ def sendBridge(bridgeData, replyFlow, replyText):
             "ReplyBridgeID":    "",
             "HiddenFlow":       False,
             "TempBridgeId":     str(uuid.uuid4()),
-            full_flow:          replyData,
-            "FID":              FID,
-            "ServerID":         'c9b6722d-5dbf-4b4f-a28e-692b4d26c1cf-7870eb8e-2f45-458a-9a70-d6b2d71ee871',
-            "SentTo":           '0',
-        }
-        r = requests.post('https://ca.cosmitude.com/bridgeSendingToForum',
-                          files={}, data={"Data": json.dumps(payload)},
-                          timeout=600)
-        print(f"[sendBridge] {replyFlow} -> HTTP {r.status_code}")
-        return r
-    except Exception as e:
-        print(f"[sendBridge] error: {e}")
-        return e
-
-def sendBridgeToSet(bridgeData, replyFlow, replyText, setName):
-    try:
-        TemplateID = bridgeData.get('TemplateID', '1cb23b30-2ecf-5bab-fb40-bde82a3335b9')
-        ForumID    = bridgeData.get('ForumID', forumID)
-        full_flow  = f"HookLab_{replyFlow}"
-        field_key  = 'HookLab_Brief_Main-8e8cd5ed-bab7-0f52-8b26-794d0dcb88ad_2'
-        FID        = '8e8cd5ed-bab7-0f52-8b26-794d0dcb88ad'
-
-        replyData = {
-            field_key: base64.b64encode(replyText.encode('utf-8')).decode('utf-8')
-        }
-
-        payload = {
-            "ForumID":          ForumID,
-            "SessionID":        Sessionid,
-            "MACAddress":       'Bridge-Web',
-            "Time":             str(int(time.time() * 1000)),
-            "ScheduledDateTime": "now",
-            "ScheduledBoolean": 0,
-            "FlowID":           full_flow,
-            "EnableChat":       1,
-            "FlowType":         "Custom",
-            "BridgeForward":    0,
-            "TemplateID":       TemplateID,
-            "TextCount":        1,
-            "ImageCount":       0,
-            "InvoiceID":        "",
-            "DocumentCount":    0,
-            "User":             False,
-            "VideoCount":       0,
-            "ReplyBridgeID":    "",
-            "HiddenFlow":       False,
-            "TempBridgeId":     str(uuid.uuid4()),
-            full_flow:          replyData,
-            "FID":              FID,
-            "ServerID":         'c9b6722d-5dbf-4b4f-a28e-692b4d26c1cf-7870eb8e-2f45-458a-9a70-d6b2d71ee871',
+            flowName:           replyData,
+            "FID":              fid,
+            "ServerID":         serverID,
             "SentTo":           setName,
         }
-        r = requests.post('https://ca.cosmitude.com/bridgeSendingToForum',
-                          files={}, data={"Data": json.dumps(payload)},
-                          timeout=600)
-        print(f"[sendBridgeToSet] {replyFlow} to set {setName} -> HTTP {r.status_code}")
+        r = requests.post(
+            'https://ca.cosmitude.com/bridgeSendingToForum',
+            files={},
+            data={"Data": json.dumps(payload)},
+            timeout=600
+        )
+        print(f"[sendBridgeToSet] {flowName} to set '{setName}' -> HTTP {r.status_code}")
         return r
     except Exception as e:
         print(f"[sendBridgeToSet] error: {e}")
         return e
 
-go()
 
-#End of bot code
+if __name__ == "__main__":
+    go()
+
+# End of bot code
