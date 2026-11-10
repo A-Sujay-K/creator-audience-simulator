@@ -83,6 +83,8 @@ class HookTestRequest(BaseModel):
 
 class CalibrateRequest(BaseModel):
     sids: List[str]
+    study_title: Optional[str] = "Creator Hook Study"
+    items: Optional[List[Dict[str, Any]]] = None
 
 # ─── INGEST & SUMMARY ENDPOINTS ──────────────────────────────────────────────
 @app.post("/ingest")
@@ -197,6 +199,25 @@ def api_cached(username: str = Query(...), creator: str = Query(...)):
         "prev_findings": prev_f
     }
 
+@app.get("/api/user/bridge-store")
+def api_bridge_store(username: str = Query(...), creator: Optional[str] = Query(None)):
+    """Retrieve stored dossiers from the user's isolated Bridge store with sync status."""
+    u = username.strip().lower()
+    from parallel.profiles import get_bridge_user_store, _load, ProfileNotFound
+    try:
+        profile = _load(u)
+        store = get_bridge_user_store(u, creator.strip() if creator else None)
+        return {
+            "username": u,
+            "bridge_set": profile.get("bridge_set", f"Set_{u}"),
+            "bridge_sync": profile.get("bridge_sync", {}),
+            "bridge_store": store
+        }
+    except ProfileNotFound:
+        raise HTTPException(status_code=404, detail="User profile not found.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/creators/suggest")
 def api_suggest(query: str = Query(...)):
     q = query.strip()
@@ -262,6 +283,18 @@ def api_analyze(req: AnalyzeRequest):
             push_summary_to_bridge(username, creator, intel)
             save_clone_run(username, creator, dossier["style_card"], dossier["blueprints"], dossier["piracy_ideas"])
             save_to_bridge_user_store(username, creator, intel, copy_result, comparison_creator=comp_creator)
+            
+            # Programmatically dispatch dossier to user's isolated Set on Cosmitude Bridge
+            try:
+                import threading
+                from parallel.bridge_client import send_user_dossier
+                threading.Thread(
+                    target=send_user_dossier,
+                    args=(username, creator, t_niche, copy_result),
+                    daemon=True
+                ).start()
+            except Exception as b_err:
+                logger.warning(f"Failed to async dispatch dossier to Bridge Set: {b_err}")
 
         return {
             "intel": intel,
@@ -385,7 +418,29 @@ def api_calibrate(req: CalibrateRequest):
     try:
         real_df = load_panel(req.sids)
         if len(real_df) > 0:
-            return {"status": "ok", "rows": len(real_df)}
+            fid_result = None
+            if req.items and len(req.items) >= 3:
+                import pandas as pd
+                from parallel.schemas import Study, Stimulus
+                from parallel.fidelity import close_the_loop
+                
+                stimuli = [Stimulus(sid=r.get("sid", f"S{i+1}"), text=r.get("hook_text", r.get("text", ""))) for i, r in enumerate(req.items)]
+                study = Study(title=req.study_title or "Hook Study", platform="shorts", audience="general", stimuli=stimuli)
+                items_df = pd.DataFrame(req.items)
+                if "text" not in items_df.columns and "hook_text" in items_df.columns:
+                    items_df["text"] = items_df["hook_text"]
+                if "stop" not in items_df.columns and "score" in items_df.columns:
+                    items_df["stop"] = items_df["score"]
+                if "score" not in items_df.columns:
+                    items_df["score"] = items_df.get("stop", 3.0)
+                fid_result = close_the_loop(study, items_df, real_df)
+                
+            return {
+                "status": "ok",
+                "rows": len(real_df),
+                "fidelity": fid_result,
+                "message": f"Loaded {len(real_df)} real panel responses and updated calibration history."
+            }
         else:
             return {"status": "empty", "message": "No real panel data found yet."}
     except Exception as e:
@@ -399,14 +454,14 @@ class HookStudyRequest(BaseModel):
 
 @app.post("/api/panel/send-hook-study")
 def api_send_hook_study(req: HookStudyRequest):
-    """Parse S1-S4 from hooks_text and post as ParallelHookStudy to Bridge Panel set."""
+    """Parse S1-S5 from hooks_text and post as ParallelHookStudy to Bridge Panel set."""
     import re as _re
     from parallel.bridge_client import send_hook_study
 
     lines = req.hooks_text.strip().splitlines()
     hooks: dict = {}
     for line in lines:
-        m = _re.match(r'S([1-4]):\s*(.+)', line.strip(), _re.IGNORECASE)
+        m = _re.match(r'S([1-5]):\s*(.+)', line.strip(), _re.IGNORECASE)
         if m:
             hooks[f"S{m.group(1)}"] = m.group(2).strip()
 
@@ -428,6 +483,7 @@ def api_send_hook_study(req: HookStudyRequest):
         s2=hooks.get("S2", ""),
         s3=hooks.get("S3", ""),
         s4=hooks.get("S4", ""),
+        s5=hooks.get("S5", ""),
         target_set="Panel"
     )
     return result

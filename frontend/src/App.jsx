@@ -6,7 +6,7 @@ import {
   Play, Clock, DollarSign, TrendingUp, HelpCircle, AlertCircle,
   Sun, Moon, Flame, Zap, Lightbulb, Eye, Share2, CheckCircle2,
   ChevronDown, Tv, Award, Users, AlertTriangle, FileText, CheckCircle,
-  Sliders, ArrowUpRight
+  Sliders, ArrowUpRight, Cloud, Database
 } from 'lucide-react';
 
 const PRESET_CREATORS = [
@@ -157,6 +157,9 @@ export default function App() {
   // User Auth State
   const [user, setUser] = useState(null);
   const [userHistory, setUserHistory] = useState([]);
+  const [bridgeModalOpen, setBridgeModalOpen] = useState(false);
+  const [bridgeStoreData, setBridgeStoreData] = useState(null);
+  const [loadingBridgeStore, setLoadingBridgeStore] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [authUsername, setAuthUsername] = useState('');
@@ -256,6 +259,22 @@ export default function App() {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const loadBridgeStore = async (username) => {
+    if (!username) return;
+    setLoadingBridgeStore(true);
+    try {
+      const res = await fetch(`/api/user/bridge-store?username=${encodeURIComponent(username)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setBridgeStoreData(data);
+      }
+    } catch (e) {
+      console.error("Bridge store fetch error:", e);
+    } finally {
+      setLoadingBridgeStore(false);
     }
   };
 
@@ -668,6 +687,19 @@ export default function App() {
                   </button>
                 ))}
               </div>
+
+              {/* View Cosmitude Cloud History Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  loadBridgeStore(user);
+                  setBridgeModalOpen(true);
+                }}
+                className={`mt-2.5 w-full py-1.5 px-2 rounded-lg border text-[11px] font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/10`}
+              >
+                <Cloud className="w-3.5 h-3.5 shrink-0" />
+                <span>Cosmitude Bridge Store</span>
+              </button>
             </div>
           )}
         </div>

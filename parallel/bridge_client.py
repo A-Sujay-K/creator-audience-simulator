@@ -232,6 +232,7 @@ def send_hook_study(
     s2: str,
     s3: str,
     s4: str,
+    s5: str = "",
     target_set: str = "Panel",
     forum_id: Optional[str] = None
 ) -> Dict[str, Any]:
@@ -249,6 +250,7 @@ def send_hook_study(
         f"{flow_name}_Main-{fid}_8": base64.b64encode(s2.encode("utf-8")).decode("utf-8"),
         f"{flow_name}_Main-{fid}_10": base64.b64encode(s3.encode("utf-8")).decode("utf-8"),
         f"{flow_name}_Main-{fid}_12": base64.b64encode(s4.encode("utf-8")).decode("utf-8"),
+        f"{flow_name}_Main-{fid}_14": base64.b64encode(s5.encode("utf-8")).decode("utf-8"),
     }
 
     return _send_bridge_raw(
@@ -256,7 +258,7 @@ def send_hook_study(
         fields_data=payload_study,
         fid=fid,
         sent_to=target_set,
-        text_count=6,
+        text_count=7,
         forum_id=target_forum
     )
 

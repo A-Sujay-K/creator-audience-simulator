@@ -46,8 +46,10 @@ def add_history(study, items, real_means):
     with open(HIST, "a") as f:
         for r in items.itertuples():
             if r.sid in real_means:
-                f.write(json.dumps({"study": study.title, "sid": r.sid, "text": r.text,
-                                    "synth": r.stop, "real": float(real_means[r.sid])}) + "\n")
+                text_val = getattr(r, "text", getattr(r, "hook_text", ""))
+                synth_val = getattr(r, "stop", getattr(r, "score", 3.0))
+                f.write(json.dumps({"study": study.title, "sid": r.sid, "text": text_val,
+                                    "synth": float(synth_val), "real": float(real_means[r.sid])}) + "\n")
 
 def fit_calibrator(history, min_rows=16):
     if len(history) < min_rows: return None

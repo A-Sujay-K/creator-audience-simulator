@@ -1342,7 +1342,10 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
     slug = re.sub(r'[^a-z0-9]+', '_', f"{creator_name}_{comparison_creator}".lower().strip())
     cache_file = cache_dir / f"{slug}.json"
 
-    if not force_refresh and cache_file.exists():
+    has_past_runs = bool(previous_findings and previous_findings.get("total_past_runs", 0) > 0)
+    # If the user has previously explored this creator, bypass static cache to ensure
+    # newly synthesized ideas build upon their historical findings without repeating.
+    if not force_refresh and not has_past_runs and cache_file.exists():
         try:
             cached_data = json.loads(cache_file.read_text(encoding="utf-8"))
             if time.time() - cached_data.get("_cached_at", 0) < 86400:
