@@ -221,9 +221,9 @@ def api_bridge_store(username: str = Query(...), creator: Optional[str] = Query(
 @app.get("/api/creators/suggest")
 def api_suggest(query: str = Query(...)):
     q = query.strip()
-    if len(q) < 2:
+    if not q:
         return {"suggestions": []}
-    sugs = find_similar_creators(q, min_score=0.45, limit=5)
+    sugs = find_similar_creators(q, min_score=0.45, limit=6)
     return {"suggestions": sugs}
 
 @app.get("/api/creators/spellfix")
