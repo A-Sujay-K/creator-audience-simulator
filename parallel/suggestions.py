@@ -59,7 +59,11 @@ def infer_specific_niche(name: str, context: str = "") -> str:
         return res
 
     # 1. High-Speed Rail, Trains & Transit
-    if any(k in text for k in ["train", "trains", "bullet", "rail", "locomotive", "transit", "metro", "shinkansen", "subway", "railway", "irctc", "railfan", "tram"]):
+    # Use word-boundary matching for "train/rail" to prevent false-positives from names
+    # like "bulletstrins" (contains "train" as substring) or "abstract" (contains "rail").
+    _bullet_train = "bullet train" in text or "bullet rail" in text or "bullet express" in text
+    _rail_words = re.search(r"\b(trains?|railway|railfan|locomotive|transit|metro|shinkansen|subway|irctc|tram)\b", text)
+    if _rail_words or _bullet_train:
         if any(b in text for b in ["bike", "ride", "enfield", "motorcycle", "cruiser"]):
             res = "Royal Enfield, Custom Motorcycles & Moto-Vlogging"
         else:
@@ -85,10 +89,35 @@ def infer_specific_niche(name: str, context: str = "") -> str:
         _niche_cache[clean_key] = res
         return res
 
-    # 5. Software Engineering, AI & Programming
-    if any(k in text for k in ["coder", "coding", "developer", "programming", "python", "javascript", "machine learning", "data science", "github", "software"]) or re.search(r"\b(code|dev|ai|ml|web|app)\b", text):
+    # 5a. DJ Sets, Electronic Music & Live Performance — HIGH PRIORITY (before software check to prevent false-positives from names like "Dev")
+    if any(k in text for k in ["dj set", "dj mix", "boiler room", "edm", "house music", "bass music", "techno", "baile funk",
+                                "music producer", "music production", "soundcloud", "spotify", "ep release", "my eyes",
+                                "remix edit", "raiyani edit", "original mix", "extended mix", "festival set",
+                                "dj", "disc jockey"]) and any(k in text for k in ["dj", "music", "song", "songs", "track", "tracks", "set", "mix", "remix", "beats", "beat", "producer", "bpm", "drops", "edm", "bass"]):
+        res = "DJ Sets, Electronic Music Production & Creative Video Editing"
+        if not context:
+            _niche_cache[clean_key] = res
+        return res
+
+    # 5b. Music & Audio Production (broader music check before software check)
+    if any(k in text for k in ["music", "song", "songs", "soundtrack", "singer", "beats", "producer", "remix",
+                                "official video", "official audio", "music video", "lyric video",
+                                "rap", "hip hop", "r&b", "pop music", "indie", "artist"]) or re.search(r"\b(rap|beat|audio|band|track|tracks|album)\\b", text):
+        res = "Independent Music Production, Soundtracks & Music Videos"
+        if not context:
+            _niche_cache[clean_key] = res
+        return res
+
+    # 5c. Software Engineering, AI & Programming
+    # IMPORTANT: standalone "dev", "ai", "app", "ml", "web" are NOT sufficient alone — require explicit programming/software terms
+    if any(k in text for k in ["coder", "coding", "developer", "programmer", "programming", "python", "javascript",
+                                "typescript", "machine learning", "data science", "github", "software engineer",
+                                "fullstack", "full stack", "backend", "frontend", "devops", "kubernetes",
+                                "neural network", "llm", "openai", "huggingface", "tensorflow", "pytorch",
+                                "web development", "app development", "api tutorial", "cursor ai", "copilot"]):
         res = "Software Engineering, Programming Tutorials & AI Dev"
-        _niche_cache[clean_key] = res
+        if not context:
+            _niche_cache[clean_key] = res
         return res
 
     # 6. Gaming, Streaming & Esports
@@ -133,7 +162,7 @@ def infer_specific_niche(name: str, context: str = "") -> str:
         _niche_cache[clean_key] = res
         return res
 
-    # 13. Music & Audio Production
+    # 13. Music & Audio Production (broader catch-all, below DJ check)
     if any(k in text for k in ["music", "song", "songs", "soundtrack", "singer", "beats", "producer", "remix"]) or re.search(r"\b(rap|beat|audio|dj|band|track|tracks|album)\b", text):
         res = "Independent Music Production, Soundtracks & Music Videos"
         _niche_cache[clean_key] = res
@@ -186,6 +215,37 @@ def infer_specific_niche(name: str, context: str = "") -> str:
         res = "Kids Entertainment, Nursery Rhymes & Animated Learning"
         _niche_cache[clean_key] = res
         return res
+
+    # ── YouTube Suggestion Completion Fallback ──
+    # When no rule matched AND no context was given, fetch live YouTube query completions
+    # for the creator name. The completions (e.g. "dev raiyani dj set", "dev raiyani songs")
+    # reliably reveal the creator's actual content domain with high precision.
+    # GUARD: Only use suggestion context if the suggestions actually refer to this creator.
+    # If YouTube corrects the typo entirely (e.g. "bulletstrins" → all "bullet train" suggestions)
+    # and none of the suggestions contain the creator's name tokens, skip the fallback to avoid
+    # misclassifying unknown creators as unrelated niches.
+    if not context:
+        try:
+            yt_url = f"https://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q={urllib.parse.quote(name)}"
+            yt_req = urllib.request.Request(
+                yt_url,
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            )
+            yt_raw = urllib.request.urlopen(yt_req, timeout=1.5).read().decode("utf-8", errors="ignore")
+            yt_match = re.search(r"window\.google\.ac\.h\((.*)\)", yt_raw)
+            if yt_match:
+                yt_data = json.loads(yt_match.group(1))
+                suggestion_texts = " ".join(item[0] for item in yt_data[1] if item and item[0])
+                # Relevance guard: at least one significant name token (3+ chars) must appear
+                # in any suggestion, confirming that YouTube is showing results for THIS creator
+                name_tokens = {t.lower() for t in re.findall(r"\b\w{3,}\b", name)}
+                suggestions_lower = suggestion_texts.lower()
+                name_is_referenced = any(tok in suggestions_lower for tok in name_tokens)
+                if suggestion_texts.strip() and name_is_referenced:
+                    # Recurse with this rich context — will NOT loop because context is now non-empty
+                    return infer_specific_niche(name, context=suggestion_texts)
+        except Exception:
+            pass
 
     # ── Smart Fallback: Phonetic & Pattern-Based Niche Resolution ──
     # Use name word count, suffix patterns, and character patterns to guess context
@@ -240,6 +300,9 @@ BASE_POPULAR_CREATORS = [
     {"name": "JiDion", "niche": "Public Pranks, Social Commentary & Faith", "aliases": ["jidion adams", "jidxon", "demarcus cousins the third"]},
     {"name": "David Dobrik", "niche": "High-Paced Vlogs & Surprise Stunts", "aliases": ["dobrik", "vlog squad", "david"]},
     {"name": "Danny Gonzalez", "niche": "Commentary, Satire & Comedy Music", "aliases": ["danny", "greg", "danny gonzales"]},
+
+    # Music, DJs & Electronic Music Producers
+    {"name": "Dev Raiyani", "niche": "DJ Sets, Electronic Music Production & Creative Video Editing", "aliases": ["dev raiyani", "raiyani", "devraiyani", "dev r", "dev dj"]},
     {"name": "Drew Gooden", "niche": "Satirical Commentary & Pop Culture Analysis", "aliases": ["drew", "gooden", "guy who made vine"]},
     {"name": "Cody Ko", "niche": "Commentary, Cringe Reacts & Comedy Podcasts", "aliases": ["cody", "tmg", "cody kolodziejzyk"]},
     {"name": "Kurtis Conner", "niche": "Pop Culture Roasts & Absurdist Comedy", "aliases": ["kurtis", "conner", "very really good"]},

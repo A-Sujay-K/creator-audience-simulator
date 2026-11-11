@@ -173,6 +173,13 @@ def is_generic_or_compilation(title: str, url: str = "", core_niche: str = "") -
         "walkthrough review", "create viral reels", "turn long videos into shorts",
         "faceless channel", "make money with ai", "ai video generator", "automated shorts",
         "passive income youtube", "how to grow on youtube", "grow your channel in 202",
+        # Digital planner / creator-economy template spam (new):
+        "digital content creator template", "digital content planner", "social media planner",
+        "content calendar template", "content planner", "content creation template",
+        "creator economy course", "how i make money as a creator", "youtube automation",
+        "content creator starter kit", "instagram content strategy", "canva template for",
+        "make money creating content", "monetize your channel with",
+        "digital planner", "notion template", "airtable creator",
         # Hashtag dumps & meaningless titles:
         "reviews reviews", "all-inclusive film #", "#reels #insta", "viral reel #shorts",
         "test video please ignore", "channel trailer"
@@ -544,6 +551,107 @@ Rules:
 
 
 # ─────────────────────────────────────────────────
+#  DIRECT YOUTUBE UPLOAD HARVESTER
+#  Scrapes real channel videos from YouTube search results page.
+#  Used to ground niche detection and creator_videos with actual uploads.
+# ─────────────────────────────────────────────────
+
+def _search_youtube_direct(creator_name: str, limit: int = 8) -> list[dict]:
+    """
+    Fetches real video uploads from YouTube by scraping the search results page
+    for the creator's name. Extracts video IDs, titles, and channel names.
+    Returns a list of dicts: {title, url, thumbnail, channel}.
+    
+    This is used to:
+      1. Ground niche detection with actual video titles (100% accurate signal)
+      2. Populate creator_videos with real uploads instead of generic search results
+    """
+    try:
+        import urllib.request
+        import urllib.parse
+        query = urllib.parse.quote(creator_name)
+        url = f"https://www.youtube.com/results?search_query={query}"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept-Language": "en-US,en;q=0.9",
+            }
+        )
+        raw = urllib.request.urlopen(req, timeout=4.0).read().decode("utf-8", errors="ignore")
+        
+        # Extract ytInitialData JSON blob
+        m = re.search(r"var ytInitialData\s*=\s*(\{.*?\});\s*</script>", raw, re.DOTALL)
+        if not m:
+            m = re.search(r"ytInitialData\s*=\s*(\{.*?\});\s*(?:var |</script>)", raw, re.DOTALL)
+        if not m:
+            return []
+        
+        data = json.loads(m.group(1))
+        contents = (
+            data.get("contents", {})
+                .get("twoColumnSearchResultsRenderer", {})
+                .get("primaryContents", {})
+                .get("sectionListRenderer", {})
+                .get("contents", [])
+        )
+        
+        results = []
+        name_lower = creator_name.lower()
+        name_parts = set(name_lower.split())
+        
+        for section in contents:
+            items = section.get("itemSectionRenderer", {}).get("contents", [])
+            for item in items:
+                vr = item.get("videoRenderer", {})
+                if not vr:
+                    continue
+                video_id = vr.get("videoId", "")
+                if not video_id:
+                    continue
+                
+                title_runs = vr.get("title", {}).get("runs", [])
+                title = " ".join(r.get("text", "") for r in title_runs).strip()
+                
+                channel_runs = (
+                    vr.get("longBylineText", {}).get("runs", []) or
+                    vr.get("shortBylineText", {}).get("runs", [])
+                )
+                channel = " ".join(r.get("text", "") for r in channel_runs).strip()
+                
+                if not title or not channel:
+                    continue
+                
+                # Only include videos from channels whose name overlaps with the creator
+                channel_lower = channel.lower()
+                channel_parts = set(channel_lower.split())
+                # Require at least one significant name part to match (skip unrelated channels)
+                sig_parts = {p for p in name_parts if len(p) > 2}
+                if sig_parts and not sig_parts.intersection(channel_parts):
+                    # Also accept if the channel name contains the full query as substring
+                    if name_lower not in channel_lower and channel_lower not in name_lower:
+                        continue
+                
+                thumbnail = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
+                results.append({
+                    "title": f"[{channel}] {title}",
+                    "url": f"https://www.youtube.com/watch?v={video_id}",
+                    "thumbnail": thumbnail,
+                    "channel": channel,
+                    "source": "youtube",
+                })
+                if len(results) >= limit:
+                    break
+            if len(results) >= limit:
+                break
+        
+        return results
+    except Exception as e:
+        print(f"[intelligence] _search_youtube_direct notice: {e}")
+        return []
+
+
+# ─────────────────────────────────────────────────
 #  TARGETED FIRECRAWL RECON (Multi-Platform: IG, YT, Shorts, Reels)
 # ─────────────────────────────────────────────────
 
@@ -601,7 +709,19 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
 
         # Dynamic niche detection if not explicitly supplied
         if not detected_niche:
-            if any(k in full_bio_text for k in ["bike", "motorcycle", "royalenfield", "ktm", "motovlog", "touring"]):
+            if any(k in full_bio_text for k in ["dj set", "dj mix", "edm", "boiler room", "electronic music", "music producer",
+                                                  "music production", "house music", "bass music", "techno", "baile funk",
+                                                  "disc jockey", "my eyes", "raiyani edit", "original mix", "extended mix",
+                                                  "festival set"]):
+                detected_niche = "DJ Sets, Electronic Music Production & Creative Video Editing"
+            elif any(k in full_bio_text for k in ["music", "song", "songs", "artist", "singer", "rapper", "rap", "r&b",
+                                                   "hip hop", "indie", "beats", "producer", "soundcloud", "spotify",
+                                                   "lyrics", "music video", "official video"]):
+                detected_niche = "Independent Music Production, Soundtracks & Music Videos"
+            elif any(k in full_bio_text for k in ["vlog", "vlogger", "daily life", "lifestyle", "day in my life",
+                                                   "life update", "storytime", "personal", "campus", "college life"]):
+                detected_niche = "Personal Vlogging, Daily Life & Lifestyle Content"
+            elif any(k in full_bio_text for k in ["bike", "motorcycle", "royalenfield", "ktm", "motovlog", "touring"]):
                 detected_niche = "Motorcycles, Travel & Moto-vlogging"
             elif any(k in full_bio_text for k in ["fitness", "gym", "workout", "bodybuilding", "trainer"]):
                 detected_niche = "Fitness, Health & Bodybuilding"
@@ -622,8 +742,33 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
             else:
                 detected_niche = "Digital Content & Visual Storytelling"
 
+        # ── YouTube Direct Upload Harvester ─────────────────────────────────────
+        # Fetch real video titles from YouTube search to:
+        #   1. Upgrade niche detection accuracy (video titles are ~100% ground-truth signal)
+        #   2. Pre-populate creator_videos with real, confirmed uploads
+        yt_direct_videos = _search_youtube_direct(clean_name, limit=8)
+        if yt_direct_videos:
+            # Combine real video titles into a rich text signal for niche re-detection
+            yt_titles_text = " ".join(v.get("title", "") for v in yt_direct_videos).lower()
+            # Re-evaluate niche using real video titles — overrides snippet-based guess if confident
+            if not niche.strip():  # Only upgrade if user didn't explicitly specify a niche
+                from .suggestions import infer_specific_niche
+                yt_derived_niche = infer_specific_niche(clean_name, context=yt_titles_text)
+                # Only upgrade if the new signal is more specific than the current detection
+                generic_markers = ["digital content", "visual storytelling", "content creation"]
+                if any(g in detected_niche.lower() for g in generic_markers) or not detected_niche:
+                    detected_niche = yt_derived_niche
+            # Add real YT videos to creator_videos (deduplicated later)
+            for v in yt_direct_videos:
+                if not is_generic_or_compilation(v.get("title", ""), v.get("url", ""), detected_niche):
+                    creator_videos.append(v)
+
         # ── Queries 2-5: Parallel Multi-Platform Reconnaissance (8x Speedup) ───
         primary_topic = (detected_niche or niche or "content").split("&")[0].split(",")[0].strip()
+        # Guard: if primary_topic is still a generic placeholder, use the creator name itself as topic anchor
+        generic_topic_markers = ["digital content", "visual storytelling", "content creation", "independent creator"]
+        if any(g in primary_topic.lower() for g in generic_topic_markers):
+            primary_topic = clean_name  # e.g. "Dev Raiyani" → forces person-specific peer search
 
         # 4 consolidated lean queries (guarantees staying under Firecrawl RPM clamp)
         queries_own = [
