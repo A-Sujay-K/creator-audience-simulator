@@ -1,0 +1,29 @@
+# HookLab Studio Production Requirements
+# Pinned for reproducible deployments (Python 3.11+)
+
+# Web Framework & ASGI
+fastapi==0.142.2
+starlette==1.7.0
+uvicorn==0.54.0
+pydantic==2.13.5
+python-multipart==0.0.32
+
+# External Services & APIs
+requests==2.34.2
+groq==1.7.0
+firecrawl-py==4.46.2
+youtube-transcript-api==1.2.4
+
+# Data Processing & Calibration Engine
+pandas==3.0.6
+numpy==2.4.6
+scikit-learn==1.9.1
+scipy==1.17.1
+
+# Environment & Config
+python-dotenv==1.2.4
+certifi==2026.7.22
+
+# Testing & Quality
+pytest==9.1.1
+httpx==0.28.1

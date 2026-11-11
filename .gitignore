@@ -23,3 +23,6 @@ data/
 *_Admin.txt
 HookLab_*.txt
 ParallelProduction_*.txt
+
+# Scratch scripts & temporary test artifacts
+scratch/
