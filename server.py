@@ -7,10 +7,12 @@ import os
 import re
 import json
 import time
+import uuid
+import threading
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 import logging
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Header, Request, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
@@ -26,8 +28,9 @@ from parallel.profiles import (
     get_cached_intel, push_summary_to_bridge,
     save_clone_run, get_cached_clone,
     save_to_bridge_user_store, get_bridge_user_store, get_user_previous_findings,
-    ProfileNotFound, WrongPIN, UsernameTaken
+    delete_profile, ProfileNotFound, WrongPIN, UsernameTaken, AccountLocked
 )
+from parallel.auth import create_access_token, verify_access_token
 from parallel.clone_intel import (
     get_style_dna, get_video_blueprint, get_piracy_ideas, generate_unified_clone_dossier
 )
@@ -50,14 +53,77 @@ def _sanitize_text(text: str, max_len: int = 200) -> str:
     # Remove script: / javascript: / data: URIs
     clean = re.sub(r"(?i)(script|javascript|data|vbscript):", "", clean)
     # Strip control characters except newline/tab
-    clean = re.sub(r"[--]", "", clean)
+    clean = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", clean)
     return clean.strip()[:max_len]
+
+
+# ─── Rate Limiter ─────────────────────────────────────────────────────────────
+class SlidingRateLimiter:
+    """Thread-safe in-memory sliding-window rate limiter per client key."""
+    def __init__(self):
+        self._history: Dict[str, List[float]] = {}
+        self._lock = threading.Lock()
+
+    def check(self, key: str, max_requests: int, window_seconds: int) -> tuple[bool, int]:
+        now = time.time()
+        with self._lock:
+            records = self._history.get(key, [])
+            valid_records = [t for t in records if now - t < window_seconds]
+            if len(valid_records) >= max_requests:
+                retry_after = int(window_seconds - (now - valid_records[0]))
+                self._history[key] = valid_records
+                return False, max(1, retry_after)
+            valid_records.append(now)
+            self._history[key] = valid_records
+            return True, 0
+
+_limiter = SlidingRateLimiter()
+
+def _enforce_rate_limit(key: str, max_reqs: int, window_sec: int, resource_name: str = "requests"):
+    allowed, retry_after = _limiter.check(key, max_reqs, window_sec)
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit exceeded for {resource_name}. Please wait {retry_after} seconds before retrying.",
+            headers={"Retry-After": str(retry_after)}
+        )
+
+
+# ─── Security Headers & CORS Middleware ───────────────────────────────────────
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "img-src 'self' data: https:; "
+        "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; "
+        "connect-src 'self' https:;"
+    )
+    return response
+
+_allowed_env = os.getenv("ALLOWED_ORIGINS")
+if _allowed_env:
+    _origins = [o.strip() for o in _allowed_env.split(",") if o.strip()]
+else:
+    _origins = [
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8000"
+    ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -67,6 +133,50 @@ _DIST_DIR = Path(__file__).parent / "frontend" / "dist"
 
 def _ensure_data_dir() -> None:
     Path("data").mkdir(parents=True, exist_ok=True)
+
+
+# ─── Safe Error Helper ────────────────────────────────────────────────────────
+def _safe_500(err: Exception, context: str = "request processing") -> HTTPException:
+    error_id = str(uuid.uuid4())[:8]
+    logger.error(f"[Error {error_id}] Exception during {context}: {err}", exc_info=True)
+    return HTTPException(
+        status_code=500,
+        detail=f"An unexpected internal error occurred during {context}. Reference ID: {error_id}"
+    )
+
+
+# ─── Auth Dependencies ────────────────────────────────────────────────────────
+def get_current_user(authorization: Optional[str] = Header(None)) -> Optional[dict]:
+    """Extract and verify bearer token claims from Authorization header."""
+    if not authorization:
+        return None
+    parts = authorization.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return None
+    return verify_access_token(parts[1])
+
+def require_auth(authorization: Optional[str] = Header(None)) -> dict:
+    """Strict auth dependency: returns user claims dict or raises 401."""
+    user = get_current_user(authorization)
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required. Please sign in to access this workspace.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    return user
+
+def check_user_access(current_user: dict, target_username: str) -> None:
+    """Guarantees strict per-user data isolation (blocks IDOR cross-account access)."""
+    req_user = target_username.strip().lower()
+    auth_user = current_user.get("sub", "")
+    is_admin = current_user.get("role") == "admin"
+    if not is_admin and auth_user != req_user:
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: You do not have permission to access another user's workspace or private store."
+        )
+
 
 # ─── MODELS ──────────────────────────────────────────────────────────────────
 class LoginRequest(BaseModel):
@@ -104,7 +214,7 @@ def summary() -> str:
     return "No prediction run yet."
 
 @app.post("/summary")
-def write_summary(item: dict) -> dict:
+def write_summary(item: dict, user: dict = Depends(require_auth)) -> dict:
     text = item.get("text", "")
     if not text:
         raise HTTPException(status_code=400, detail="'text' field is required")
@@ -130,19 +240,38 @@ def health_check():
     return {"status": "ok", "service": "Parallel Creator OS", "version": "2.4.0"}
 
 @app.post("/api/auth/login")
-def api_login(req: LoginRequest):
+def api_login(req: LoginRequest, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    _enforce_rate_limit(f"login_ip:{client_ip}", max_reqs=15, window_sec=60, resource_name="login attempts")
+
     username = req.username.strip().lower()
     pin = req.pin.strip()
     try:
-        login(username, pin)
-        return {"success": True, "username": username}
+        profile = login(username, pin)
+        role = "admin" if username == "admin" else "creator"
+        token = create_access_token(username, role=role)
+        return {
+            "success": True,
+            "username": username,
+            "role": role,
+            "token": token
+        }
     except ProfileNotFound:
         raise HTTPException(status_code=404, detail="Username not found.")
+    except AccountLocked as al:
+        raise HTTPException(
+            status_code=429,
+            detail=str(al),
+            headers={"Retry-After": str(al.retry_after)}
+        )
     except WrongPIN:
         raise HTTPException(status_code=401, detail="Incorrect PIN.")
 
 @app.post("/api/auth/signup")
-def api_signup(req: LoginRequest):
+def api_signup(req: LoginRequest, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    _enforce_rate_limit(f"signup_ip:{client_ip}", max_reqs=10, window_sec=60, resource_name="account registrations")
+
     username = req.username.strip().lower()
     pin = req.pin.strip()
     if not username:
@@ -151,9 +280,13 @@ def api_signup(req: LoginRequest):
         raise HTTPException(status_code=400, detail="PIN must be at least 3 digits.")
     try:
         profile = create_profile(username, pin)
+        role = "admin" if username == "admin" else "creator"
+        token = create_access_token(username, role=role)
         return {
             "success": True,
             "username": username,
+            "role": role,
+            "token": token,
             "bridge_set": profile.get("bridge_set"),
             "bridge_sync": profile.get("bridge_sync")
         }
@@ -161,9 +294,11 @@ def api_signup(req: LoginRequest):
         raise HTTPException(status_code=409, detail="Username already taken.")
 
 @app.post("/api/user/sync-bridge-set")
-def api_sync_bridge_set(username: str = Query(...)):
-    """Explicitly provision or re-verify the user's isolated Set on Cosmitude Bridge."""
+def api_sync_bridge_set(username: str = Query(...), current_user: dict = Depends(require_auth)):
+    """Provision or re-verify the user's isolated Set on Cosmitude Bridge."""
     u = username.strip().lower()
+    check_user_access(current_user, u)
+
     from parallel.bridge_client import create_bridge_user_set
     from parallel.profiles import _load, _save, ProfileNotFound
     res = create_bridge_user_set(u)
@@ -184,13 +319,18 @@ def api_sync_bridge_set(username: str = Query(...)):
     return res
 
 @app.get("/api/user/history")
-def api_history(username: str = Query(...)):
-    history = get_history(username.strip().lower())
+def api_history(username: str = Query(...), current_user: dict = Depends(require_auth)):
+    """Strictly isolated per-user analysis history."""
+    u = username.strip().lower()
+    check_user_access(current_user, u)
+    history = get_history(u)
     return {"history": history or []}
 
 @app.get("/api/user/cached")
-def api_cached(username: str = Query(...), creator: str = Query(...)):
+def api_cached(username: str = Query(...), creator: str = Query(...), current_user: dict = Depends(require_auth)):
+    """Fetch cached intelligence & clone dossier for authenticated user."""
     u = username.strip().lower()
+    check_user_access(current_user, u)
     c = creator.strip()
     cached_intel = get_cached_intel(u, c)
     cached_clone = get_cached_clone(u, c)
@@ -202,9 +342,10 @@ def api_cached(username: str = Query(...), creator: str = Query(...)):
     }
 
 @app.get("/api/user/bridge-store")
-def api_bridge_store(username: str = Query(...), creator: Optional[str] = Query(None)):
+def api_bridge_store(username: str = Query(...), creator: Optional[str] = Query(None), current_user: dict = Depends(require_auth)):
     """Retrieve stored dossiers from the user's isolated Bridge store with sync status."""
     u = username.strip().lower()
+    check_user_access(current_user, u)
     from parallel.profiles import get_bridge_user_store, _load, ProfileNotFound
     try:
         profile = _load(u)
@@ -218,7 +359,16 @@ def api_bridge_store(username: str = Query(...), creator: Optional[str] = Query(
     except ProfileNotFound:
         raise HTTPException(status_code=404, detail="User profile not found.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _safe_500(e, "retrieving Bridge store")
+
+@app.delete("/api/user/delete")
+def api_user_delete(current_user: dict = Depends(require_auth)):
+    """Permanently delete user profile and data (GDPR / Right to be Forgotten)."""
+    u = current_user.get("sub", "")
+    success = delete_profile(u)
+    if not success:
+        raise HTTPException(status_code=404, detail="Profile not found or already deleted.")
+    return {"success": True, "message": f"Profile and data for '{u}' permanently removed."}
 
 @app.get("/api/creators/suggest")
 def api_suggest(query: str = Query(...)):
@@ -237,18 +387,26 @@ def api_spellfix(query: str = Query(...)):
     return {"suggestions": ai_sugs}
 
 @app.post("/api/intel/analyze")
-def api_analyze(req: AnalyzeRequest):
+def api_analyze(req: AnalyzeRequest, request: Request, authorization: Optional[str] = Header(None)):
+    # Rate limit: 10 deep analyses per 10 minutes per client IP
+    client_ip = request.client.host if request.client else "unknown"
+    _enforce_rate_limit(f"analyze:{client_ip}", max_reqs=10, window_sec=600, resource_name="creator intelligence analyses")
+
     creator = _sanitize_text(req.creator_name.strip())
     if not creator:
         raise HTTPException(status_code=400, detail="Creator name is required.")
     
     comp_creator = _sanitize_text(req.comparison_creator.strip() if req.comparison_creator else "")
     niche = _sanitize_text(req.niche.strip() if req.niche else "")
-    username = req.username.strip().lower() if req.username else ""
+    
+    # Derive active user and admin role strictly from verified session token
+    auth_user = get_current_user(authorization)
+    is_admin = bool(auth_user and auth_user.get("role") == "admin")
+    active_user = auth_user.get("sub") if auth_user else (req.username.strip().lower() if req.username else "")
 
     prev_findings = {}
-    if username:
-        prev_findings = get_user_previous_findings(username, creator)
+    if active_user:
+        prev_findings = get_user_previous_findings(active_user, creator)
 
     try:
         intel = generate_creator_intelligence(
@@ -285,21 +443,21 @@ def api_analyze(req: AnalyzeRequest):
         }
 
         # Auto-save to profile & Bridge store
-        if username:
-            save_intel(username, creator, t_niche, intel, comparison_creator=comp_creator)
-            push_summary_to_bridge(username, creator, intel)
-            save_clone_run(username, creator, dossier["style_card"], dossier["blueprints"], dossier["piracy_ideas"])
-            save_to_bridge_user_store(username, creator, intel, copy_result, comparison_creator=comp_creator)
+        if active_user:
+            save_intel(active_user, creator, t_niche, intel, comparison_creator=comp_creator)
+            push_summary_to_bridge(active_user, creator, intel)
+            save_clone_run(active_user, creator, dossier["style_card"], dossier["blueprints"], dossier["piracy_ideas"])
+            save_to_bridge_user_store(active_user, creator, intel, copy_result, comparison_creator=comp_creator)
             
-            # Master Intelligence Dossier is strictly archived to Admin Set ONLY (never to end-users)
-            if username.lower() == "admin":
+            # Master Intelligence Dossier is strictly archived for verified Admin ONLY (never for normal users)
+            if is_admin:
                 try:
                     import threading
                     from parallel.bridge_client import send_user_dossier
                     threading.Thread(
                         target=send_user_dossier,
-                        args=(username, creator, t_niche, copy_result),
-                        kwargs={"target_set": "Set_Admin"},
+                        args=(active_user, creator, t_niche, copy_result),
+                        kwargs={"target_set": "Admin"},
                         daemon=True
                     ).start()
                 except Exception as b_err:
@@ -311,10 +469,13 @@ def api_analyze(req: AnalyzeRequest):
             "prev_findings": prev_findings
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _safe_500(e, "creator intelligence synthesis")
 
 @app.post("/api/hooks/simulate")
-def api_hook_simulate(req: HookTestRequest):
+def api_hook_simulate(req: HookTestRequest, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    _enforce_rate_limit(f"simulate:{client_ip}", max_reqs=25, window_sec=300, resource_name="hook simulations")
+
     text = req.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Hook text is required.")
@@ -337,7 +498,6 @@ def api_hook_simulate(req: HookTestRequest):
         top_hook_content = str(top_row["hook_text"])
 
         # Scientific Relative Velocity & Incremental Value Modeling
-        # Grounded in creator baseline multiplier rather than arbitrary flat views
         if top_score >= 4.2:
             views_tier = "3.0x – 5.0x Baseline Velocity (Breakout)"
             fame_label = "Ultra Viral Breakout (Top 3% of Niche)"
@@ -420,10 +580,10 @@ def api_hook_simulate(req: HookTestRequest):
             }
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _safe_500(e, "hook simulation")
 
 @app.post("/api/panel/calibrate")
-def api_calibrate(req: CalibrateRequest):
+def api_calibrate(req: CalibrateRequest, user: dict = Depends(require_auth)):
     try:
         real_df = load_panel(req.sids)
         if len(real_df) > 0:
@@ -453,7 +613,7 @@ def api_calibrate(req: CalibrateRequest):
         else:
             return {"status": "empty", "message": "No real panel data found yet."}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _safe_500(e, "panel calibration")
 
 class HookStudyRequest(BaseModel):
     hooks_text: str          # raw textarea content "S1: ...\nS2: ...\nS3: ...\nS4: ...\nS5: ..."
@@ -463,8 +623,11 @@ class HookStudyRequest(BaseModel):
     target_set: str = "Panel" # target panel or audience set
 
 @app.post("/api/panel/send-hook-study")
-def api_send_hook_study(req: HookStudyRequest):
+def api_send_hook_study(req: HookStudyRequest, request: Request, user: dict = Depends(require_auth)):
     """Parse S1-S5 from hooks_text and post as ParallelHookStudy to Bridge Panel set."""
+    client_ip = request.client.host if request.client else "unknown"
+    _enforce_rate_limit(f"hookstudy:{client_ip}", max_reqs=10, window_sec=300, resource_name="panel hook studies")
+
     import re as _re
     from parallel.bridge_client import send_hook_study
 
@@ -531,4 +694,6 @@ def serve_spa(full_path: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+    # In production, reload must be False
+    is_dev = os.getenv("ENV", "development").lower() == "development"
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=is_dev)

@@ -17,7 +17,8 @@ import {
   DisambiguationModal,
   BridgeStoreModal,
   AuthModal,
-  TeleprompterModal
+  TeleprompterModal,
+  LegalModal
 } from './components';
 
 const PRESET_CREATORS = [
@@ -83,10 +84,15 @@ export default function App() {
 
   // ─── User Profile & Bridge Store ─────────────────────────────────────────────
   const [user, setUser] = useState(() => localStorage.getItem('hooklab_user') || 'user');
+  const [token, setToken] = useState(() => localStorage.getItem('hooklab_token') || '');
   const [userHistory, setUserHistory] = useState([]);
   const [bridgeModalOpen, setBridgeModalOpen] = useState(false);
   const [bridgeStoreData, setBridgeStoreData] = useState(null);
   const [loadingBridgeStore, setLoadingBridgeStore] = useState(false);
+
+  // ─── Legal & Compliance State ────────────────────────────────────────────────
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalInitialTab, setLegalInitialTab] = useState('privacy');
 
   // ─── Auth State ──────────────────────────────────────────────────────────────
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -99,6 +105,12 @@ export default function App() {
   const [teleprompterOpen, setTeleprompterOpen] = useState(false);
   const [teleprompterScript, setTeleprompterScript] = useState([]);
 
+  // ─── Cryptographic Auth Headers Helper ───────────────────────────────────────
+  const getAuthHeaders = () => {
+    const t = token || localStorage.getItem('hooklab_token');
+    return t ? { 'Authorization': `Bearer ${t}` } : {};
+  };
+
   // ─── Restore Cached Run ──────────────────────────────────────────────────────
   const handleLoadCached = async (targetCreator, targetComp, autoScroll = true) => {
     if (!user) return;
@@ -108,7 +120,10 @@ export default function App() {
     setStatusText(`Restoring saved report for ${targetCreator}...`);
 
     try {
-      const res = await fetch(`/api/user/cached?username=${encodeURIComponent(user)}&creator=${encodeURIComponent(targetCreator)}`);
+      const res = await fetch(
+        `/api/user/cached?username=${encodeURIComponent(user)}&creator=${encodeURIComponent(targetCreator)}`,
+        { headers: { ...getAuthHeaders() } }
+      );
       if (res.ok) {
         const data = await res.json();
         if (data.intel) {
@@ -143,7 +158,10 @@ export default function App() {
   // ─── Auth & User History Actions ─────────────────────────────────────────────
   const loadHistory = async (username, autoRestore = false) => {
     try {
-      const res = await fetch(`/api/user/history?username=${encodeURIComponent(username)}`);
+      const res = await fetch(
+        `/api/user/history?username=${encodeURIComponent(username)}`,
+        { headers: { ...getAuthHeaders() } }
+      );
       if (res.ok) {
         const data = await res.json();
         const hist = data.history || [];
@@ -161,7 +179,10 @@ export default function App() {
     if (!username) return;
     setLoadingBridgeStore(true);
     try {
-      const res = await fetch(`/api/user/bridge-store?username=${encodeURIComponent(username)}`);
+      const res = await fetch(
+        `/api/user/bridge-store?username=${encodeURIComponent(username)}`,
+        { headers: { ...getAuthHeaders() } }
+      );
       if (res.ok) {
         const data = await res.json();
         setBridgeStoreData(data);
@@ -185,7 +206,10 @@ export default function App() {
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ username: authUsername.trim(), pin: authPin.trim() })
       });
       const data = await res.json();
@@ -193,6 +217,10 @@ export default function App() {
         setAuthError(data.detail || 'Authentication error.');
       } else {
         setUser(data.username);
+        if (data.token) {
+          localStorage.setItem('hooklab_token', data.token);
+          setToken(data.token);
+        }
         setAuthModalOpen(false);
         setAuthUsername('');
         setAuthPin('');
@@ -201,6 +229,31 @@ export default function App() {
       }
     } catch (err) {
       setAuthError('Network communication error.');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      const res = await fetch('/api/user/delete', {
+        method: 'DELETE',
+        headers: { ...getAuthHeaders() }
+      });
+      if (res.ok) {
+        setUser('');
+        setToken('');
+        localStorage.removeItem('hooklab_user');
+        localStorage.removeItem('hooklab_token');
+        setUserHistory([]);
+        setBridgeStoreData(null);
+        setIntelData(null);
+        setCopyData(null);
+        alert('Your account and all stored creator dossiers have been permanently deleted.');
+      } else {
+        const err = await res.json();
+        alert(err.detail || 'Failed to delete account.');
+      }
+    } catch (e) {
+      alert('Network error deleting account.');
     }
   };
 
@@ -319,7 +372,10 @@ export default function App() {
     try {
       const res = await fetch('/api/intel/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({
           creator_name: target,
           comparison_creator: comparisonCreator.trim(),
@@ -436,7 +492,10 @@ export default function App() {
     try {
       const res = await fetch('/api/hooks/simulate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({
           text: hooksText.trim(),
           sample_size: sampleSize
@@ -463,7 +522,10 @@ export default function App() {
     try {
       const res = await fetch('/api/panel/send-hook-study', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({
           hooks_text: hooksText,
           concept_title: '',
@@ -613,6 +675,52 @@ export default function App() {
               <MonetizationAndDemographicsModule intelData={intelData} />
             </div>
           )}
+
+          {/* Trust & Compliance Footer */}
+          <footer className="mt-20 pt-8 pb-12 border-t border-[var(--border-hairline)] flex flex-col sm:flex-row items-center justify-between text-xs text-[var(--text-muted)] gap-4">
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-bold text-[var(--text-primary)]">HookLab Studio</span>
+              <span>•</span>
+              <span>Parallel Creator Intelligence OS v2.4</span>
+            </div>
+            <div className="flex items-center gap-4 text-xs font-mono">
+              <button
+                type="button"
+                onClick={() => { setLegalInitialTab('privacy'); setLegalModalOpen(true); }}
+                className="hover:text-white cursor-pointer transition"
+              >
+                Privacy Policy
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => { setLegalInitialTab('terms'); setLegalModalOpen(true); }}
+                className="hover:text-white cursor-pointer transition"
+              >
+                Terms of Use
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => { setLegalInitialTab('ai'); setLegalModalOpen(true); }}
+                className="hover:text-white cursor-pointer transition"
+              >
+                AI Methodology
+              </button>
+              {user && (
+                <>
+                  <span>•</span>
+                  <button
+                    type="button"
+                    onClick={() => { setLegalInitialTab('account'); setLegalModalOpen(true); }}
+                    className="text-rose-400 hover:text-rose-300 cursor-pointer transition"
+                  >
+                    Delete Account
+                  </button>
+                </>
+              )}
+            </div>
+          </footer>
         </main>
       </div>
 
@@ -677,6 +785,15 @@ export default function App() {
         authError={authError}
         setAuthError={setAuthError}
         onSubmit={handleAuth}
+      />
+
+      {/* ─── 08. LEGAL & COMPLIANCE MODAL ────────────────────────────────── */}
+      <LegalModal
+        isOpen={legalModalOpen}
+        onClose={() => setLegalModalOpen(false)}
+        initialTab={legalInitialTab}
+        currentUser={user}
+        onDeleteAccount={handleDeleteAccount}
       />
     </div>
   );
