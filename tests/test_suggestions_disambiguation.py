@@ -35,3 +35,25 @@ def test_llm_spellfix_fallback():
     res = resolve_misspelled_creator_with_llm("veratasium")
     assert len(res) > 0
     assert "veritasium" in res[0]["name"].lower()
+
+
+def test_vast_catalog_and_dynamic_expansion():
+    from parallel.suggestions import get_all_candidate_creators, register_analyzed_creator
+    candidates = get_all_candidate_creators()
+    # Ensure catalog is vast (over 150 verified creators)
+    assert len(candidates) >= 150
+
+    # Ensure 1-letter dynamic prefix works accurately
+    m_matches = find_similar_creators("m")
+    assert len(m_matches) > 0
+    assert all(m["name"].lower().startswith("m") for m in m_matches)
+
+    # Test dynamic registration of a new creator
+    initial_count = len(get_all_candidate_creators())
+    register_analyzed_creator("TestNewCreatorXYZ", "Gaming & AI")
+    new_candidates = get_all_candidate_creators()
+    assert len(new_candidates) >= initial_count
+    found = [c for c in new_candidates if c["name"] == "TestNewCreatorXYZ"]
+    assert len(found) == 1
+    assert found[0]["niche"] == "Gaming & AI"
+

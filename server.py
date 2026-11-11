@@ -31,7 +31,9 @@ from parallel.profiles import (
 from parallel.clone_intel import (
     get_style_dna, get_video_blueprint, get_piracy_ideas, generate_unified_clone_dossier
 )
-from parallel.suggestions import find_similar_creators, resolve_misspelled_creator_with_llm
+from parallel.suggestions import (
+    find_similar_creators, resolve_misspelled_creator_with_llm, register_analyzed_creator
+)
 from parallel.intelligence import generate_creator_intelligence
 
 app = FastAPI(title="Parallel API & Creator OS", version="2.4.0")
@@ -257,6 +259,10 @@ def api_analyze(req: AnalyzeRequest):
 
         t_profile = intel.get("creator_profile", {})
         t_niche = t_profile.get("core_niche", niche or "Digital Content")
+        try:
+            register_analyzed_creator(creator, t_niche)
+        except Exception as _e:
+            logger.warning(f"Failed to dynamically register creator: {_e}")
         t_creator_vids = intel.get("creator_videos", [])
         t_niche_vids = intel.get("niche_trending_videos", [])
 
