@@ -131,6 +131,10 @@ export default function App() {
   const [comparisonCreator, setComparisonCreator] = useState('');
   const [niche, setNiche] = useState('');
   const [suggestions, setSuggestions] = useState([]);
+  const [disambiguationOpen, setDisambiguationOpen] = useState(false);
+  const [similarSuggestions, setSimilarSuggestions] = useState([]);
+  const [typedQuery, setTypedQuery] = useState('');
+  const [resolvingSpelling, setResolvingSpelling] = useState(false);
   const [loading, setLoading] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [statusStep, setStatusStep] = useState(1);
@@ -347,9 +351,11 @@ export default function App() {
   };
 
   // Analyze action
-  const handleAnalyze = async () => {
-    const target = creatorName.trim();
+  // Core analysis execution
+  const executeAnalysis = async (targetCreator, targetNiche = null) => {
+    const target = (targetCreator || creatorName).trim();
     if (!target) return;
+    const finalNiche = (targetNiche !== null ? targetNiche : niche).trim();
 
     setLoading(true);
     setErrorBanner('');
@@ -386,7 +392,7 @@ export default function App() {
         body: JSON.stringify({
           creator_name: target,
           comparison_creator: comparisonCreator.trim(),
-          niche: niche.trim(),
+          niche: finalNiche,
           username: user || ''
         })
       });
@@ -408,6 +414,72 @@ export default function App() {
       setLoading(false);
       setStatusText('');
     }
+  };
+
+  // Smart Pre-Check: Checks spelling / exact match and prompts user if misspelled
+  const handleAnalyze = async () => {
+    const target = creatorName.trim();
+    if (!target) return;
+
+    setResolvingSpelling(true);
+    setTypedQuery(target);
+
+    try {
+      // 1. Check local creator catalog for exact or fuzzy matches
+      const sugRes = await fetch(`/api/creators/suggest?query=${encodeURIComponent(target)}`);
+      const sugData = sugRes.ok ? await sugRes.json() : { suggestions: [] };
+      const sugs = sugData.suggestions || [];
+
+      // Check if user's input is an exact match (case-insensitive)
+      const exactMatch = sugs.find(s => s.is_exact || s.name.toLowerCase() === target.toLowerCase());
+
+      if (exactMatch) {
+        // Exact match found! Proceed directly
+        setResolvingSpelling(false);
+        setSuggestions([]);
+        executeAnalysis(exactMatch.name, exactMatch.niche || niche);
+        return;
+      }
+
+      // If not an exact match, gather similar creator suggestions
+      let candidates = sugs.filter(s => s.score >= 0.45);
+
+      // If local score is low (<0.70) or no matches, query LLM spellfix
+      if (candidates.length === 0 || (candidates[0] && candidates[0].score < 0.70)) {
+        try {
+          const spellRes = await fetch(`/api/creators/spellfix?query=${encodeURIComponent(target)}`);
+          if (spellRes.ok) {
+            const spellData = await spellRes.json();
+            const aiSugs = spellData.suggestions || [];
+            const seen = new Set(candidates.map(c => c.name.toLowerCase()));
+            for (const as of aiSugs) {
+              if (as.name && !seen.has(as.name.toLowerCase())) {
+                candidates.unshift(as);
+                seen.add(as.name.toLowerCase());
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("LLM spellfix check:", e);
+        }
+      }
+
+      setResolvingSpelling(false);
+
+      if (candidates.length > 0) {
+        // Misspelled or similar creator found! Show disambiguation modal so user can choose
+        setSimilarSuggestions(candidates);
+        setDisambiguationOpen(true);
+        setSuggestions([]);
+        return;
+      }
+    } catch (err) {
+      console.warn("Spelling check error:", err);
+      setResolvingSpelling(false);
+    }
+
+    // If no suggestions found at all, proceed with typed query directly
+    executeAnalysis(target);
   };
 
 
@@ -948,7 +1020,12 @@ export default function App() {
               disabled={loading || !creatorName.trim()}
               className={`w-full py-3 px-6 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${th.btnPrimary} disabled:opacity-50`}
             >
-              {loading ? (
+              {resolvingSpelling ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Checking creator match &amp; spelling...</span>
+                </>
+              ) : loading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   <span>Analyzing Creator &amp; Reverse-Engineering Formula...</span>
@@ -2271,6 +2348,210 @@ export default function App() {
           )}
         </main>
       </div>
+
+            {/* ─── SIMILAR CREATOR DISAMBIGUATION MODAL ───────────────────────── */}
+      {disambiguationOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-popover">
+          <div className={`relative w-full max-w-lg rounded-2xl border p-6 shadow-2xl flex flex-col ${th.modalBg} overflow-hidden space-y-4 border-amber-500/30`}>
+            {/* Header */}
+            <div className="flex items-start justify-between pb-3 border-b border-zinc-800">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
+                    <AlertCircle className="w-4 h-4" />
+                  </div>
+                  <h3 className={`font-heading font-extrabold text-base ${th.textPrimary}`}>
+                    Did You Mean This Creator?
+                  </h3>
+                </div>
+                <p className={`text-xs ${th.textSecondary}`}>
+                  No exact match found for <strong className="text-amber-400">"{typedQuery}"</strong>. Please select the creator you meant to analyze:
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDisambiguationOpen(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* List of Similar Creators */}
+            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+              {similarSuggestions.map((s, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    setCreatorName(s.name);
+                    if (s.niche) setNiche(s.niche);
+                    setDisambiguationOpen(false);
+                    executeAnalysis(s.name, s.niche || niche);
+                  }}
+                  className={`p-3.5 rounded-xl border border-zinc-800 hover:border-indigo-500/50 bg-zinc-900/60 hover:bg-indigo-500/5 transition cursor-pointer flex items-center justify-between gap-3 group`}
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-bold text-sm text-zinc-100 group-hover:text-indigo-400 transition`}>
+                        {s.name}
+                      </span>
+                      {s.score && (
+                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                          {Math.round(s.score * 100)}% Match
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-zinc-400 block">
+                      {s.niche || 'Digital Content'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1 shadow-sm"
+                  >
+                    <span>Select &amp; Analyze</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Fallback Option */}
+            <div className="pt-3 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs">
+              <span className="text-zinc-500 text-[11px]">New, obscure, or unlisted creator?</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setDisambiguationOpen(false);
+                  executeAnalysis(typedQuery, niche);
+                }}
+                className="w-full sm:w-auto px-3.5 py-1.5 rounded-lg border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white transition font-medium text-xs cursor-pointer"
+              >
+                Analyze "{typedQuery}" anyway ➔
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── COSMITUDE BRIDGE STORE / CLOUD HISTORY MODAL ─────────────── */}
+      {bridgeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-popover">
+          <div className={`relative w-full max-w-2xl max-h-[85vh] rounded-2xl border p-6 shadow-2xl flex flex-col ${th.modalBg} overflow-hidden`}>
+            {/* Modal Header */}
+            <div className="flex items-start justify-between pb-4 border-b border-zinc-800">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
+                    <Cloud className="w-4 h-4" />
+                  </div>
+                  <h3 className={`font-heading font-extrabold text-base ${th.textPrimary}`}>
+                    Cosmitude Bridge History &amp; User Store
+                  </h3>
+                </div>
+                <p className={`text-xs ${th.textSecondary}`}>
+                  Isolated cloud storage and synchronization under Cosmitude forum set <strong>{bridgeStoreData?.bridge_set || `Set_${user}`}</strong>.
+                </p>
+              </div>
+              <button
+                onClick={() => setBridgeModalOpen(false)}
+                className={`p-1.5 rounded-lg text-zinc-400 hover:text-white transition cursor-pointer`}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Set & Sync Status Badge */}
+            <div className="my-3 p-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5 flex items-center justify-between text-xs">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-mono text-zinc-400 uppercase font-bold">Bridge Isolated Namespace</span>
+                <div className="font-mono font-bold text-indigo-400">{bridgeStoreData?.bridge_set || `Set_${user}`}</div>
+              </div>
+              <div className="text-right space-y-0.5">
+                <span className="text-[10px] font-mono text-zinc-400 uppercase font-bold">Set Status</span>
+                <div className="flex items-center gap-1.5 justify-end text-emerald-400 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>{bridgeStoreData?.bridge_sync?.status === 'active' ? 'Active on Bridge' : 'Provisioned'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Stored Sessions Content */}
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 py-2">
+              {loadingBridgeStore ? (
+                <div className="text-center py-12 text-zinc-400 text-xs">
+                  <RefreshCw className="w-5 h-5 mx-auto animate-spin mb-2 text-indigo-500" />
+                  Loading stored Bridge dossiers...
+                </div>
+              ) : !bridgeStoreData?.bridge_store || Object.keys(bridgeStoreData.bridge_store).length === 0 ? (
+                <div className="text-center py-12 space-y-2 text-zinc-400 text-xs border border-dashed border-zinc-800 rounded-xl">
+                  <Database className="w-8 h-8 mx-auto opacity-30 text-indigo-400" />
+                  <p className="font-semibold text-zinc-300">No Dossiers Stored Yet in Bridge Store</p>
+                  <p className="text-[11px] text-zinc-500 max-w-sm mx-auto">
+                    When you analyze creators while signed in as @{user}, your dossiers and style blueprints are stored here and synced to Cosmitude Bridge.
+                  </p>
+                </div>
+              ) : (
+                Object.entries(bridgeStoreData.bridge_store).map(([creatorKey, sessions]) => (
+                  <div key={creatorKey} className={`border rounded-xl p-4 space-y-3 ${th.cardInner}`}>
+                    <div className="flex items-center justify-between">
+                      <h4 className={`font-bold text-sm ${th.textPrimary} capitalize`}>
+                        {creatorKey.replace(/_/g, ' ')}
+                      </h4>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                        {Array.isArray(sessions) ? `${sessions.length} Session(s)` : '1 Session'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {(Array.isArray(sessions) ? sessions : [sessions]).map((s, sIdx) => (
+                        <div key={s.session_id || sIdx} className="p-3 rounded-lg bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-between gap-3 text-xs">
+                          <div className="space-y-1 truncate">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-zinc-200">{s.niche || 'Digital Content'}</span>
+                              {s.comparison_creator && (
+                                <span className="text-[10px] text-zinc-400">vs {s.comparison_creator}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-mono">
+                              <span>Saved: {s.stored_at ? new Date(s.stored_at).toLocaleDateString() : 'Recent'}</span>
+                              <span>•</span>
+                              <span>{s.content_ideas_count || 0} Ideas</span>
+                              <span>•</span>
+                              <span>{s.hooks_generated || 0} Hooks</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleLoadCached(s.creator_name, s.comparison_creator || '');
+                              setBridgeModalOpen(false);
+                            }}
+                            className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition cursor-pointer"
+                          >
+                            Restore Run ↗
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-4 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
+              <span className="font-mono text-[11px]">Synced with Cosmitude Bridge Gateway</span>
+              <button
+                onClick={() => setBridgeModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-zinc-700 hover:bg-zinc-800 text-zinc-300 font-medium cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── AUTHENTICATION MODAL ──────────────────────────────────────────── */}
       {authModalOpen && (
