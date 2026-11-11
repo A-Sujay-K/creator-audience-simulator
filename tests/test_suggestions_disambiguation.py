@@ -57,3 +57,25 @@ def test_vast_catalog_and_dynamic_expansion():
     assert len(found) == 1
     assert found[0]["niche"] == "Gaming & AI"
 
+
+def test_obscure_creator_and_specific_niche_resolution():
+    # User query: 'bulletstrins' (lesser-known / obscure creator)
+    sugs = find_similar_creators("bulletstrins")
+    assert len(sugs) > 0
+    top = sugs[0]
+
+    # Universal Creator Recognition: The entered creator is directly recognized
+    assert top["name"] == "Bulletstrins"
+    assert top["is_exact"] is True
+
+    # Specific Niche (never generic 'YouTube / Digital Content')
+    assert "High-Speed Rail" in top["niche"] or "Transportation" in top["niche"] or "Modeling" in top["niche"]
+    assert "digital content" not in top["niche"].lower()
+    assert "youtube" not in top["niche"].lower()
+
+    # Similar alternatives also have specific niches
+    for s in sugs:
+        assert "digital content" not in s["niche"].lower()
+        assert "youtube" not in s["niche"].lower()
+
+

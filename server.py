@@ -32,7 +32,7 @@ from parallel.clone_intel import (
     get_style_dna, get_video_blueprint, get_piracy_ideas, generate_unified_clone_dossier
 )
 from parallel.suggestions import (
-    find_similar_creators, resolve_misspelled_creator_with_llm, register_analyzed_creator
+    find_similar_creators, resolve_misspelled_creator_with_llm, register_analyzed_creator, infer_specific_niche
 )
 from parallel.intelligence import generate_creator_intelligence
 
@@ -258,7 +258,8 @@ def api_analyze(req: AnalyzeRequest):
         )
 
         t_profile = intel.get("creator_profile", {})
-        t_niche = t_profile.get("core_niche", niche or "Digital Content")
+        t_raw_niche = t_profile.get("core_niche", niche)
+        t_niche = t_raw_niche if t_raw_niche and "digital content" not in t_raw_niche.lower() else infer_specific_niche(creator)
         try:
             register_analyzed_creator(creator, t_niche)
         except Exception as _e:
