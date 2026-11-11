@@ -4,6 +4,7 @@ import {
   Sliders, ShieldCheck, Sparkles, Award
 } from 'lucide-react';
 import HelpTooltip from './HelpTooltip';
+import ProvenanceBadge from './ProvenanceBadge';
 import { formatCurrencyRange, normalizeCountryDemographics } from '../utils/formatters';
 
 export default function MonetizationAndDemographicsModule({
@@ -32,9 +33,12 @@ export default function MonetizationAndDemographicsModule({
               <DollarSign className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-heading font-black text-xl text-[var(--text-display)]">
-                Sponsorship Price Guide (What Brands Pay)
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-heading font-black text-xl text-[var(--text-display)]">
+                  Sponsorship Price Guide (What Brands Pay)
+                </h3>
+                <ProvenanceBadge type="calculated" label="CALCULATED CPM" size="xs" />
+              </div>
               <p className="text-xs text-[var(--text-muted)] mt-0.5">
                 Market rate-card estimates across dedicated YouTube videos, Instagram Reels, and stories
               </p>
@@ -163,9 +167,12 @@ export default function MonetizationAndDemographicsModule({
               <Globe className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-heading font-black text-xl text-[var(--text-display)]">
-                Audience Demographics &amp; Geographic Distribution
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-heading font-black text-xl text-[var(--text-display)]">
+                  Audience Demographics &amp; Geographic Distribution
+                </h3>
+                <ProvenanceBadge type="estimate" label="AI-ESTIMATE" size="xs" />
+              </div>
               <p className="text-xs text-[var(--text-muted)] mt-0.5">
                 Accurate geographic footprint, age cohort segmentation, and gender breakdown (100% normalized)
               </p>
@@ -250,9 +257,12 @@ export default function MonetizationAndDemographicsModule({
               <Sliders className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-heading font-black text-xl text-[var(--text-display)]">
-                Audience Size &amp; Ad Rates Predictor
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-heading font-black text-xl text-[var(--text-display)]">
+                  Audience Size &amp; Ad Rates Predictor
+                </h3>
+                <ProvenanceBadge type="calculated" label="SIMULATED" size="xs" />
+              </div>
               <p className="text-xs text-[var(--text-muted)] mt-0.5">
                 Simulate potential campaign revenue across variable view delivery and CPM brackets
               </p>

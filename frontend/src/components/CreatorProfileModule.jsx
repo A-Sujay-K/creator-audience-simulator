@@ -4,6 +4,7 @@ import {
   Activity, Calendar, ChevronRight, Award, Zap
 } from 'lucide-react';
 import HelpTooltip from './HelpTooltip';
+import ProvenanceBadge from './ProvenanceBadge';
 import { computeCreatorTier, parseVideoUrl } from '../utils/formatters';
 
 export default function CreatorProfileModule({
@@ -273,9 +274,12 @@ export default function CreatorProfileModule({
         <div className="control-room-card rounded-2xl p-6 sm:p-7 space-y-5 bg-[var(--bg-card)]">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
-              <h3 className="font-heading font-extrabold text-base text-[var(--text-display)]">
-                Top Performing Uploads ({creatorVideos.length} Deconstructed)
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-heading font-extrabold text-base text-[var(--text-display)]">
+                  Top Performing Uploads ({creatorVideos.length} Deconstructed)
+                </h3>
+                <ProvenanceBadge type="verified" label="VERIFIED UPLOADS" size="xs" />
+              </div>
               <p className="text-xs text-[var(--text-muted)] mt-0.5">
                 Inspect proven 3-second opening hooks and why viewer retention held
               </p>
@@ -361,9 +365,10 @@ function VideoPlayerCard({ video }) {
     return (
       <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-[var(--border-hairline)] bg-black shadow-inner">
         <iframe
-          src={`https://www.youtube.com/embed/${parsed.id}?autoplay=1`}
+          src={`https://www.youtube-nocookie.com/embed/${parsed.id}?autoplay=1`}
           className="w-full h-full border-0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          sandbox="allow-scripts allow-same-origin allow-presentation"
           allowFullScreen
           title={video.title || 'YouTube Player'}
         />

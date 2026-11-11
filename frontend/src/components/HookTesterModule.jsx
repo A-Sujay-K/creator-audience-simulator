@@ -1,6 +1,7 @@
 import React from 'react';
 import { Target, RefreshCw, Zap, Share2, CheckCircle, AlertTriangle, Play, Flame } from 'lucide-react';
 import HelpTooltip from './HelpTooltip';
+import ProvenanceBadge from './ProvenanceBadge';
 
 export default function HookTesterModule({
   hooksText,
@@ -23,9 +24,12 @@ export default function HookTesterModule({
             <Target className="w-5 h-5 text-[var(--brand-volt)]" />
           </div>
           <div>
-            <h3 className="font-heading font-black text-xl text-[var(--text-display)]">
-              Video Hook Tester &amp; Retention Waveform
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-heading font-black text-xl text-[var(--text-display)]">
+                Video Hook Tester &amp; Retention Waveform
+              </h3>
+              <ProvenanceBadge type="estimate" label="SYNTHETIC AUDIENCE SIMULATION" size="xs" />
+            </div>
             <p className="text-xs text-[var(--text-muted)] mt-0.5">
               Monte Carlo neural simulation scoring viewer retention and clickbait risk across thousands of viewers
             </p>

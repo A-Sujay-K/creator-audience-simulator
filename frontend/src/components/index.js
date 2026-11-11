@@ -16,3 +16,5 @@ export { default as DisambiguationModal } from './DisambiguationModal';
 export { default as BridgeStoreModal } from './BridgeStoreModal';
 export { default as AuthModal } from './AuthModal';
 export { default as TeleprompterModal } from './TeleprompterModal';
+export { default as ProvenanceBadge } from './ProvenanceBadge';
+export { default as LegalModal } from './LegalModal';
