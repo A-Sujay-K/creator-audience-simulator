@@ -234,12 +234,13 @@ export default function App() {
     sliderTrack: 'accent-blue-600',
   };
 
-  // Suggestion lookup
+  // Dynamic suggestion lookup on every letter input
   useEffect(() => {
-    if (creatorName.trim().length >= 2) {
+    const q = creatorName.trim();
+    if (q.length >= 1) {
       const timer = setTimeout(async () => {
         try {
-          const res = await fetch(`/api/creators/suggest?query=${encodeURIComponent(creatorName.trim())}`);
+          const res = await fetch(`/api/creators/suggest?query=${encodeURIComponent(q)}`);
           if (res.ok) {
             const data = await res.json();
             setSuggestions(data.suggestions || []);
@@ -247,7 +248,7 @@ export default function App() {
         } catch (e) {
           console.error(e);
         }
-      }, 250);
+      }, 40); // 40ms fast debounce for instant responsive typing
       return () => clearTimeout(timer);
     } else {
       setSuggestions([]);
@@ -934,9 +935,13 @@ export default function App() {
                     placeholder="e.g. CarryMinati, MrBeast, Aakash Dhawan"
                     className={`w-full rounded-xl px-3.5 py-2.5 text-xs outline-none transition border font-medium ${th.input}`}
                   />
-                  {/* Autocomplete Suggestions Menu */}
+                  {/* Autocomplete Suggestions Menu — Dynamic & Real Creators Only */}
                   {suggestions.length > 0 && (
-                    <div className={`absolute left-0 right-0 top-full mt-2 border rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto ${th.modalBg}`}>
+                    <div className={`absolute left-0 right-0 top-full mt-2 border rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto ${th.modalBg} border-indigo-500/30`}>
+                      <div className="p-2 border-b border-zinc-800/80 bg-zinc-950/40 flex items-center justify-between text-[10px] font-mono text-zinc-400">
+                        <span>VERIFIED CREATOR MATCHES</span>
+                        <span>CLICK TO AUTO-FILL</span>
+                      </div>
                       {suggestions.map((s, idx) => (
                         <button
                           key={idx}
@@ -946,10 +951,18 @@ export default function App() {
                             if (s.niche) setNiche(s.niche);
                             setSuggestions([]);
                           }}
-                          className={`w-full text-left px-4 py-2.5 text-xs ${th.textSecondary} hover:${th.textPrimary} ${th.cardHover} border-b ${th.border} last:border-0 flex justify-between items-center transition cursor-pointer`}
+                          className={`w-full text-left px-4 py-2.5 text-xs ${th.textSecondary} hover:${th.textPrimary} ${th.cardHover} border-b ${th.border} last:border-0 flex justify-between items-center transition cursor-pointer group`}
                         >
-                          <span className={`font-semibold ${th.textPrimary}`}>{s.name}</span>
-                          <span className={`text-[11px] font-mono ${th.textMuted}`}>{s.niche}</span>
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0 group-hover:scale-125 transition"></span>
+                            <span className={`font-semibold ${th.textPrimary} group-hover:text-indigo-400 transition`}>{s.name}</span>
+                            {s.score && (
+                              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 group-hover:bg-indigo-500/20 group-hover:text-indigo-300">
+                                {Math.round(s.score * 100)}% Match
+                              </span>
+                            )}
+                          </div>
+                          <span className={`text-[11px] font-mono ${th.textMuted} truncate ml-2 max-w-[45%]`}>{s.niche}</span>
                         </button>
                       ))}
                     </div>

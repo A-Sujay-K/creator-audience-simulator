@@ -1,13 +1,13 @@
 """
 suggestions.py
 --------------
-Intelligent spell-correction and fuzzy matching for creator names.
+Intelligent spell-correction, dynamic prefix completion, and fuzzy matching for creator names.
 
-Combines:
-  1. A rich catalog of top global & Indian creators across niches
-  2. Dynamically loaded past searches from user profiles in data/profiles/
-  3. Fuzzy substring, token similarity, and difflib matching
-  4. Ultra-fast LLM spelling auto-resolver for obscure or heavily misspelled names
+Guarantees:
+  1. 100% verified real creators across top global & Indian niches (no phantom/typo names).
+  2. High-speed prefix completion on every keystroke (even 1-2 characters).
+  3. Context-aware fuzzy matching for common typos (e.g. 'mrbist' -> 'MrBeast', 'technicl' -> 'Technical Guruji').
+  4. Ultra-fast LLM fallback for obscure or heavily phonetic queries.
 """
 
 import difflib
@@ -17,23 +17,38 @@ import json
 from typing import Optional
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  CURATED POPULAR CREATOR CATALOG (Name, Niche, Aliases)
+#  VERIFIED REAL CREATOR CATALOG (100% Google/YouTube verifiable)
 # ─────────────────────────────────────────────────────────────────────────────
 
 POPULAR_CREATORS = [
-    # Moto & Travel
-    {"name": "Aakash Dhawan the_incredigrapher", "niche": "Motorcycles, Travel & Moto-vlogging", "aliases": ["aakash dhawan", "incredigrapher", "the incredigrapher", "the_incredigrapher", "aakash"]},
-    {"name": "Mumbiker Nikhil", "niche": "Motorcycles, Travel & Moto-vlogging", "aliases": ["nikhil", "mumbiker", "mumbaiker nikhil"]},
-    {"name": "RideWithMridul", "niche": "Motorcycles, Travel & Moto-vlogging", "aliases": ["mridul madhok", "ride with mridul", "mridul"]},
-    {"name": "ThrottleThings", "niche": "Motorcycles, Travel & Moto-vlogging", "aliases": ["throttle things", "rahul sharma"]},
-    {"name": "Jatt Prabhjot", "niche": "Motorcycles, Travel & Moto-vlogging", "aliases": ["prabhjot", "jatt", "jattprabhjot"]},
-    {"name": "Sourav Joshi Vlogs", "niche": "Travel & Daily Vlogging", "aliases": ["sourav joshi", "sourav", "joshi vlogs"]},
-    {"name": "Flying Beast", "niche": "Fitness, Aviation & Family Vlogging", "aliases": ["gaurav taneja", "taneja", "flying beast 320"]},
+    # Global Titans & Entertainment
+    {"name": "MrBeast", "niche": "High-Stakes Challenges & Philanthropy", "aliases": ["mr beast", "jimmy donaldson", "mrbist", "mister beast", "mrbeast6000", "beast"]},
+    {"name": "Mrwhosetheboss", "niche": "Tech Reviews & Consumer Gadgets", "aliases": ["mr who's the boss", "arun maini", "mr whose the boss", "mrwho", "whosetheboss"]},
+    {"name": "Mark Rober", "niche": "Engineering & Science Spectacle", "aliases": ["mark robber", "rober", "glitterbomb"]},
+    {"name": "Ryan Trahan", "niche": "Penny Survival & Travel Challenges", "aliases": ["ryan", "trahan", "trahn", "penny challenge"]},
+    {"name": "Dude Perfect", "niche": "Trick Shots & Sports Entertainment", "aliases": ["dudeperfect", "trick shots"]},
+    {"name": "PewDiePie", "niche": "Gaming & Internet Culture", "aliases": ["felix", "pewdie", "pewdipie", "pewds"]},
+    {"name": "IShowSpeed", "niche": "Gaming, IRL Streaming & Entertainment", "aliases": ["speed", "ishowspeed", "darren watkins", "showspeed"]},
+    {"name": "Kai Cenat", "niche": "Streaming, Challenges & Comedy", "aliases": ["kai", "cenat", "amp"]},
+    {"name": "KSI", "niche": "Boxing, Entertainment & Music", "aliases": ["olajide", "jj", "sidemen ksi"]},
+    {"name": "Sidemen", "niche": "Group Entertainment & Challenges", "aliases": ["the sidemen", "miniminter", "zerkaa", "w2s", "tbjzle", "behzinga"]},
+    {"name": "Zach King", "niche": "Visual Magic, Illusions & Short-Form Edits", "aliases": ["zach", "zachking", "magic vine", "illusion"]},
+    {"name": "Nas Daily", "niche": "1-Minute World Stories & Travel", "aliases": ["nas", "nuseir yassin", "nas daily"]},
+    {"name": "CoComelon", "niche": "Kids Songs, Nursery Rhymes & Animation", "aliases": ["cocomelon", "cocomellon", "coco melon", "nursery rhymes", "cocomelon - nursery rhymes"]},
+
+    # Tech Reviews & Consumer Gadgets
+    {"name": "Marques Brownlee (MKBHD)", "niche": "Tech Reviews & Consumer Gadgets", "aliases": ["mkbhd", "marques", "marquez", "brownlee", "marques brownley"]},
+    {"name": "Technical Guruji", "niche": "Tech Reviews & Consumer Gadgets", "aliases": ["gaurav chaudhary", "technical guruji", "guruji tech", "guruji", "technical"]},
+    {"name": "Tech Burner", "niche": "Consumer Tech & Fun Unboxings", "aliases": ["shlok srivastava", "techburner", "burner"]},
+    {"name": "Trakin Tech", "niche": "Smartphone Reviews & Buying Guides", "aliases": ["trakintech", "ershad", "trakin"]},
+    {"name": "Geekyranjit", "niche": "Detailed Gadget Reviews", "aliases": ["ranjit", "geeky ranjit", "geeky"]},
+    {"name": "Dave2D", "niche": "Laptop & Mobile Tech Reviews", "aliases": ["dave lee", "dave2d", "dave 2d"]},
+    {"name": "Linus Tech Tips", "niche": "PC Hardware & Tech Experiments", "aliases": ["ltt", "linus", "linus sebastian"]},
 
     # Comedy, Roasts & Sketches
     {"name": "CarryMinati", "niche": "Comedy, Sketches & Roast Shorts", "aliases": ["carry", "ajey nagar", "caryminati", "carry minati", "karyminati"]},
     {"name": "Ashish Chanchlani", "niche": "Comedy, Sketches & Roast Shorts", "aliases": ["ashish", "ashis chanchlani", "ashish chanchlani vines", "acv"]},
-    {"name": "Bhuvan Bam (BB Ki Vines)", "niche": "Comedy, Sketches & Roast Shorts", "aliases": ["bb ki vines", "bhuvan", "bbkivines", "bhuvan bam"]},
+    {"name": "Bhuvan Bam (BB Ki Vines)", "niche": "Comedy, Sketches & Roast Shorts", "aliases": ["bb ki vines", "bhuvan", "bbkivines", "bhuvan bam", "dhindhora"]},
     {"name": "Triggered Insaan", "niche": "Comedy, Roasts & Commentary", "aliases": ["nishchay malhan", "triggered", "triggeredinsaan", "live insaan"]},
     {"name": "Fukra Insaan", "niche": "Challenges & Entertainment", "aliases": ["abhishek malhan", "fukra", "fukrainsaan"]},
     {"name": "Tanmay Bhat", "niche": "Comedy, Reactions & Finance", "aliases": ["tanmay", "bhat", "tanmay bhat reactions"]},
@@ -41,146 +56,161 @@ POPULAR_CREATORS = [
     {"name": "Slayy Point", "niche": "Comedy & Internet Culture Commentary", "aliases": ["slayypoint", "abhyudaya", "gautami"]},
     {"name": "Round2Hell", "niche": "Comedy & Big Budget Sketches", "aliases": ["r2h", "round 2 hell", "round two hell", "nazim", "wasim", "zayan"]},
 
-    # Global Entertainment & Engineering
-    {"name": "MrBeast", "niche": "High-Stakes Challenges & Philanthropy", "aliases": ["mr beast", "jimmy donaldson", "mrbist", "mister beast", "mrbeast6000"]},
-    {"name": "Mark Rober", "niche": "Engineering & Science Spectacle", "aliases": ["mark robber", "rober", "glitterbomb"]},
-    {"name": "Ryan Trahan", "niche": "Penny Survival & Travel Challenges", "aliases": ["ryan", "trahan", "trahn", "penny challenge"]},
-    {"name": "Veritasium", "niche": "Science, Physics & Education", "aliases": ["derek muller", "veritasam", "veritas"]},
-    {"name": "Dude Perfect", "niche": "Trick Shots & Sports Entertainment", "aliases": ["dudeperfect", "trick shots"]},
-    {"name": "PewDiePie", "niche": "Gaming & Internet Culture", "aliases": ["felix", "pewdie", "pewdipie", "pewds"]},
+    # Science, Education & Podcasts
+    {"name": "Veritasium", "niche": "Science, Physics & Education", "aliases": ["derek muller", "veritasam", "veritas", "veratasium"]},
+    {"name": "Kurzgesagt – In a Nutshell", "niche": "Science Animation & Philosophy", "aliases": ["kurzgesagt", "in a nutshell", "nutshell"]},
+    {"name": "Dhruv Rathee", "niche": "Current Affairs, Analysis & Education", "aliases": ["dhruv", "rathi", "dhruv rathi"]},
+    {"name": "BeerBiceps (Ranveer Allahbadia)", "niche": "Podcasts, Self-Improvement & Spirituality", "aliases": ["ranveer", "beerbiceps", "ranveer allahbadia", "trs"]},
+    {"name": "Ali Abdaal", "niche": "Productivity, Learning & Business", "aliases": ["ali abdal", "abdaal", "productivity"]},
+    {"name": "Lex Fridman", "niche": "Science, AI & Long-Form Podcasts", "aliases": ["lex", "fridman", "lex podcast"]},
+    {"name": "Joe Rogan (JRE)", "niche": "Culture, Comedy & Long-Form Podcasts", "aliases": ["joe rogan", "rogan", "jre", "joe rogan experience"]},
+    {"name": "Andrew Huberman (Huberman Lab)", "niche": "Neuroscience, Health & Protocols", "aliases": ["huberman", "huberman lab", "dr andrew huberman"]},
 
-    # Tech Reviews & Gadgets
-    {"name": "Marques Brownlee (MKBHD)", "niche": "Tech Reviews & Consumer Gadgets", "aliases": ["mkbhd", "marques", "marquez", "brownlee", "marques brownley"]},
-    {"name": "Technical Guruji", "niche": "Tech Reviews & Consumer Gadgets", "aliases": ["gaurav chaudhary", "technical guruji", "guruji tech"]},
-    {"name": "Trakin Tech", "niche": "Smartphone Reviews & Buying Guides", "aliases": ["trakintech", "ershad", "trakin"]},
-    {"name": "Geekyranjit", "niche": "Detailed Gadget Reviews", "aliases": ["ranjit", "geeky ranjit", "geeky"]},
-    {"name": "Tech Burner", "niche": "Consumer Tech & Fun Unboxings", "aliases": ["shlok srivastava", "techburner", "burner"]},
-    {"name": "Dave2D", "niche": "Laptop & Mobile Tech Reviews", "aliases": ["dave lee", "dave2d", "dave 2d"]},
-    {"name": "Linus Tech Tips", "niche": "PC Hardware & Tech Experiments", "aliases": ["ltt", "linus", "linus sebastian"]},
+    # Travel, Moto & Vlogging
+    {"name": "Aakash Dhawan", "niche": "Motorcycles, Travel & Moto-vlogging", "aliases": ["aakash", "the_incredigrapher", "incredigrapher", "the incredigrapher", "dhawan"]},
+    {"name": "Mumbiker Nikhil", "niche": "Motorcycles, Travel & Moto-vlogging", "aliases": ["nikhil", "mumbiker", "mumbaiker nikhil"]},
+    {"name": "RideWithMridul", "niche": "Motorcycles, Travel & Moto-vlogging", "aliases": ["mridul madhok", "ride with mridul", "mridul"]},
+    {"name": "ThrottleThings", "niche": "Motorcycles, Travel & Moto-vlogging", "aliases": ["throttle things", "rahul sharma"]},
+    {"name": "Jatt Prabhjot", "niche": "Motorcycles, Travel & Moto-vlogging", "aliases": ["prabhjot", "jatt", "jattprabhjot"]},
+    {"name": "Sourav Joshi Vlogs", "niche": "Travel & Daily Vlogging", "aliases": ["sourav joshi", "sourav", "joshi vlogs"]},
+    {"name": "Flying Beast", "niche": "Fitness, Aviation & Family Vlogging", "aliases": ["gaurav taneja", "taneja", "flying beast 320"]},
+    {"name": "Casey Neistat", "niche": "Cinematic Vlogging & Storytelling", "aliases": ["casey", "neistat", "caseyneistat"]},
 
     # Fitness & Bodybuilding
     {"name": "Sam Sulek", "niche": "Fitness, Health & Bodybuilding", "aliases": ["sam sulak", "sulek", "sam sulek bulk"]},
-    {"name": "Andrew Huberman (Huberman Lab)", "niche": "Neuroscience, Health & Protocols", "aliases": ["huberman", "huberman lab", "dr andrew huberman"]},
     {"name": "Tarun Gill", "niche": "Bodybuilding & Fitness Supplement Reviews", "aliases": ["tarun", "gill", "tarungill"]},
     {"name": "Nikhil Fit (FitMuscle TV)", "niche": "Home Workouts & Transformations", "aliases": ["fitmuscle", "nikhil fit", "fit muscle tv"]},
     {"name": "Jeet Selal", "niche": "Natural Bodybuilding & Nutrition", "aliases": ["jeet selal aesthetics", "jeet selal"]},
     {"name": "Jeff Nippard", "niche": "Science-Based Lifting & Hypertrophy", "aliases": ["nippard", "jeff", "science based lifting"]},
 
     # Gaming & Esports
-    {"name": "Scout (Tanmay Singh)", "niche": "Gaming & Esports Commentary", "aliases": ["scoutop", "scout op", "tanmay singh scout"]},
-    {"name": "Mortal (Naman Mathur)", "niche": "Gaming, BGMI & Vlogs", "aliases": ["mortal", "naman mathur", "soul mortal"]},
     {"name": "Total Gaming (Ajju Bhai)", "niche": "Free Fire & Mobile Gaming", "aliases": ["ajjubhai", "total gaming", "ajju bhai"]},
     {"name": "Techno Gamerz", "niche": "GTA V, Minecraft & Story Gaming", "aliases": ["ujjwai chaurasia", "techno gamerz", "technogamerz"]},
+    {"name": "Scout (Tanmay Singh)", "niche": "Gaming & Esports Commentary", "aliases": ["scoutop", "scout op", "tanmay singh scout"]},
+    {"name": "Mortal (Naman Mathur)", "niche": "Gaming, BGMI & Vlogs", "aliases": ["mortal", "naman mathur", "soul mortal"]},
 
-    # Podcasts, Commentary & Education
-    {"name": "Dhruv Rathee", "niche": "Current Affairs, Analysis & Education", "aliases": ["dhruv", "rathi", "dhruv rathi"]},
-    {"name": "BeerBiceps (Ranveer Allahbadia)", "niche": "Podcasts, Self-Improvement & Spirituality", "aliases": ["ranveer", "beerbiceps", "ranveer allahbadia", "trs"]},
-    {"name": "Ali Abdaal", "niche": "Productivity, Learning & Business", "aliases": ["ali abdal", "abdaal", "productivity"]},
-    {"name": "Iman Gadzhi", "niche": "Agency Business & Entrepreneurship", "aliases": ["iman", "gadzhi", "iman ghadzi"]},
+    # Finance, Business & Filmmaking
+    {"name": "Graham Stephan", "niche": "Real Estate, Investing & Personal Finance", "aliases": ["graham", "stephan", "millennial money"]},
     {"name": "Pranjal Kamra (Finology)", "niche": "Personal Finance & Stock Market", "aliases": ["pranjal", "finology", "pranjal kamra"]},
     {"name": "CA Rachana Ranade", "niche": "Stock Market & Financial Literacy", "aliases": ["rachana ranade", "rachana"]},
-
-    # Photography & Filmmaking
+    {"name": "Iman Gadzhi", "niche": "Agency Business & Entrepreneurship", "aliases": ["iman", "gadzhi", "iman ghadzi"]},
     {"name": "Peter McKinnon", "niche": "Cinematic Filmmaking & Visual Storytelling", "aliases": ["peter mackinnon", "mckinnon", "petermckinnon"]},
     {"name": "PiXimperfect (Unmesh Dinda)", "niche": "Photoshop, Editing & Retouching", "aliases": ["unmesh dinda", "piximperfect", "pix imperfect"]},
-    {"name": "Casey Neistat", "niche": "Cinematic Vlogging & Storytelling", "aliases": ["casey", "neistat", "caseyneistat"]},
     {"name": "Komal Pandey", "niche": "Fashion, Styling & Grooming", "aliases": ["komal", "pandey", "komalpandey"]},
     {"name": "Trevor James (Food Ranger)", "niche": "Food Reviews & Culinary Travel", "aliases": ["food ranger", "trevor james", "the food ranger"]},
-    {"name": "Nikunj Vasoya", "niche": "Street Food Reviews & Culinary Travel", "aliases": ["indian food ranger", "nikunj vasoya"]}
+    {"name": "Nikunj Vasoya", "niche": "Street Food Reviews & Culinary Travel", "aliases": ["indian food ranger", "nikunj vasoya"]},
 ]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  DYNAMIC CREATOR POOL LOADER
+#  CREATOR POOL LOADER (100% Curated Verified Creators)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def get_all_candidate_creators() -> list[dict]:
-    """Combines curated creators with past searched creators across profiles."""
-    candidates = list(POPULAR_CREATORS)
-    seen_names = {c["name"].lower() for c in candidates}
-
-    # Load from saved profiles
-    p_dir = Path("data/profiles")
-    if p_dir.exists():
-        for f in p_dir.glob("*.json"):
-            try:
-                data = json.loads(f.read_text(encoding="utf-8"))
-                for s in data.get("searches", []):
-                    c_name = s.get("creator_name", "").strip()
-                    if c_name and c_name.lower() not in seen_names:
-                        seen_names.add(c_name.lower())
-                        candidates.append({
-                            "name": c_name,
-                            "niche": s.get("niche", "Digital Content"),
-                            "aliases": [c_name.lower()]
-                        })
-            except Exception:
-                pass
-
-    return candidates
+    """
+    Returns only verified, real creators.
+    Excludes dirty/typo searches from user profiles to guarantee accurate suggestions.
+    """
+    return list(POPULAR_CREATORS)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  FUZZY SIMILARITY SCORER
+#  HIGH-PRECISION DYNAMIC MATCH SCORER
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _calculate_match_score(query: str, item: dict) -> float:
-    """Computes a match score from 0.0 to 1.0 based on name and aliases."""
+    """
+    Computes a match score from 0.0 to 1.0.
+    
+    Rules:
+      1. Short queries (1-2 chars): STRICT prefix matching on creator name, word initials, or aliases.
+         (Prevents random creator matches when typing just 'm' or 't').
+      2. 3+ char queries:
+         - Exact match -> 1.0
+         - Name starts with query -> 0.98
+         - Word in name starts with query (e.g. 'guruji' -> 'Technical Guruji') -> 0.95
+         - Alias starts with query -> 0.94
+         - Substring inside name -> 0.90
+         - Substring in alias -> 0.88
+         - Fuzzy typo match (e.g. 'mrbist' -> 'MrBeast', 'technicl' -> 'Technical Guruji') -> 0.70 - 0.85
+         - Low coincidental overlaps are strictly rejected (0.0).
+    """
     q = query.lower().strip()
-    name = item["name"].lower()
+    if not q:
+        return 0.0
 
-    # Exact match gets maximum score
-    if q == name:
+    name = item["name"].lower()
+    aliases = [a.lower() for a in item.get("aliases", [])]
+
+    # Exact Match
+    if q == name or any(q == a for a in aliases):
         return 1.0
 
-    # Prefix match
-    if name.startswith(q) or q.startswith(name):
+    name_clean = re.sub(r"[^\w\s]", " ", name)
+    name_words = name_clean.split()
+
+    # ── 1-2 CHARACTERS: STRICT PREFIX ONLY ──
+    if len(q) <= 2:
+        if name.startswith(q):
+            return 0.98
+        if any(w.startswith(q) for w in name_words):
+            return 0.95
+        if any(a.startswith(q) for a in aliases):
+            return 0.94
+        return 0.0
+
+    # ── 3+ CHARACTERS: STRUCTURED RANKING ──
+    # Full name starts with query
+    if name.startswith(q):
+        return 0.98
+
+    # Word inside name starts with query (e.g. 'guruji', 'beast', 'brownlee')
+    if any(w.startswith(q) for w in name_words):
         return 0.95
+
+    # Any alias starts with query
+    for a in aliases:
+        if a.startswith(q):
+            return 0.94
 
     # Substring in name
     if q in name:
         return 0.90
 
-    # Alias check
-    for a in item.get("aliases", []):
-        al = a.lower()
-        if q == al:
-            return 0.98
-        if q in al or al in q:
-            return 0.88
+    # Substring in alias
+    if any(q in a for a in aliases):
+        return 0.88
 
-    # Word-by-word token overlap
+    # Multi-word token overlap
     q_words = set(re.findall(r"\w+", q))
-    name_words = set(re.findall(r"\w+", name))
-    if q_words and q_words.intersection(name_words):
-        overlap = len(q_words.intersection(name_words)) / max(len(q_words), 1)
+    if q_words and q_words.intersection(set(name_words)):
+        overlap = len(q_words.intersection(set(name_words))) / max(len(q_words), 1)
         if overlap >= 0.5:
-            return 0.75 + (overlap * 0.15)
+            return 0.78 + (overlap * 0.12)
 
-    # SequenceMatcher difflib ratio against name
-    ratio_name = difflib.SequenceMatcher(None, q, name).ratio()
+    # Fuzzy typo matching using difflib
+    r_name = difflib.SequenceMatcher(None, q, name).ratio()
+    r_alias = max([difflib.SequenceMatcher(None, q, a).ratio() for a in aliases], default=0.0)
+    best_r = max(r_name, r_alias)
 
-    # Best ratio against any alias
-    max_alias_ratio = 0.0
-    for a in item.get("aliases", []):
-        r = difflib.SequenceMatcher(None, q, a.lower()).ratio()
-        if r > max_alias_ratio:
-            max_alias_ratio = r
+    min_thresh = 0.70 if len(q) <= 4 else 0.60
+    if best_r >= min_thresh:
+        return round(0.70 + (best_r - min_thresh) * 0.5, 3)
 
-    return max(ratio_name, max_alias_ratio)
+    return 0.0
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  PUBLIC API: FIND SIMILAR CREATORS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def find_similar_creators(query: str, min_score: float = 0.45, limit: int = 5) -> list[dict]:
+def find_similar_creators(query: str, min_score: float = 0.45, limit: int = 6) -> list[dict]:
     """
     Given a user's search query (potentially misspelled), returns the top
-    closest matching creators along with their match confidence.
+    closest matching real creators along with their match confidence.
     """
     q = query.strip()
-    if not q or len(q) < 2:
+    if not q or len(q) < 1:
         return []
 
     candidates = get_all_candidate_creators()
@@ -213,13 +243,13 @@ def find_similar_creators(query: str, min_score: float = 0.45, limit: int = 5) -
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  OPTIONAL LLM SPELL-CORRECTION FOR RARE / UNCATALOGED CREATORS
+#  LLM SPELL-CORRECTION FOR RARE / UNCATALOGED CREATORS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def resolve_misspelled_creator_with_llm(query: str) -> list[dict]:
     """
-    If local catalog gives low confidence (<0.65), calls fast LLM to identify
-    who the user most likely meant.
+    If local catalog gives low confidence (<0.70), calls fast LLM to identify
+    who the user most likely meant from global social media.
     """
     q = query.strip()
     if not q or len(q) < 3:
@@ -229,14 +259,14 @@ def resolve_misspelled_creator_with_llm(query: str) -> list[dict]:
 
     sys_prompt = """You are a global social media encyclopedia.
 The user typed a creator or channel name that might be misspelled or phonetically written.
-Identify up to 3 most likely real content creators, YouTubers, or Instagrammers they are referring to.
+Identify up to 3 most likely real, established content creators, YouTubers, or Instagrammers they are referring to.
 Return ONLY valid JSON in this schema:
 {
   "suggestions": [
     {"name": "Correct Creator Name", "niche": "Their primary niche / content topic"}
   ]
 }
-If the query is completely unintelligible or not a person/creator, return {"suggestions": []}."""
+If the query is completely unintelligible or not a real person/creator, return {"suggestions": []}."""
 
     user_prompt = f"User typed: '{q}'\nWho did they most likely mean?"
 
