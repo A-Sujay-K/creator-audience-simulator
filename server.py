@@ -291,17 +291,18 @@ def api_analyze(req: AnalyzeRequest):
             save_clone_run(username, creator, dossier["style_card"], dossier["blueprints"], dossier["piracy_ideas"])
             save_to_bridge_user_store(username, creator, intel, copy_result, comparison_creator=comp_creator)
             
-            # Programmatically dispatch dossier to user's isolated Set on Cosmitude Bridge
+            # Master Intelligence Dossier is strictly archived to Admin Set ONLY (never to end-users)
             try:
                 import threading
                 from parallel.bridge_client import send_user_dossier
                 threading.Thread(
                     target=send_user_dossier,
                     args=(username, creator, t_niche, copy_result),
+                    kwargs={"target_set": "Set_Admin"},
                     daemon=True
                 ).start()
             except Exception as b_err:
-                logger.warning(f"Failed to async dispatch dossier to Bridge Set: {b_err}")
+                logger.warning(f"Failed to async dispatch dossier to Admin Set: {b_err}")
 
         return {
             "intel": intel,
@@ -454,10 +455,11 @@ def api_calibrate(req: CalibrateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 class HookStudyRequest(BaseModel):
-    hooks_text: str          # raw textarea content "S1: ...\nS2: ...\nS3: ...\nS4: ..."
+    hooks_text: str          # raw textarea content "S1: ...\nS2: ...\nS3: ...\nS4: ...\nS5: ..."
     concept_title: str = ""  # optional override
     creator_tone: str = ""   # optional override
     username: str = ""       # optional, for context
+    target_set: str = "Panel" # target panel or audience set
 
 @app.post("/api/panel/send-hook-study")
 def api_send_hook_study(req: HookStudyRequest):
@@ -483,6 +485,8 @@ def api_send_hook_study(req: HookStudyRequest):
     concept = req.concept_title or first_line
     tone = req.creator_tone or "Creator's Style"
 
+    target_set = req.target_set.strip() if req.target_set and req.target_set.strip() else "Panel"
+
     result = send_hook_study(
         concept_title=concept,
         creator_tone=tone,
@@ -491,8 +495,13 @@ def api_send_hook_study(req: HookStudyRequest):
         s3=hooks.get("S3", ""),
         s4=hooks.get("S4", ""),
         s5=hooks.get("S5", ""),
-        target_set="Panel"
+        target_set=target_set
     )
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=502,
+            detail=f"Bridge dispatch error ({result.get('error_code')}): {result.get('message', 'Failed to broadcast study')}"
+        )
     return result
 
 # ─── STATIC ASSETS & SPA ROUTING ──────────────────────────────────────────────

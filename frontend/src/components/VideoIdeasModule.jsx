@@ -28,7 +28,8 @@ export default function VideoIdeasModule({
     { label: 'INCIDENT / HIGH STAKES', badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
     { label: 'CURIOSITY GAP', badge: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' },
     { label: 'AUDIENCE REACTION', badge: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30' },
-    { label: 'BENCHMARK CHALLENGE', badge: 'bg-amber-500/15 text-amber-400 border-amber-500/30' }
+    { label: 'BENCHMARK CHALLENGE', badge: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+    { label: 'PATTERN INTERRUPT', badge: 'bg-[var(--brand-volt)]/15 text-[var(--brand-volt)] border-[var(--brand-volt)]/30' }
   ];
 
   return (
@@ -184,14 +185,14 @@ export default function VideoIdeasModule({
             </div>
           )}
 
-          {/* 4 Hook Archetypes Matrix */}
+          {/* 5 Hook Archetypes Matrix */}
           <div className="space-y-3 pt-3 border-t border-[var(--border-hairline)]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-muted)] block">
-                4 Tested Opening Hook Styles (First 3 Seconds):
+                5 Tested Opening Hook Styles (First 3 Seconds):
               </span>
               <span className="text-[10px] font-mono text-[var(--text-dim)]">
-                Incident · Curiosity Gap · Audience Reaction · Benchmark Challenge
+                Incident · Curiosity Gap · Audience Reaction · Benchmark Challenge · Pattern Interrupt
               </span>
             </div>
 
@@ -250,16 +251,16 @@ export default function VideoIdeasModule({
               })}
             </div>
 
-            {/* Test All 4 hooks for this specific concept */}
+            {/* Test All 5 hooks for this specific concept */}
             <button
               type="button"
               onClick={() => {
-                const lines = activeConcept.candidate_hooks?.map(h => `${h.sid || 'S1'}: ${h.text}`).join('\n') || '';
+                const lines = activeConcept.candidate_hooks?.map((h, i) => `${h.sid || `S${i + 1}`}: ${h.text}`).join('\n') || '';
                 onSendSingleHookToTester(activeConcept.title, 'ALL', lines);
               }}
               className="mt-2 text-xs font-bold text-[var(--brand-volt)] hover:underline flex items-center gap-1.5 cursor-pointer"
             >
-              <span>Test all 4 opening hooks for Idea #{activeConcept.id || selectedConceptIdx + 1} in Hook Tester</span>
+              <span>Test all 5 opening hooks for Idea #{activeConcept.id || selectedConceptIdx + 1} in Hook Tester</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>

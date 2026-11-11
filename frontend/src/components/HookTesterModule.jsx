@@ -52,10 +52,10 @@ export default function HookTesterModule({
           </div>
 
           <textarea
-            rows={4}
+            rows={5}
             value={hooksText}
             onChange={(e) => setHooksText(e.target.value)}
-            placeholder="S1: Stop scrolling — this single mistake costs you 50% watch time.&#10;S2: I tested 100 opening lines so you never make this mistake."
+            placeholder="S1: Stop scrolling — this single mistake costs you 50% watch time.&#10;S2: I tested 100 opening lines so you never make this mistake.&#10;S3: The audience comments on this controversy are wild.&#10;S4: Every creator tells you to buy this gear. They are lying.&#10;S5: Before they delete this video, watch what broke at 2:15."
             className="w-full rounded-xl p-4 text-xs sm:text-sm outline-none transition border border-[var(--border-hairline)] focus:border-[var(--brand-volt)] bg-[var(--bg-input)] text-[var(--text-primary)] placeholder-[var(--text-dim)] font-mono leading-relaxed"
           />
 

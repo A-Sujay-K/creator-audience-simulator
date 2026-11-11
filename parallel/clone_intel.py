@@ -212,10 +212,11 @@ Given a target creator, their niche, and their top performing content, return ON
       "why_yours_wins": "string (the specific upgrade that makes yours better, max 15 words)",
       "upgrade_angle": "More cinematic | More emotional | Faster paced | More relatable | Bigger stakes | Better data",
       "candidate_hooks": [
-        {"sid": "S1", "text": "string (max 10 words)"},
-        {"sid": "S2", "text": "string (max 10 words)"},
-        {"sid": "S3", "text": "string (max 10 words)"},
-        {"sid": "S4", "text": "string (max 10 words)"}
+        {"sid": "S1", "text": "string (Incident/Action hook, max 10 words)"},
+        {"sid": "S2", "text": "string (Curiosity/Secret hook, max 10 words)"},
+        {"sid": "S3", "text": "string (Shock/Contrarian hook, max 10 words)"},
+        {"sid": "S4", "text": "string (Direct Challenge hook, max 10 words)"},
+        {"sid": "S5", "text": "string (Pattern Interrupt/Wildcard hook, max 10 words)"}
       ],
       "estimated_views": "string (e.g. 🔥 2M - 8M)"
     }
@@ -265,6 +266,7 @@ def _fallback_piracy(competitor_name: str, niche: str) -> dict:
                 {"sid": "S2", "text": f"Day 1 vs Day 30: the {niche} difference is insane."},
                 {"sid": "S3", "text": f"Nobody tells you what {niche} does after a month."},
                 {"sid": "S4", "text": f"I committed to {niche} daily. Here is the result."},
+                {"sid": "S5", "text": f"Pause at Day 14 — this was the exact turning point."}
             ],
             "estimated_views": "🔥 1.5M - 4M"
         },
@@ -278,6 +280,7 @@ def _fallback_piracy(competitor_name: str, niche: str) -> dict:
                 {"sid": "S2", "text": f"Only one expert was right about {niche}."},
                 {"sid": "S3", "text": f"I tested every {niche} expert. One was lying."},
                 {"sid": "S4", "text": f"Experts disagree on {niche}. I found the truth."},
+                {"sid": "S5", "text": f"The final expert’s confession caught our camera team off-guard."}
             ],
             "estimated_views": "🔥 2M - 6M"
         },
@@ -291,6 +294,7 @@ def _fallback_piracy(competitor_name: str, niche: str) -> dict:
                 {"sid": "S2", "text": f"I made a {niche} video with just my phone."},
                 {"sid": "S3", "text": f"Zero budget {niche} vs professional setup — same result?"},
                 {"sid": "S4", "text": f"Does budget actually matter in {niche}? I tested it."},
+                {"sid": "S5", "text": f"Look at these side-by-side frames — you won’t guess which cost ₹0."}
             ],
             "estimated_views": "🔥 1M - 3M"
         },
@@ -304,6 +308,7 @@ def _fallback_piracy(competitor_name: str, niche: str) -> dict:
                 {"sid": "S2", "text": f"I spent 3 months disproving viral {niche} tips."},
                 {"sid": "S3", "text": f"Stop following this {niche} advice. Here is why."},
                 {"sid": "S4", "text": f"Everyone is teaching {niche} wrong. I have proof."},
+                {"sid": "S5", "text": f"Throw this single habit out today before it ruins your progress."}
             ],
             "estimated_views": "🔥 2.5M - 7M"
         },
@@ -317,6 +322,7 @@ def _fallback_piracy(competitor_name: str, niche: str) -> dict:
                 {"sid": "S2", "text": f"What happens when you go unfiltered in {niche}?"},
                 {"sid": "S3", "text": f"I deleted my script and filmed {niche} naturally."},
                 {"sid": "S4", "text": f"Real {niche} content. No cuts. No retakes."},
+                {"sid": "S5", "text": f"Watch what happens when the camera keeps rolling after the scene ended."}
             ],
             "estimated_views": "🔥 1.5M - 5M"
         },
@@ -377,7 +383,8 @@ Given a creator name, niche, and top uploads, return a single valid JSON object:
         {"sid": "S1", "text": "string (Incident/Action hook)"},
         {"sid": "S2", "text": "string (Curiosity/Secret hook)"},
         {"sid": "S3", "text": "string (Shock/Contrarian hook)"},
-        {"sid": "S4", "text": "string (Direct Viewer Challenge hook)"}
+        {"sid": "S4", "text": "string (Direct Viewer Challenge hook)"},
+        {"sid": "S5", "text": "string (Pattern Interrupt/Wildcard hook)"}
       ],
       "estimated_views": "🔥 2M - 5M"
     },
@@ -391,7 +398,8 @@ Given a creator name, niche, and top uploads, return a single valid JSON object:
         {"sid": "S1", "text": "string (Incident/Action hook)"},
         {"sid": "S2", "text": "string (Curiosity/Secret hook)"},
         {"sid": "S3", "text": "string (Shock/Contrarian hook)"},
-        {"sid": "S4", "text": "string (Direct Viewer Challenge hook)"}
+        {"sid": "S4", "text": "string (Direct Viewer Challenge hook)"},
+        {"sid": "S5", "text": "string (Pattern Interrupt/Wildcard hook)"}
       ],
       "estimated_views": "🔥 3M - 8M"
     },
@@ -405,7 +413,8 @@ Given a creator name, niche, and top uploads, return a single valid JSON object:
         {"sid": "S1", "text": "string (Incident/Action hook)"},
         {"sid": "S2", "text": "string (Curiosity/Secret hook)"},
         {"sid": "S3", "text": "string (Shock/Contrarian hook)"},
-        {"sid": "S4", "text": "string (Direct Viewer Challenge hook)"}
+        {"sid": "S4", "text": "string (Direct Viewer Challenge hook)"},
+        {"sid": "S5", "text": "string (Pattern Interrupt/Wildcard hook)"}
       ],
       "estimated_views": "🔥 1.5M - 4M"
     }

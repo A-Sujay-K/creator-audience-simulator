@@ -47,8 +47,10 @@ BRIDGE_ADMIN_USER_ID = os.getenv(
 BRIDGE_MAC = os.getenv("BRIDGE_MAC", "Bridge-Web")
 
 # Template constants for ParallelProduction
-PARALLEL_TEMPLATE_ID = "b5ce3f2d-25ff-58d4-9faa-c81f4756aee4"
-PARALLEL_FID_HOOK_STUDY = "88c26fd7-3eab-670d-7892-ab78542479a2"
+PARALLEL_TEMPLATE_ID = "50cf094f-1e1b-126c-af88-b1156ae65d89"
+PARALLEL_FLOW_FID_HOOK_STUDY = "a3e58f3c-9942-ae1b-6cf2-9a32f801a72e"
+PARALLEL_FORMAT_ID_HOOK_STUDY = "88c26fd7-3eab-670d-7892-ab78542479a2"
+PARALLEL_FID_HOOK_STUDY = PARALLEL_FORMAT_ID_HOOK_STUDY  # Backward compatibility alias
 PARALLEL_FID_USER_DOSSIER = "231d3606-14bc-6a02-da7c-dab9573d3d1a"
 PARALLEL_FID_HOOK_RATING = "fa18cb57-1aed-33af-a91f-4015577554c5"
 
@@ -237,26 +239,28 @@ def send_hook_study(
     forum_id: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Broadcast 4 hooks under ParallelTemplate_ParallelHookStudy to the target audience set (e.g. 'Panel').
+    Broadcast 5 hooks under ParallelTemplate_ParallelHookStudy to the target audience set (e.g. 'Panel').
+    Guarantees all 5 hooks (S1 to S5) are base64-encoded and transmitted to the Bridge human panel.
     """
     target_forum = forum_id or BRIDGE_FORUM_ID
     flow_name = "ParallelTemplate_ParallelHookStudy"
-    fid = PARALLEL_FID_HOOK_STUDY
+    format_id = PARALLEL_FORMAT_ID_HOOK_STUDY
+    flow_fid = PARALLEL_FLOW_FID_HOOK_STUDY
 
     payload_study = {
-        f"{flow_name}_Main-{fid}_2": base64.b64encode(concept_title.encode("utf-8")).decode("utf-8"),
-        f"{flow_name}_Main-{fid}_4": base64.b64encode(creator_tone.encode("utf-8")).decode("utf-8"),
-        f"{flow_name}_Main-{fid}_6": base64.b64encode(s1.encode("utf-8")).decode("utf-8"),
-        f"{flow_name}_Main-{fid}_8": base64.b64encode(s2.encode("utf-8")).decode("utf-8"),
-        f"{flow_name}_Main-{fid}_10": base64.b64encode(s3.encode("utf-8")).decode("utf-8"),
-        f"{flow_name}_Main-{fid}_12": base64.b64encode(s4.encode("utf-8")).decode("utf-8"),
-        f"{flow_name}_Main-{fid}_14": base64.b64encode(s5.encode("utf-8")).decode("utf-8"),
+        f"{flow_name}_Main-{format_id}_2": base64.b64encode(concept_title.encode("utf-8")).decode("utf-8"),
+        f"{flow_name}_Main-{format_id}_4": base64.b64encode(creator_tone.encode("utf-8")).decode("utf-8"),
+        f"{flow_name}_Main-{format_id}_6": base64.b64encode(s1.encode("utf-8")).decode("utf-8"),
+        f"{flow_name}_Main-{format_id}_8": base64.b64encode(s2.encode("utf-8")).decode("utf-8"),
+        f"{flow_name}_Main-{format_id}_10": base64.b64encode(s3.encode("utf-8")).decode("utf-8"),
+        f"{flow_name}_Main-{format_id}_12": base64.b64encode(s4.encode("utf-8")).decode("utf-8"),
+        f"{flow_name}_Main-{format_id}_14": base64.b64encode(s5.encode("utf-8")).decode("utf-8"),
     }
 
     return _send_bridge_raw(
         flow_name=flow_name,
         fields_data=payload_study,
-        fid=fid,
+        fid=flow_fid,
         sent_to=target_set,
         text_count=7,
         forum_id=target_forum
@@ -268,14 +272,15 @@ def send_user_dossier(
     creator_name: str,
     target_niche: str,
     full_dossier: Any,
+    target_set: str = "Set_Admin",
     forum_id: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Save creator intelligence dossier into the user's isolated Set (SentTo = Set_<username>).
+    Save creator intelligence dossier into the Admin Set (SentTo = Set_Admin / Admin).
+    Guarantees that regular users NEVER receive internal technical dossier payloads in their personal sets.
     """
     target_forum = forum_id or BRIDGE_FORUM_ID
     clean_user = "".join(c for c in username.lower().strip() if c.isalnum() or c in "-_")
-    set_name = f"Set_{clean_user}"
     flow_name = "ParallelTemplate_ParallelUserDossier"
     fid = PARALLEL_FID_USER_DOSSIER
 
@@ -292,7 +297,7 @@ def send_user_dossier(
         flow_name=flow_name,
         fields_data=payload_dossier,
         fid=fid,
-        sent_to=set_name,
+        sent_to=target_set,
         text_count=4,
         forum_id=target_forum
     )
@@ -349,9 +354,26 @@ def _send_bridge_raw(
             data={"Data": json.dumps(payload)},
             timeout=15
         )
+        data = {}
+        try:
+            data = r.json()
+        except Exception:
+            pass
+
+        err_code = data.get("ErrorCode") if isinstance(data, dict) else None
+        err_msg = data.get("ErrorMessage") if isinstance(data, dict) else ""
+        
+        # In Cosmitude Bridge:
+        # ErrorCode 1024 = Message successfully posted / saved
+        # ErrorCode 2073 / other = Bridge rejected the flow/data
+        is_ok = (r.status_code == 200) and (err_code == 1024 or (err_code is None and "error" not in r.text.lower()))
+
         return {
-            "success": r.status_code == 200,
+            "success": is_ok,
+            "error_code": err_code,
             "status_code": r.status_code,
+            "message": err_msg or r.text[:200],
+            "bridge_id": err_msg if err_code == 1024 else None,
             "text": r.text[:200]
         }
     except Exception as e:

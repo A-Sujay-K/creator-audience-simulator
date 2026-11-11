@@ -493,6 +493,12 @@ Given the creator dossier, audience demographics, benchmark rival analysis, real
           "archetype": "Contrarian vs Benchmark",
           "text": "string — Spoken opening hook (first 3s): directly disputes the benchmark rival's safe take or popular niche consensus (max 12 words)",
           "hook_technique": "string (why this stops scroll for this audience, max 8 words)"
+        },
+        {
+          "sid": "S5",
+          "archetype": "Pattern Interrupt / Wildcard",
+          "text": "string — Spoken opening hook (first 3s): an extreme visual or conceptual non sequitur that shatters scroll blindness (max 12 words)",
+          "hook_technique": "string (why this stops scroll for this audience, max 8 words)"
         }
       ]
     }
@@ -514,7 +520,7 @@ Hook & Topic Engineering Rules (CRITICAL — strictly enforced):
    - Suggestions and hooks must highlight why the viewer should watch THIS creator instead of their benchmark rival (e.g., raw unfiltered receipts vs the rival's diplomatic/safe sponsor-friendly video).
 5. REAL NICHE TRENDING TOPICS:
    - Ground topics in the actual search findings and niche controversies provided — NEVER fabricate random topics from unrelated industries.
-6. Provide exactly 5 high-potential content suggestions with all 4 distinct hook archetypes each.
+6. Provide exactly 5 high-potential content suggestions with all 5 distinct hook archetypes each (S1 to S5).
 7. Return ONLY valid JSON."""
 
 
@@ -1253,7 +1259,8 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                     {"sid": "S1", "archetype": "Incident / Stakes", "text": f"I bought the exact top-rated {core_niche} product everyone recommends. It failed in 10 minutes.", "hook_technique": "Names immediate product failure with visceral speed."},
                     {"sid": "S2", "archetype": "Curiosity Gap", "text": f"The #1 rule in {core_niche} is actually a marketing lie invented by sponsors.", "hook_technique": "Open-loop mystery that challenges common wisdom."},
                     {"sid": "S3", "archetype": "Audience Reaction / Shock", "text": f"You guys in the comments were 100% right about {core_niche}. It is worse than we thought.", "hook_technique": "Validates viewer comment theories immediately."},
-                    {"sid": "S4", "archetype": "Contrarian vs Benchmark", "text": f"{comp_target or 'Every other creator'} told you this works. Here is the unedited proof it does not.", "hook_technique": "Direct competitive contrast with immediate stakes."}
+                    {"sid": "S4", "archetype": "Contrarian vs Benchmark", "text": f"{comp_target or 'Every other creator'} told you this works. Here is the unedited proof it does not.", "hook_technique": "Direct competitive contrast with immediate stakes."},
+                    {"sid": "S5", "archetype": "Pattern Interrupt / Wildcard", "text": f"Do not spend another rupee on {core_niche} until you see what broke at 3:14.", "hook_technique": "Shatters scroll blindness with specific timecode alert."}
                 ]
             },
             {
@@ -1269,7 +1276,8 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                     {"sid": "S1", "text": f"I put a ₹50,000 setup against a ₹500 thrift item in {core_niche}.", "archetype": "Incident / Stakes", "hook_technique": "Concrete price contrast stops the scroll instantly."},
                     {"sid": "S2", "text": f"Can a blindfolded expert tell the difference between these two {core_niche} outputs?", "archetype": "Curiosity Gap", "hook_technique": "Gamified test hook with viewer participation."},
                     {"sid": "S3", "text": f"The look on their face when the cheapest {core_niche} option won was priceless.", "archetype": "Audience Reaction / Shock", "hook_technique": "Emotional payoff teaser creates irresistible curiosity."},
-                    {"sid": "S4", "text": f"Stop saving up ₹1,00,000 for {core_niche} gear — watch this first.", "archetype": "Contrarian vs Benchmark", "hook_technique": "Direct pocketbook warning saves viewer money."}
+                    {"sid": "S4", "text": f"Stop saving up ₹1,00,000 for {core_niche} gear — watch this first.", "archetype": "Contrarian vs Benchmark", "hook_technique": "Direct pocketbook warning saves viewer money."},
+                    {"sid": "S5", "text": f"We took both into a live studio test and the result offended everyone.", "archetype": "Pattern Interrupt / Wildcard", "hook_technique": "Audience shock interrupt."}
                 ]
             },
             {
@@ -1285,7 +1293,8 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                     {"sid": "S1", "text": f"At 2:14 AM yesterday, the entire {core_niche} community blew up over this.", "archetype": "Incident / Stakes", "hook_technique": "Timestamp urgency implies breaking real-time news."},
                     {"sid": "S2", "text": f"Everyone missed the single detail that proves who was lying in {core_niche}.", "archetype": "Curiosity Gap", "hook_technique": "Detective-style micro-clue hook."},
                     {"sid": "S3", "text": f"The comments on this {core_niche} video are wild — here is what actually happened.", "archetype": "Audience Reaction / Shock", "hook_technique": "Directly references audience comment section frenzy."},
-                    {"sid": "S4", "text": f"{comp_target or 'The main media'} took their side. The actual contract tells the opposite story.", "archetype": "Contrarian vs Benchmark", "hook_technique": "Receipts-driven contrarian challenge."}
+                    {"sid": "S4", "text": f"{comp_target or 'The main media'} took their side. The actual contract tells the opposite story.", "archetype": "Contrarian vs Benchmark", "hook_technique": "Receipts-driven contrarian challenge."},
+                    {"sid": "S5", "text": f"Before they delete the footage, pause right here at 0:42.", "archetype": "Pattern Interrupt / Wildcard", "hook_technique": "Urgent scarcity and pattern break."}
                 ]
             },
             {
@@ -1301,7 +1310,8 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                     {"sid": "S1", "text": f"I have 24 hours to finish this {core_niche} milestone or delete this channel.", "archetype": "Incident / Stakes", "hook_technique": "Ultimate personal stakes with irreversible consequence."},
                     {"sid": "S2", "text": f"Hour 17 of {core_niche}: My gear gave up, and we are 40km from civilization.", "archetype": "Curiosity Gap", "hook_technique": "Mid-crisis cold open hooks attention instantly."},
                     {"sid": "S3", "text": f"I genuinely did not think this {core_niche} stunt would go this wrong.", "archetype": "Audience Reaction / Shock", "hook_technique": "Vulnerable admission of danger or error."},
-                    {"sid": "S4", "text": f"{comp_target or 'Most people'} fake this challenge with off-camera hotels. Not today.", "archetype": "Contrarian vs Benchmark", "hook_technique": "Calls out fake industry trends."}
+                    {"sid": "S4", "text": f"{comp_target or 'Most people'} fake this challenge with off-camera hotels. Not today.", "archetype": "Contrarian vs Benchmark", "hook_technique": "Calls out fake industry trends."},
+                    {"sid": "S5", "text": f"Look at my hands right now — this was hour 19.", "archetype": "Pattern Interrupt / Wildcard", "hook_technique": "Visual proof pattern interrupt."}
                 ]
             },
             {
@@ -1317,7 +1327,8 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                     {"sid": "S1", "text": f"If your {core_niche} routine takes more than 30 minutes, you are wasting 80% of your time.", "archetype": "Incident / Stakes", "hook_technique": "Specific quantitative challenge stops the scroll."},
                     {"sid": "S2", "text": f"The hidden setting in {core_niche} that instantly fixes your results.", "archetype": "Curiosity Gap", "hook_technique": "Quick-fix insider secret triggers instant curiosity."},
                     {"sid": "S3", "text": f"I showed this {core_niche} trick to a 10-year veteran and broke his brain.", "archetype": "Audience Reaction / Shock", "hook_technique": "Social proof of expert shock."},
-                    {"sid": "S4", "text": f"{comp_target or 'Every tutorial'} insists on Step 1. Science proves Step 1 is useless.", "archetype": "Contrarian vs Benchmark", "hook_technique": "Authoritative contrarian myth-busting."}
+                    {"sid": "S4", "text": f"{comp_target or 'Every tutorial'} insists on Step 1. Science proves Step 1 is useless.", "archetype": "Contrarian vs Benchmark", "hook_technique": "Authoritative contrarian myth-busting."},
+                    {"sid": "S5", "text": f"Throw this away immediately if you own one — here is why.", "archetype": "Pattern Interrupt / Wildcard", "hook_technique": "Physical action imperative."}
                 ]
             }
         ]
@@ -1342,13 +1353,14 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
         if not s.get("benchmark_differentiation"):
             s["benchmark_differentiation"] = f"Delivers raw evidence and faster punchlines than {comp_target or 'competitors in this space'}."
 
-        # Ensure all 4 candidate hooks have authentic archetypes
+        # Ensure all 5 candidate hooks have authentic archetypes
         raw_hooks = s.get("candidate_hooks") or []
         archetype_defs = [
             ("Incident / Stakes", "Immediate event naming concrete niche details, brands, or stakes (under 12 words)"),
             ("Curiosity Gap", "Teases a specific insider loophole, secret, or mechanism (under 12 words)"),
             ("Audience Reaction / Shock", "Channels viewer comments, emotional outrage, or collective shock (under 12 words)"),
-            ("Contrarian vs Benchmark", "Disputes the benchmark creator's safe narrative or common myth (under 12 words)")
+            ("Contrarian vs Benchmark", "Disputes the benchmark creator's safe narrative or common myth (under 12 words)"),
+            ("Pattern Interrupt / Wildcard", "Extreme visual or conceptual non sequitur that shatters scroll blindness (under 12 words)")
         ]
 
         valid_hooks = []
@@ -1378,9 +1390,12 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                 elif h_i == 3:
                     h_text = f"Everyone in the comments was furious about this {core_niche} update. Here is why."
                     h_tech = "Channels viewer outrage and active sentiment."
-                else:
+                elif h_i == 4:
                     h_text = f"{comp_target or 'The top creators'} claim this works. The actual receipts say no."
                     h_tech = "Direct competitive challenge with evidence."
+                else:
+                    h_text = f"Before they ban this in {core_niche}, watch what happens at the 2-minute mark."
+                    h_tech = "Pattern interrupt with intense curiosity."
 
             final_hooks.append({
                 "sid": sid,
