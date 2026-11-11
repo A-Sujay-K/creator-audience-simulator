@@ -285,9 +285,10 @@ function BenchmarkPlayer({ refVideo }) {
     return (
       <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-[var(--border-hairline)] bg-black shadow-inner">
         <iframe
-          src={`https://www.youtube.com/embed/${parsed.id}?autoplay=1`}
+          src={`https://www.youtube-nocookie.com/embed/${parsed.id}?autoplay=1`}
           className="w-full h-full border-0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          sandbox="allow-scripts allow-same-origin allow-presentation"
           allowFullScreen
           title={refVideo.title || 'YouTube Benchmark'}
         />
