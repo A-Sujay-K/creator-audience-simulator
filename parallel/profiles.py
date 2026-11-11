@@ -14,13 +14,20 @@ Usage:
 """
 
 import hashlib
+import hmac
 import json
+import os
 import time
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 _PROFILES_DIR = Path("data/profiles")
+
+# Brute-force protection: {username: [timestamps_of_failed_attempts]}
+_FAILED_LOGINS: dict[str, list[float]] = {}
+_LOCKOUT_WINDOW = 900  # 15 minutes lockout window
+_MAX_FAILED_ATTEMPTS = 5
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -35,8 +42,42 @@ def _profile_path(username: str) -> Path:
     return _PROFILES_DIR / f"{safe}.json"
 
 
-def _hash_pin(pin: str) -> str:
-    return hashlib.sha256(pin.strip().encode()).hexdigest()
+def _hash_pin(pin: str, salt: Optional[str] = None) -> Tuple[str, str]:
+    """
+    Hashes PIN using PBKDF2-HMAC-SHA256 with 100,000 iterations and per-user random salt.
+    Returns (hash_hex, salt_hex).
+    """
+    salt_bytes = bytes.fromhex(salt) if salt else os.urandom(16)
+    hashed = hashlib.pbkdf2_hmac(
+        "sha256",
+        pin.strip().encode("utf-8"),
+        salt_bytes,
+        100_000
+    )
+    return hashed.hex(), salt_bytes.hex()
+
+
+def _is_account_locked(username: str) -> Tuple[bool, int]:
+    """Check if an account is locked out. Returns (is_locked, seconds_remaining)."""
+    now = time.time()
+    failures = _FAILED_LOGINS.get(username, [])
+    # Keep only failures within lockout window
+    recent = [t for t in failures if now - t < _LOCKOUT_WINDOW]
+    _FAILED_LOGINS[username] = recent
+    if len(recent) >= _MAX_FAILED_ATTEMPTS:
+        remaining = int(_LOCKOUT_WINDOW - (now - recent[-1]))
+        return True, max(1, remaining)
+    return False, 0
+
+
+def _record_failed_login(username: str) -> None:
+    now = time.time()
+    failures = _FAILED_LOGINS.setdefault(username, [])
+    failures.append(now)
+
+
+def _clear_failed_logins(username: str) -> None:
+    _FAILED_LOGINS.pop(username, None)
 
 
 def _load(username: str) -> dict:
@@ -63,6 +104,11 @@ class WrongPIN(Exception):
 class UsernameTaken(Exception):
     pass
 
+class AccountLocked(Exception):
+    def __init__(self, message: str, retry_after: int):
+        super().__init__(message)
+        self.retry_after = retry_after
+
 
 # ─── Core API ─────────────────────────────────────────────────────────────────
 
@@ -71,7 +117,7 @@ def profile_exists(username: str) -> bool:
 
 
 def create_profile(username: str, pin: str) -> dict:
-    """Create a new user profile and automatically provision an isolated Set on Cosmitude Bridge."""
+    """Create a new user profile with salted PBKDF2 PIN and provision Bridge Set."""
     _ensure_dir()
     if profile_exists(username):
         raise UsernameTaken(f"Username '{username}' is already taken.")
@@ -79,6 +125,9 @@ def create_profile(username: str, pin: str) -> dict:
     clean_user = username.lower().strip()
     set_name = f"Set_{clean_user}"
     
+    # Secure PBKDF2 hash with unique 16-byte random salt
+    pin_hash, salt = _hash_pin(pin)
+
     # Automatically provision isolated Set in Cosmitude Bridge
     bridge_sync = {"set_name": set_name, "status": "pending"}
     try:
@@ -101,7 +150,8 @@ def create_profile(username: str, pin: str) -> dict:
     profile = {
         "username": clean_user,
         "display_name": username.strip(),
-        "pin_hash": _hash_pin(pin),
+        "pin_hash": pin_hash,
+        "salt": salt,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "bridge_set": set_name,
         "bridge_sync": bridge_sync,
@@ -114,11 +164,52 @@ def create_profile(username: str, pin: str) -> dict:
 
 
 def login(username: str, pin: str) -> dict:
-    """Load profile and verify PIN. Returns profile dict on success."""
-    profile = _load(username)
-    if profile["pin_hash"] != _hash_pin(pin):
+    """
+    Load profile and verify PIN with brute-force rate limit protection.
+    Includes seamless backward-compatible upgrade for legacy unsalted profiles.
+    """
+    clean_user = username.lower().strip()
+    locked, remaining = _is_account_locked(clean_user)
+    if locked:
+        raise AccountLocked(
+            f"Account locked due to multiple failed login attempts. Try again in {remaining} seconds.",
+            retry_after=remaining
+        )
+
+    profile = _load(clean_user)
+    salt = profile.get("salt")
+
+    if salt:
+        # Standard PBKDF2 verification
+        cand_hash, _ = _hash_pin(pin, salt=salt)
+        valid = hmac.compare_digest(cand_hash, profile["pin_hash"])
+    else:
+        # Legacy unsalted SHA-256 verification + automatic transparent upgrade
+        legacy_hash = hashlib.sha256(pin.strip().encode("utf-8")).hexdigest()
+        valid = hmac.compare_digest(legacy_hash, profile["pin_hash"])
+        if valid:
+            # Upgrade profile to PBKDF2 + salt immediately
+            new_hash, new_salt = _hash_pin(pin)
+            profile["pin_hash"] = new_hash
+            profile["salt"] = new_salt
+            _save(profile)
+
+    if not valid:
+        _record_failed_login(clean_user)
         raise WrongPIN("Incorrect PIN.")
+
+    _clear_failed_logins(clean_user)
     return profile
+
+
+def delete_profile(username: str) -> bool:
+    """Permanently delete user profile file (compliance / GDPR data deletion)."""
+    p = _profile_path(username)
+    if p.exists():
+        p.unlink()
+        _clear_failed_logins(username.lower().strip())
+        return True
+    return False
 
 
 def get_all_usernames() -> list[str]:
