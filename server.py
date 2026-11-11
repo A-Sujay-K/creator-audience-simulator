@@ -292,17 +292,18 @@ def api_analyze(req: AnalyzeRequest):
             save_to_bridge_user_store(username, creator, intel, copy_result, comparison_creator=comp_creator)
             
             # Master Intelligence Dossier is strictly archived to Admin Set ONLY (never to end-users)
-            try:
-                import threading
-                from parallel.bridge_client import send_user_dossier
-                threading.Thread(
-                    target=send_user_dossier,
-                    args=(username, creator, t_niche, copy_result),
-                    kwargs={"target_set": "Set_Admin"},
-                    daemon=True
-                ).start()
-            except Exception as b_err:
-                logger.warning(f"Failed to async dispatch dossier to Admin Set: {b_err}")
+            if username.lower() == "admin":
+                try:
+                    import threading
+                    from parallel.bridge_client import send_user_dossier
+                    threading.Thread(
+                        target=send_user_dossier,
+                        args=(username, creator, t_niche, copy_result),
+                        kwargs={"target_set": "Set_Admin"},
+                        daemon=True
+                    ).start()
+                except Exception as b_err:
+                    logger.warning(f"Failed to async dispatch dossier to Admin Set: {b_err}")
 
         return {
             "intel": intel,

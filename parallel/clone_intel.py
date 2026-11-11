@@ -452,7 +452,8 @@ def _fallback_head_to_head(creator_a: str, creator_b: str, niche: str) -> dict:
                 {"sid": "S1", "text": f"Stop scrolling — what happens in the next 10 seconds will change how you view {niche}."},
                 {"sid": "S2", "text": f"Hey guys, today we are going to look into an interesting problem in {niche}."},
                 {"sid": "S3", "text": f"Everyone watching {creator_b} gets this wrong. Here is {creator_a}'s formula tested."},
-                {"sid": "S4", "text": f"I took {creator_b}'s biggest video and remade it using {creator_a}'s secret formula."}
+                {"sid": "S4", "text": f"I took {creator_b}'s biggest video and remade it using {creator_a}'s secret formula."},
+                {"sid": "S5", "text": f"Before you watch another {creator_b} video, look at this frame."}
             ]
         }
     }
@@ -556,7 +557,7 @@ def generate_unified_clone_dossier(creator_name: str, niche: str, creator_vids: 
     if not piracy_ideas or len(piracy_ideas) < 2:
         piracy_ideas = fb_piracy.get("piracy_ideas", [])
 
-    # Ensure every piracy idea has at least 4 candidate hooks
+    # Ensure every piracy idea has exactly 5 candidate hooks (S1 – S5)
     for p_idx, p_idea in enumerate(piracy_ideas, start=1):
         p_hooks = p_idea.get("candidate_hooks") or []
         valid_p_hooks = [h for h in p_hooks if isinstance(h, dict) and h.get("text")]
@@ -565,14 +566,15 @@ def generate_unified_clone_dossier(creator_name: str, niche: str, creator_vids: 
             f"I put {p_title} to the ultimate live test — here is what broke first.",
             f"The hidden trick behind {p_title} that nobody in {niche} admits.",
             f"Everyone in the comments called {p_title} impossible. Watch this.",
-            f"Stop wasting time on standard {niche} advice — this changes the result."
+            f"Stop wasting time on standard {niche} advice — this changes the result.",
+            f"Before you watch another {niche} video, look at this frame."
         ]
-        while len(valid_p_hooks) < 4:
+        while len(valid_p_hooks) < 5:
             v_i = len(valid_p_hooks)
             valid_p_hooks.append({"sid": f"S{v_i+1}", "text": p_fallbacks[v_i % len(p_fallbacks)]})
         for h_i, h in enumerate(valid_p_hooks, start=1):
             h["sid"] = f"S{h_i}"
-        p_idea["candidate_hooks"] = valid_p_hooks[:4]
+        p_idea["candidate_hooks"] = valid_p_hooks[:5]
 
     # Head to head comparison extraction
     h2h_data = None

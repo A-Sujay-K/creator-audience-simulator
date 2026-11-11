@@ -987,40 +987,144 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
         "instagram_cadence": ig_cad,
     }
 
-    # Rate Card & Sponsor Projections Grounded in CPM Standards by Tier & Currency
+    # Rate Card & Sponsor Projections — Creator-specific, niche-calibrated, slash-formatted for USD/INR toggle
     rc = intel.get("rate_card_and_sponsors") or {}
     is_india = "india" in str(profile.get("location", "")).lower()
+    core_n = profile.get("core_niche", "Content Creation").lower()
+
+    # ── Niche CPM multiplier (affects rates significantly) ──────────────────
+    # Finance / Investing / Crypto: highest CPM ($18-35)
+    # Tech Reviews / Gadgets / AI: high CPM ($12-25)
+    # Fitness / Health / Nutrition: mid-high CPM ($10-18)
+    # DJ / Music / Events: mid CPM ($5-10)
+    # Entertainment / Comedy / Vlogs: mid CPM ($6-12)
+    # Lifestyle / Fashion / Beauty: mid CPM ($7-14)
+    # Gaming: mid-low CPM ($4-8)
+    if any(k in core_n for k in ["finance", "invest", "crypto", "trading", "stock", "money"]):
+        niche_tier = "finance"
+    elif any(k in core_n for k in ["tech", "gadget", "review", "smartphone", "laptop", "unbox", "ai", "engineering"]):
+        niche_tier = "tech"
+    elif any(k in core_n for k in ["fitness", "health", "gym", "nutrition", "workout", "yoga"]):
+        niche_tier = "fitness"
+    elif any(k in core_n for k in ["dj", "music", "edm", "event", "concert", "festival", "nightlife", "electronic"]):
+        niche_tier = "music"
+    elif any(k in core_n for k in ["fashion", "lifestyle", "beauty", "makeup", "style", "luxury", "travel"]):
+        niche_tier = "lifestyle"
+    elif any(k in core_n for k in ["gaming", "game", "esport", "stream"]):
+        niche_tier = "gaming"
+    else:
+        niche_tier = "general"
+
+    # ── Per-tier, per-niche rate calculation (USD base, then INR at 83x) ───
+    # Rates reflect actual India influencer market + YouTube Brand Partnership norms
+    _usd_to_inr = 83
+
+    def _fmt(usd_min: int, usd_max: int) -> str:
+        """Format as '$X,XXX - $Y,YYY / ₹A.BL - ₹C.DCr' ready for the USD/INR toggle."""
+        inr_min = usd_min * _usd_to_inr
+        inr_max = usd_max * _usd_to_inr
+
+        def _inr_str(v: int) -> str:
+            if v >= 10_000_000:
+                return f"₹{v / 10_000_000:.1f}Cr"
+            if v >= 100_000:
+                return f"₹{v / 100_000:.0f}L"
+            if v >= 1_000:
+                return f"₹{v / 1_000:.0f}K"
+            return f"₹{v}"
+
+        def _usd_str(v: int) -> str:
+            if v >= 1_000_000:
+                return f"${v / 1_000_000:.1f}M"
+            if v >= 1_000:
+                return f"${v:,}"
+            return f"${v}"
+
+        return f"{_usd_str(usd_min)} - {_usd_str(usd_max)} / {_inr_str(inr_min)} - {_inr_str(inr_max)}"
+
+    # Niche multipliers applied on top of tier base rates
+    _niche_mult = {
+        "finance": 1.8,
+        "tech": 1.4,
+        "fitness": 1.2,
+        "lifestyle": 1.1,
+        "music": 0.75,
+        "gaming": 0.65,
+        "general": 1.0,
+    }
+    nm = _niche_mult.get(niche_tier, 1.0)
 
     if "Mega" in tier_label:
-        yt_rate = "₹40L - ₹1.2Cr ($50K - $150K)" if is_india else "$50,000 - $150,000"
-        ig_rate = "₹15L - ₹45L ($18K - $55K)" if is_india else "$20,000 - $60,000"
-        story_rate = "₹3L - ₹10L ($4K - $12K)" if is_india else "$5,000 - $15,000"
+        yt_base = (50_000, 150_000)
+        ig_base = (20_000, 60_000)
+        st_base = (5_000, 15_000)
     elif "Macro" in tier_label:
-        yt_rate = "₹8L - ₹25L ($10K - $30K)" if is_india else "$10,000 - $35,000"
-        ig_rate = "₹3L - ₹10L ($4K - $12K)" if is_india else "$4,000 - $12,000"
-        story_rate = "₹80K - ₹2.5L ($1K - $3K)" if is_india else "$1,000 - $3,500"
+        yt_base = (10_000, 35_000)
+        ig_base = (4_000, 12_000)
+        st_base = (1_000, 3_500)
     elif "Mid" in tier_label:
-        yt_rate = "₹1.5L - ₹6L ($2K - $7.5K)" if is_india else "$2,000 - $8,000"
-        ig_rate = "₹60K - ₹2.5L ($800 - $3K)" if is_india else "$800 - $3,500"
-        story_rate = "₹20K - ₹60K ($250 - $750)" if is_india else "$300 - $1,000"
+        yt_base = (2_000, 8_000)
+        ig_base = (800, 3_500)
+        st_base = (300, 1_000)
     else:  # Micro (< 100K)
-        yt_rate = "₹25K - ₹1L ($300 - $1.2K)" if is_india else "$400 - $1,500"
-        ig_rate = "₹15K - ₹50K ($200 - $600)" if is_india else "$200 - $700"
-        story_rate = "₹5K - ₹15K ($70 - $200)" if is_india else "$100 - $300"
+        yt_base = (400, 1_500)
+        ig_base = (200, 700)
+        st_base = (100, 300)
 
-    rc["est_youtube_rate"] = rc.get("est_youtube_rate") or yt_rate
+    yt_rate  = _fmt(int(yt_base[0] * nm), int(yt_base[1] * nm))
+    ig_rate  = _fmt(int(ig_base[0] * nm), int(ig_base[1] * nm))
+    story_rate = _fmt(int(st_base[0] * nm), int(st_base[1] * nm))
+
+    rc["est_youtube_rate"]        = rc.get("est_youtube_rate")        or yt_rate
     rc["est_instagram_reel_rate"] = rc.get("est_instagram_reel_rate") or ig_rate
-    rc["est_story_rate"] = rc.get("est_story_rate") or story_rate
+    rc["est_story_rate"]          = rc.get("est_story_rate")          or story_rate
 
-    # Dynamic niche brand affinity
-    core_n = profile.get("core_niche", "Content Creation")
+    # ── Niche-specific brand affinity (not generic placeholders) ────────────
+    _brand_map = {
+        "finance":   {
+            "niches": ["Fintech & Investments", "Banking & Credit Cards", "Personal Finance Apps", "Insurance & Wealth Management"],
+            "sponsors": ["Groww", "Zerodha", "CRED", "INDmoney", "Upstox", "Paytm Money", "HDFC Bank", "NordVPN (data security)"]
+        },
+        "tech": {
+            "niches": ["Consumer Electronics", "Mobile & Laptops", "Software & SaaS", "Audio & Peripherals"],
+            "sponsors": ["OnePlus", "Asus ROG", "Samsung", "Apple", "Intel", "Boat Lifestyle", "JBL", "Razer", "Logitech", "NordVPN"]
+        },
+        "fitness": {
+            "niches": ["Sports Nutrition & Supplements", "Activewear & Gym Gear", "Fitness Apps & Wearables", "Health & Wellness"],
+            "sponsors": ["MyProtein", "Optimum Nutrition", "Cult.fit", "Noise (wearables)", "Decathlon", "Puma", "Nike", "Healthkart"]
+        },
+        "music": {
+            "niches": ["DJ Gear & Pro Audio", "Music Streaming", "Lifestyle & Nightlife", "Clothing & Streetwear"],
+            "sponsors": ["Pioneer DJ", "Native Instruments", "Denon DJ", "Spotify", "JBL", "Boat Lifestyle", "Sennheiser", "Audio-Technica", "Puma", "Red Bull"]
+        },
+        "lifestyle": {
+            "niches": ["Fashion & Apparel", "Luxury & Travel", "Beauty & Personal Care", "Food & D2C Brands"],
+            "sponsors": ["Myntra", "Nykaa", "MamaEarth", "Levi's", "H&M", "Airbnb", "MakeMyTrip", "Tata CLiQ Luxury"]
+        },
+        "gaming": {
+            "niches": ["Gaming Peripherals", "Mobile Gaming", "Streaming Tech", "Energy Drinks & Lifestyle"],
+            "sponsors": ["Asus ROG", "Razer", "HyperX", "Logitech G", "Red Bull", "NordVPN", "Discord Nitro", "Steam"]
+        },
+        "general": {
+            "niches": ["Digital Lifestyle Brands", "Consumer Apps", "D2C Products", "Personal Care"],
+            "sponsors": ["Amazon", "Flipkart", "Boat Lifestyle", "Lenskart", "Swiggy/Zomato", "CRED", "Heads Up For Tails"]
+        }
+    }
+
+    brand_data = _brand_map.get(niche_tier, _brand_map["general"])
     if not rc.get("brand_affinity_niches"):
-        rc["brand_affinity_niches"] = [f"{core_n} Brands", "Consumer Tech", "Direct-to-Consumer Lifestyle"]
+        rc["brand_affinity_niches"] = brand_data["niches"]
     if not rc.get("past_or_likely_sponsors"):
-        rc["past_or_likely_sponsors"] = [f"Premium {core_n} Brands", "Relevant Category Sponsors"]
+        rc["past_or_likely_sponsors"] = brand_data["sponsors"]
     if not rc.get("why_brands_partner"):
-        rc["why_brands_partner"] = f"Authentic community trust and high engagement within the {core_n} audience."
+        rc["why_brands_partner"] = (
+            f"Highly engaged niche-specific audience with strong {niche_tier.title()} purchase intent, "
+            f"authentic creator endorsement credibility, and reliable view delivery per upload."
+        )
+
+    # Assign to BOTH keys so frontend always finds it regardless of which key it reads
     intel["rate_card_and_sponsors"] = rc
+    intel["commercial_rate_card"]   = rc
 
     # Demographics Grounded in Detected Location
     demo = intel.get("audience_demographics") or {}

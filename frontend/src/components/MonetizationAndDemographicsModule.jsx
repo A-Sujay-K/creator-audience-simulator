@@ -15,7 +15,7 @@ export default function MonetizationAndDemographicsModule({
 
   if (!intelData) return null;
 
-  const rateCard = intelData.commercial_rate_card || {};
+  const rateCard = intelData.rate_card_and_sponsors || intelData.commercial_rate_card || {};
   const demographics = intelData.audience_demographics || {};
   const normalizedCountries = normalizeCountryDemographics(demographics.top_countries);
 
