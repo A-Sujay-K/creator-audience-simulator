@@ -365,4 +365,185 @@ def query_live_youtube_creators(q: str, limit: int = 5) -> list[dict]:
     return []
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+#  FUZZY & PREFIX MATCH SCORING
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _calculate_match_score(query: str, item: dict) -> float:
+    """
+    Computes a match score from 0.0 to 1.0.
+    """
+    q = query.lower().strip()
+    if not q:
+        return 0.0
+
+    name = item["name"].lower()
+    aliases = [a.lower() for a in item.get("aliases", [])]
+
+    # Exact Match
+    if q == name or any(q == a for a in aliases):
+        return 1.0
+
+    name_clean = re.sub(r"[_\W]+", " ", name)
+    name_words = name_clean.split()
+
+    # 1-2 characters: strict prefix
+    if len(q) <= 2:
+        if name.startswith(q):
+            return 0.98
+        if any(w.startswith(q) for w in name_words):
+            return 0.95
+        if any(a.startswith(q) for a in aliases):
+            return 0.94
+        return 0.0
+
+    # 3+ characters: multi-tier ranking
+    if name.startswith(q):
+        return 0.98
+
+    if any(w.startswith(q) for w in name_words):
+        return 0.95
+
+    for a in aliases:
+        if a.startswith(q):
+            return 0.94
+
+    if q in name:
+        return 0.90
+
+    if any(q in a for a in aliases):
+        return 0.88
+
+    q_words = set(re.findall(r"\w+", q))
+    if q_words and q_words.intersection(set(name_words)):
+        overlap = len(q_words.intersection(set(name_words))) / max(len(q_words), 1)
+        if overlap >= 0.5:
+            return 0.78 + (overlap * 0.12)
+
+    r_name = difflib.SequenceMatcher(None, q, name).ratio()
+    r_alias = max([difflib.SequenceMatcher(None, q, a).ratio() for a in aliases], default=0.0)
+    best_r = max(r_name, r_alias)
+
+    min_thresh = 0.75 if len(q) <= 5 else 0.70
+    if best_r >= min_thresh:
+        return round(0.70 + (best_r - min_thresh) * 0.5, 3)
+
+    return 0.0
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  PUBLIC API: FIND SIMILAR CREATORS (Universal Recognition + Specific Niches)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def find_similar_creators(query: str, min_score: float = 0.45, limit: int = 6) -> list[dict]:
+    """
+    Returns closest matching creators with specific content categories.
+    Universally recognizes any creator (even lesser-known like 'bulletstrins')
+    as a direct candidate so they are NEVER treated as non-existent.
+    """
+    q = query.strip()
+    if not q or len(q) < 1:
+        return []
+
+    clean_user = " ".join(w.capitalize() for w in re.sub(r"[_\W]+", " ", q).split())
+    candidates = get_all_candidate_creators()
+    scored = []
+
+    # Check if user input directly matches any existing catalog item
+    exact_catalog_match = next(
+        (c for c in candidates if c["name"].lower() == q.lower() or any(q.lower() == a for a in c.get("aliases", []))),
+        None
+    )
+
+    for item in candidates:
+        score = _calculate_match_score(q, item)
+        if score >= min_score:
+            niche = item["niche"]
+            scored.append({
+                "name": item["name"],
+                "niche": niche,
+                "score": round(score, 3),
+                "is_exact": (q.lower() == item["name"].lower())
+            })
+
+    best_catalog_score = max([s["score"] for s in scored], default=0.0)
+
+    # ── UNIVERSAL DIRECT CREATOR RECOGNITION ──
+    # If not already an exact match in catalog, present user's entered creator as Direct Candidate!
+    if exact_catalog_match is None and len(q) >= 2:
+        user_specific_niche = infer_specific_niche(clean_user)
+        direct_score = 0.80 if best_catalog_score >= 0.82 else 1.0
+        scored.append({
+            "name": clean_user,
+            "niche": user_specific_niche,
+            "score": direct_score,
+            "is_exact": (direct_score == 1.0),
+            "is_direct_input": True
+        })
+
+    # Sort descending by score
+    scored.sort(key=lambda x: x["score"], reverse=True)
+
+    # Deduplicate by creator name
+    seen = set()
+    dedup = []
+    for item in scored:
+        k = item["name"].lower()
+        if k not in seen:
+            seen.add(k)
+            dedup.append(item)
+            if len(dedup) >= limit:
+                break
+
+    return dedup
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  LLM SPELL-CORRECTION FOR RARE / UNCATALOGED CREATORS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def resolve_misspelled_creator_with_llm(query: str) -> list[dict]:
+    """
+    If local catalog gives low confidence (<0.70), calls fast LLM to identify
+    who the user most likely meant from global social media.
+    """
+    q = query.strip()
+    if not q or len(q) < 3:
+        return []
+
+    from .llm import ask_json, MODEL_FAST
+
+    sys_prompt = """You are a global social media encyclopedia.
+The user typed a creator or channel name that might be misspelled or phonetically written.
+Identify up to 3 most likely real, established content creators, YouTubers, or Instagrammers they are referring to.
+Return ONLY valid JSON in this schema:
+{
+  "suggestions": [
+    {"name": "Correct Creator Name", "niche": "Their specific 3-5 word niche"}
+  ]
+}
+If the query is completely unintelligible, return {"suggestions": []}."""
+
+    user_prompt = f"User typed: '{q}'\nWho did they most likely mean?"
+
+    try:
+        res = ask_json(sys_prompt, user_prompt, MODEL_FAST, max_tokens=180)
+        suggs = res.get("suggestions", [])
+        resolved = []
+        for s in suggs:
+            name = s.get("name")
+            if name:
+                niche = s.get("niche") or infer_specific_niche(name)
+                register_analyzed_creator(name, niche, [name.lower()])
+                resolved.append({
+                    "name": name,
+                    "niche": niche,
+                    "score": 0.85,
+                    "is_exact": False
+                })
+        return resolved
+    except Exception:
+        return []
+
+
 

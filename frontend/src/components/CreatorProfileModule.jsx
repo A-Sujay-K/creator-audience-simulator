@@ -21,16 +21,36 @@ export default function CreatorProfileModule({
   const creatorVideos = intelData.creator_videos || [];
   const h2h = copyData?.head_to_head || null;
 
-  const tier = computeCreatorTier(profile.tier, metrics.total_reach);
+  const getMetricDisplay = (val) => {
+    if (!val) return { display: 'Unavailable', isAvailable: false, reason: 'Data unavailable' };
+    if (typeof val === 'object' && val !== null) {
+      if (val.status === 'UNAVAILABLE') {
+        return { display: 'Unavailable', isAvailable: false, reason: val.reason || 'Metric unavailable' };
+      }
+      return { display: val.value != null ? String(val.value) : 'Unavailable', isAvailable: val.value != null, reason: val.reason };
+    }
+    return { display: String(val), isAvailable: true, reason: null };
+  };
 
-  // Parse YouTube vs Instagram numbers for proportional split bar
-  const ytStr = metrics.youtube_subscribers || '0';
-  const igStr = metrics.instagram_followers || '0';
-  const ytNum = parseFloat(ytStr.replace(/[^0-9.]/g, '')) * (ytStr.includes('M') ? 1000000 : ytStr.includes('K') ? 1000 : 1);
-  const igNum = parseFloat(igStr.replace(/[^0-9.]/g, '')) * (igStr.includes('M') ? 1000000 : igStr.includes('K') ? 1000 : 1);
-  const totalAudience = ytNum + igNum || 1;
-  const ytPercent = Math.round((ytNum / totalAudience) * 100) || 85;
-  const igPercent = 100 - ytPercent;
+  const ytMetric = getMetricDisplay(metrics.youtube_subscribers);
+  const igMetric = getMetricDisplay(metrics.instagram_followers);
+  const reachMetric = getMetricDisplay(metrics.total_reach);
+  const engMetric = getMetricDisplay(metrics.engagement_rate);
+
+  const tier = computeCreatorTier(profile.tier, reachMetric.isAvailable ? reachMetric.display : null);
+
+  let ytNum = 0;
+  let igNum = 0;
+  if (ytMetric.isAvailable) {
+    ytNum = parseFloat(ytMetric.display.replace(/[^0-9.]/g, '')) * (ytMetric.display.includes('M') ? 1000000 : ytMetric.display.includes('K') ? 1000 : 1) || 0;
+  }
+  if (igMetric.isAvailable) {
+    igNum = parseFloat(igMetric.display.replace(/[^0-9.]/g, '')) * (igMetric.display.includes('M') ? 1000000 : igMetric.display.includes('K') ? 1000 : 1) || 0;
+  }
+  const totalAudience = ytNum + igNum;
+  const hasAudienceData = ytMetric.isAvailable || igMetric.isAvailable;
+  const ytPercent = hasAudienceData && totalAudience > 0 ? Math.round((ytNum / totalAudience) * 100) : 0;
+  const igPercent = hasAudienceData && totalAudience > 0 ? 100 - ytPercent : 0;
 
   return (
     <section id="dossier" className="space-y-6">
@@ -126,14 +146,14 @@ export default function CreatorProfileModule({
             <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-[var(--text-muted)]">
               Total Audience Reach
             </span>
-            <span className="w-2 h-2 rounded-full bg-[var(--brand-volt)] shadow-sm shadow-[var(--brand-volt-glow)]"></span>
+            <span className={`w-2 h-2 rounded-full ${reachMetric.isAvailable ? 'bg-[var(--brand-volt)] shadow-sm shadow-[var(--brand-volt-glow)]' : 'bg-zinc-600'}`}></span>
           </div>
           <div className="text-3xl sm:text-4xl font-extrabold telemetry-num text-[var(--brand-volt)] mt-2">
-            {metrics.total_reach || '45M+'}
+            {reachMetric.display}
           </div>
           <div className="text-[11px] text-[var(--text-muted)] mt-1 flex items-center gap-1 font-medium">
-            <Activity className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Cross-platform verified footprint</span>
+            <Activity className="w-3.5 h-3.5 text-zinc-400" />
+            <span>{reachMetric.isAvailable ? 'Cross-platform verified footprint' : reachMetric.reason}</span>
           </div>
         </div>
 
@@ -143,17 +163,25 @@ export default function CreatorProfileModule({
             Platform Distribution
           </span>
           <div className="flex items-center justify-between text-xs font-mono font-bold mt-2">
-            <span className="text-red-400">YouTube {metrics.youtube_subscribers || '—'}</span>
-            <span className="text-pink-400">IG {metrics.instagram_followers || '—'}</span>
+            <span className="text-red-400">YouTube {ytMetric.display}</span>
+            <span className="text-pink-400">IG {igMetric.display}</span>
           </div>
-          <div className="w-full h-2 rounded-full overflow-hidden bg-[var(--bg-card-inner)] border border-[var(--border-hairline)] flex mt-2">
-            <div style={{ width: `${ytPercent}%` }} className="bg-red-500 h-full" title={`YouTube: ${ytPercent}%`} />
-            <div style={{ width: `${igPercent}%` }} className="bg-pink-500 h-full" title={`Instagram: ${igPercent}%`} />
-          </div>
-          <div className="text-[10px] text-[var(--text-dim)] font-mono mt-1.5 flex justify-between">
-            <span>{ytPercent}% YouTube</span>
-            <span>{igPercent}% Instagram</span>
-          </div>
+          {hasAudienceData && totalAudience > 0 ? (
+            <>
+              <div className="w-full h-2 rounded-full overflow-hidden bg-[var(--bg-card-inner)] border border-[var(--border-hairline)] flex mt-2">
+                <div style={{ width: `${ytPercent}%` }} className="bg-red-500 h-full" title={`YouTube: ${ytPercent}%`} />
+                <div style={{ width: `${igPercent}%` }} className="bg-pink-500 h-full" title={`Instagram: ${igPercent}%`} />
+              </div>
+              <div className="text-[10px] text-[var(--text-dim)] font-mono mt-1.5 flex justify-between">
+                <span>{ytPercent}% YouTube</span>
+                <span>{igPercent}% Instagram</span>
+              </div>
+            </>
+          ) : (
+            <div className="mt-2 py-2 px-3 rounded-lg bg-[var(--bg-card-inner)] border border-[var(--border-hairline)] text-[10px] font-mono text-[var(--text-dim)] text-center">
+              Platform metrics unavailable pending API grounding
+            </div>
+          )}
         </div>
 
         {/* Engagement Benchmark */}
@@ -162,11 +190,11 @@ export default function CreatorProfileModule({
             Audience Engagement
           </span>
           <div className="text-3xl font-extrabold telemetry-num text-cyan-400 mt-2">
-            {metrics.engagement_rate || '4.8%'}
+            {engMetric.display}
           </div>
           <div className="text-[11px] text-[var(--text-muted)] mt-1 flex items-center gap-1">
             <Zap className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Top tier viral velocity in {profile.core_niche || 'category'}</span>
+            <span>{engMetric.isAvailable ? `Top tier viral velocity in ${profile.core_niche || 'category'}` : engMetric.reason}</span>
           </div>
         </div>
 
@@ -176,19 +204,11 @@ export default function CreatorProfileModule({
             Upload Cadence
           </span>
           <div className="text-xl font-bold text-[var(--text-primary)] mt-2 truncate">
-            {metrics.youtube_cadence || '3-4 videos/week'}
+            {metrics.youtube_cadence || 'Analysis pending'}
           </div>
-          <div className="flex items-center gap-1.5 mt-2.5">
-            {[true, true, true, false, true, false, true].map((active, idx) => (
-              <span
-                key={idx}
-                className={`w-3.5 h-3.5 rounded-md flex items-center justify-center text-[8px] font-mono font-bold ${
-                  active ? 'bg-[var(--brand-volt)] text-[var(--bg-canvas)]' : 'bg-white/[0.06] text-[var(--text-dim)]'
-                }`}
-              >
-                {['M','T','W','T','F','S','S'][idx]}
-              </span>
-            ))}
+          <div className="text-[11px] text-[var(--text-muted)] mt-2 flex items-center gap-1 font-medium">
+            <Calendar className="w-3.5 h-3.5 text-[var(--text-dim)]" />
+            <span>Upload cadence analysis</span>
           </div>
         </div>
       </div>

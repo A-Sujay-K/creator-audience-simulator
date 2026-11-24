@@ -8,10 +8,18 @@
  * Handles Indian Lakh (L) and Crore (Cr) notation with Intl.NumberFormat.
  */
 export function formatCurrencyRange(amountStr, currency = 'USD') {
-  if (!amountStr) return '—';
+  if (!amountStr) return 'Unavailable';
+
+  if (typeof amountStr === 'object' && amountStr !== null) {
+    if (amountStr.status === 'UNAVAILABLE') {
+      return amountStr.value != null ? String(amountStr.value) : 'Unavailable';
+    }
+    amountStr = amountStr.value;
+    if (!amountStr) return 'Unavailable';
+  }
 
   // If the string already contains a slash (e.g. "$120,000 - $200,000 / ₹1Cr - ₹1.7Cr")
-  if (amountStr.includes('/')) {
+  if (typeof amountStr === 'string' && amountStr.includes('/')) {
     const parts = amountStr.split('/');
     if (currency === 'INR') {
       return parts[1] ? parts[1].trim() : parts[0].trim();
@@ -20,11 +28,11 @@ export function formatCurrencyRange(amountStr, currency = 'USD') {
   }
 
   // If it's already an INR string and currency is INR, return it
-  if (currency === 'INR' && (amountStr.includes('₹') || amountStr.includes('L') || amountStr.includes('Cr'))) {
+  if (currency === 'INR' && typeof amountStr === 'string' && (amountStr.includes('₹') || amountStr.includes('L') || amountStr.includes('Cr'))) {
     return amountStr;
   }
 
-  return amountStr;
+  return String(amountStr);
 }
 
 /**
@@ -51,7 +59,7 @@ export function parseRateRange(rateStr) {
  * Computes an authoritative tier label from subscriber count and raw string
  */
 export function computeCreatorTier(rawTier, reachStr) {
-  const reach = (reachStr || '').toUpperCase();
+  const reach = (typeof reachStr === 'string' ? reachStr : '').toUpperCase();
   if (reach.includes('M')) {
     const val = parseFloat(reach);
     if (val >= 100) return 'Apex Titan (100M+)';
@@ -62,7 +70,7 @@ export function computeCreatorTier(rawTier, reachStr) {
   if (rawTier && !rawTier.toLowerCase().includes('mega (10m+)')) {
     return rawTier;
   }
-  return 'Macro Creator (1M+)';
+  return rawTier || 'Unclassified';
 }
 
 /**
@@ -70,13 +78,8 @@ export function computeCreatorTier(rawTier, reachStr) {
  * by adding an 'Other Regions' remainder.
  */
 export function normalizeCountryDemographics(countries = []) {
-  if (!countries || countries.length === 0) {
-    return [
-      { country: 'United States', share: '45%', percent: 45 },
-      { country: 'India', share: '30%', percent: 30 },
-      { country: 'United Kingdom', share: '12%', percent: 12 },
-      { country: 'Other Regions', share: '13%', percent: 13, isRemainder: true }
-    ];
+  if (!countries || !Array.isArray(countries) || countries.length === 0) {
+    return [];
   }
 
   let total = 0;

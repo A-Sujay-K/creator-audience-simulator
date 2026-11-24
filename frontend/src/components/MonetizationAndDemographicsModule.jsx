@@ -90,7 +90,9 @@ export default function MonetizationAndDemographicsModule({
               {formatCurrencyRange(rateCard.est_youtube_rate, currency)}
             </div>
             <span className="text-[11px] text-[var(--text-dim)] font-mono block">
-              30-60s integrated or dedicated sponsorship
+              {typeof rateCard.est_youtube_rate === 'object' && rateCard.est_youtube_rate?.reason
+                ? rateCard.est_youtube_rate.reason
+                : '30-60s integrated or dedicated sponsorship'}
             </span>
           </div>
 
@@ -102,7 +104,9 @@ export default function MonetizationAndDemographicsModule({
               {formatCurrencyRange(rateCard.est_instagram_reel_rate, currency)}
             </div>
             <span className="text-[11px] text-[var(--text-dim)] font-mono block">
-              High-retention vertical brand integration
+              {typeof rateCard.est_instagram_reel_rate === 'object' && rateCard.est_instagram_reel_rate?.reason
+                ? rateCard.est_instagram_reel_rate.reason
+                : 'High-retention vertical brand integration'}
             </span>
           </div>
 
@@ -114,7 +118,9 @@ export default function MonetizationAndDemographicsModule({
               {formatCurrencyRange(rateCard.est_story_rate, currency)}
             </div>
             <span className="text-[11px] text-[var(--text-dim)] font-mono block">
-              3-frame sequential swipe-up series
+              {typeof rateCard.est_story_rate === 'object' && rateCard.est_story_rate?.reason
+                ? rateCard.est_story_rate.reason
+                : '3-frame sequential swipe-up series'}
             </span>
           </div>
         </div>
