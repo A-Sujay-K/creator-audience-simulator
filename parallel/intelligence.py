@@ -773,22 +773,13 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
         if any(g in primary_topic.lower() for g in generic_topic_markers):
             primary_topic = clean_name  # e.g. "Dev Raiyani" → forces person-specific peer search
 
-        # Lean queries (stays safely under Firecrawl free tier RPM limit)
+        # Lean queries: only creator uploads and verified format themes (criticism and competitor queries purged)
         queries_own = [
             f"{creator_name} site:instagram.com/reel OR site:youtube.com/watch"
         ]
 
-        # Target real domain creators, excluding AI tool promos and generic SaaS walkthroughs
-        peer_queries = [
-            f'"{clean_name}" competitor OR similar "{primary_topic}" site:youtube.com/watch -top10 -compilation -software -saas'
-        ]
-
-        queries_negative = [
-            f"{creator_name} criticism complaints review feedback reddit"
-        ]
-
         queries_trending = [
-            f"{primary_topic} viral trending topic debate reddit OR youtube"
+            f"{primary_topic} viral format trending video youtube"
         ]
 
         def _exec_search(q: str, limit: int = 4):
@@ -798,14 +789,10 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
                 print(f"[intelligence] Search note ({q[:30]}): {e}")
                 return None
 
-        # Execute all 12 search queries in parallel across the network
+        # Execute search tasks in parallel across the network
         all_search_tasks = []
         for qo in queries_own:
             all_search_tasks.append(("own", qo, 4))
-        for pq in peer_queries:
-            all_search_tasks.append(("peer", pq, 4))
-        for qn in queries_negative:
-            all_search_tasks.append(("neg", qn, 3))
         for qt in queries_trending:
             all_search_tasks.append(("trend", qt, 3))
 
