@@ -21,173 +21,8 @@ export default function StyleBlueprintModule({ copyData }) {
     setTimeout(() => setCopiedStep(null), 2000);
   };
 
-  const defaultRoadmap = [
-    {
-      step: 1,
-      title: 'Reverse-Engineer Top Hook',
-      difficulty: 'Easy',
-      time_estimate: '2h',
-      action: `Transcribe the first 3 seconds of ${creatorName}'s top 3 uploads and mirror their exact sentence cadence, tension trigger, and visual cut rate.`,
-      expected_result: '3 battle-tested, production-ready opening hook scripts with director cues matching their retention benchmark.',
-      deliverable: {
-        headline: 'Deconstructed Openings & 3 Ready-to-Record Mirrored Hooks',
-        breakdown: [
-          {
-            label: 'Reverse-Engineered Pattern',
-            text: '[Sensory / Audio Anomaly at 0.5s] + [High-Stakes Constraint or Personal Bet] + [Visual Jump Cut at 1.4s]'
-          },
-          {
-            label: 'Script #1 (High-Stakes Challenge / Drop)',
-            text: '"Watch what happens to this room when I drop this unreleased edit at 130 BPM." (Visual: Extreme close-up of fingers poised over cue button → snap cut to wide crowd shot holding breath).'
-          },
-          {
-            label: 'Script #2 (Curiosity Flip / Insider Secret)',
-            text: '"Nobody believed this acoustic melody could work in a club setting until this transition." (Visual: Split screen comparing original track vs. massive DAW waveform with red drop marker).'
-          },
-          {
-            label: 'Script #3 (Social Jeopardy / Relatable Bet)',
-            text: '"If the crowd doesn’t start jumping in the next 15 seconds, the promoter doesn’t pay for my flight home." (Visual: POV looking over decks into audience, countdown overlay ticking down).'
-          }
-        ]
-      }
-    },
-    {
-      step: 2,
-      title: 'Shot Framing & B-Roll Match',
-      difficulty: 'Medium',
-      time_estimate: '4h',
-      action: 'Film in Close and Medium alternating frames every 3 to 4 seconds to maintain kinetic momentum and eliminate early retention drop-offs.',
-      expected_result: 'Frame-by-frame 60-second visual pacing matrix with focal lengths, camera movements, and audio sync markers.',
-      deliverable: {
-        headline: '0:00–1:00 Dynamic Shot Sequence & Rhythm Matrix',
-        breakdown: [
-          {
-            label: '0:00–0:03 (Scene 1 - Cold Open)',
-            text: 'Extreme Close-Up (ECU, 50mm f/1.8): Fingers slamming cue button on mixer. Micro push-in. SFX: Sub-bass riser building.'
-          },
-          {
-            label: '0:03–0:07 (Scene 2 - Stakes Hook)',
-            text: 'Medium Shot (MS, 24mm f/2.8): Creator looking down lens, headphones around neck, speaking hook. Handheld natural kinetic sway.'
-          },
-          {
-            label: '0:07–0:11 (Scene 3 - Proof / Tension)',
-            text: 'Over-The-Shoulder (OTS, 35mm): Camera whips into glowing screen/hardware meters peaking in the red. SFX: Accelerating snare roll.'
-          },
-          {
-            label: '0:11–0:15 (Scene 4 - Payoff / Atmosphere)',
-            text: 'Wide Shot (WS, 16mm ultra-wide): Low angle, room/stage lighting switch, crowd erupts. SFX: Sub-bass drop hits on 0:11.2.'
-          },
-          {
-            label: '0:15–0:20 (Scene 5 - Micro-Tutorial)',
-            text: 'Close-Up (CU, 35mm): Smooth tilt down from face to knobs adjusting low-pass filter with frequency visualizer graphic.'
-          }
-        ]
-      }
-    },
-    {
-      step: 3,
-      title: 'Thumbnail Specular Contrast',
-      difficulty: 'Easy',
-      time_estimate: '1h',
-      action: `Create a high-contrast thumbnail using ${creatorName}'s visual composition zones, rim-lighting color theory, and 3-word curiosity headline formula.`,
-      expected_result: 'Complete thumbnail design blueprint with exact hex color codes, composition coordinates, and 3 tested headline variations.',
-      deliverable: {
-        headline: 'Thumbnail Production Canvas & 3-Word Headline Formula',
-        breakdown: [
-          {
-            label: 'Composition Power Grid',
-            text: 'Left 45%: High-emotion face cutout with sharp specular rim light. Right 55%: High-contrast curiosity anchor (e.g. glowing DAW waveform with warning sticker or highlighted equipment). Bottom-right clear for timestamp.'
-          },
-          {
-            label: 'Lighting & Color Codes',
-            text: 'Background: Deep Obsidian Navy (#080C14). Specular Rim Light: Electric Volt Lime (#C6FF00) or Hot Cyan (#00F0FF). Key Light: Crisp 5600K Daylight on face.'
-          },
-          {
-            label: 'Tested 3-Word Headlines',
-            text: 'Option A: "THEY WALKED OUT?" | Option B: "WRONG BPM DISASTER" | Option C: "NEVER PLAY THIS"'
-          },
-          {
-            label: 'AI / Designer Prompt',
-            text: '"Cinematic candid photograph of a music producer in dark neon studio, looking at camera in shock, split lighting cyan and warm amber, high specular highlights on headphones, 8k resolution, rule of thirds --ar 16:9"'
-          }
-        ]
-      }
-    },
-    {
-      step: 4,
-      title: 'Mid-Roll Curiosity Loop',
-      difficulty: 'Medium',
-      time_estimate: '3h',
-      action: 'Introduce a secondary question or unexpected technical hurdle at the 50% runtime mark before resolving the opening premise.',
-      expected_result: 'Mid-roll re-hook script and visual pattern interrupt designed to spike retention past the 45-second audience cliff.',
-      deliverable: {
-        headline: '50% Runtime Retention Re-Hook Script & Audio Freeze',
-        breakdown: [
-          {
-            label: 'The Retention Cliff',
-            text: 'Audience retention naturally dips 35-40% at midpoint when viewers assume the outcome is predictable. This script prevents that drop.'
-          },
-          {
-            label: 'The Audio/Visual Freeze (At 50% Mark)',
-            text: 'Audio cuts to dead silence with a 1.2s room reverb tail. Camera crash-zooms into creator freezing with hands in the air.'
-          },
-          {
-            label: 'The Spoken Re-Hook Dialogue',
-            text: '"Wait. Right as I was about to play the drop, I realized a fatal problem. If the sound system doesn’t support sub-30Hz frequencies, this whole drop sounds like static. So I had to make an emergency call..."'
-          },
-          {
-            label: 'On-Screen Visual Graphic',
-            text: 'Flashing red diagnostic overlay showing "SUB FREQUENCY CLIPPING DETECTED" to visually validate the emergency stakes.'
-          }
-        ]
-      }
-    },
-    {
-      step: 5,
-      title: 'Community Payoff CTA',
-      difficulty: 'Easy',
-      time_estimate: '30m',
-      action: 'Deliver an open-ended debate question in the final 5 seconds to drive rapid comment engagement velocity in the first hour.',
-      expected_result: '2 high-converting closing scripts and a pre-formatted pinned comment template engineered for algorithmic comment volume.',
-      deliverable: {
-        headline: 'High-Velocity Comment Traps & Pinned Comment Blueprint',
-        breakdown: [
-          {
-            label: 'Closing Script A (The Tribal Debate Trap)',
-            text: '"Be honest in the comments: would you ever drop this vocal over a Jersey beat, or did I ruin a classic? Replying to everyone for the next 60 minutes."'
-          },
-          {
-            label: 'Closing Script B (The Download / Stems Incentive)',
-            text: '"I exported the full stems and Ableton rack. If this gets 500 comments, I’ll drop the Google Drive link in the pinned comment. Which track should I flip next?"'
-          },
-          {
-            label: 'Ready-to-Paste Pinned Comment',
-            text: '"🚨 90% of you said the transition at 0:28 was illegal... but what did you think of the second drop at 0:42? Drop your timestamp rating below (1-10) 👇 (Replying to the first 50 people!)"'
-          }
-        ]
-      }
-    }
-  ];
-
   const rawRoadmap = copyData.blueprints?.[0]?.action_roadmap || copyData.blueprints?.[0]?.steps || copyData.style_card?.clone_roadmap;
-  
-  // Merge default deliverables into roadmap steps if raw data lacks detailed deliverables
-  const roadmap = defaultRoadmap.map((defStep, idx) => {
-    if (rawRoadmap && rawRoadmap[idx]) {
-      const raw = rawRoadmap[idx];
-      return {
-        ...defStep,
-        step: raw.step || defStep.step,
-        title: raw.title || defStep.title,
-        action: raw.action || defStep.action,
-        difficulty: raw.difficulty || defStep.difficulty,
-        time_estimate: raw.time_estimate || defStep.time_estimate,
-        expected_result: raw.expected_result || defStep.expected_result,
-        deliverable: raw.deliverable || defStep.deliverable
-      };
-    }
-    return defStep;
-  });
+  const roadmap = Array.isArray(rawRoadmap) ? rawRoadmap : [];
 
   return (
     <div className="space-y-6">
@@ -278,22 +113,33 @@ export default function StyleBlueprintModule({ copyData }) {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-heading font-black text-lg text-[var(--text-display)]">
-                5-Step Action Plan to Replicate Their Success
+                {roadmap.length > 0 ? `${roadmap.length}-Step Action Plan` : 'Action Plan'}
               </h3>
-              <span className="px-2 py-0.5 rounded-full bg-[var(--brand-volt)]/10 text-[var(--brand-volt)] text-[10px] font-mono font-bold uppercase border border-[var(--brand-volt)]/20">
-                Done-For-You Deliverables
-              </span>
+              {roadmap.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-[var(--brand-volt)]/10 text-[var(--brand-volt)] text-[10px] font-mono font-bold uppercase border border-[var(--brand-volt)]/20">
+                  Execution Steps
+                </span>
+              )}
             </div>
             <p className="text-xs text-[var(--text-muted)] mt-0.5">
-              Complete production directives paired with the exact generated end results ready to execute immediately.
+              Production directives grounded in the creator's verified format.
             </p>
           </div>
-          <span className="font-mono text-xs text-[var(--brand-volt)] font-bold">
-            {roadmap.length} Production Deliverables
-          </span>
+          {roadmap.length > 0 && (
+            <span className="font-mono text-xs text-[var(--brand-volt)] font-bold">
+              {roadmap.length} Steps
+            </span>
+          )}
         </div>
 
-        <div className="space-y-4">
+        {roadmap.length === 0 ? (
+          <div className="p-8 text-center rounded-xl bg-[var(--bg-card-inner)] border border-[var(--border-hairline)] space-y-2">
+            <Layers className="w-8 h-8 mx-auto text-[var(--text-dim)]" />
+            <p className="text-sm font-semibold text-[var(--text-secondary)]">Action Roadmap Not Available</p>
+            <p className="text-xs text-[var(--text-muted)]">No verified execution roadmap was returned for this creator profile.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
           {roadmap.map((step, sIdx) => {
             const isOpen = expandedStep === sIdx;
             const diffColor = 
@@ -336,7 +182,7 @@ export default function StyleBlueprintModule({ copyData }) {
                           {step.difficulty || 'Medium'}
                         </span>
                         <span className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold uppercase flex items-center gap-1">
-                          <CheckCircle2 className="w-2.5 h-2.5" /> Output Ready
+                          <CheckCircle2 className="w-2.5 h-2.5" /> Action Item
                         </span>
                       </div>
                       <div className="text-xs text-[var(--text-muted)] truncate mt-1">
@@ -434,6 +280,7 @@ export default function StyleBlueprintModule({ copyData }) {
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );
