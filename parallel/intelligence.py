@@ -696,9 +696,9 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
         snippet_texts = []
         if hasattr(res1, "web") and res1.web:
             for item in res1.web:
-                u = getattr(item, "url", "")
-                t = getattr(item, "title", "")
-                s = getattr(item, "description", "")
+                u = str(getattr(item, "url", "") or "")
+                t = str(getattr(item, "title", "") or "")
+                s = str(getattr(item, "description", "") or "")
                 web_results.append({"title": t, "url": u, "snippet": s})
                 snippet_texts.append(f"{t} {s}")
 
@@ -777,25 +777,22 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
         if any(g in primary_topic.lower() for g in generic_topic_markers):
             primary_topic = clean_name  # e.g. "Dev Raiyani" → forces person-specific peer search
 
-        # 4 consolidated lean queries (guarantees staying under Firecrawl RPM clamp)
+        # Lean queries (stays safely under Firecrawl free tier RPM limit)
         queries_own = [
-            f"{creator_name} site:instagram.com/reel OR site:youtube.com/watch OR site:youtube.com/shorts"
+            f"{creator_name} site:instagram.com/reel OR site:youtube.com/watch"
         ]
-        if handle:
-            queries_own.append(f"{handle} reel OR video site:instagram.com OR site:youtube.com")
 
         # Target real domain creators, excluding AI tool promos and generic SaaS walkthroughs
         peer_queries = [
-            f'"{clean_name}" competitor OR similar "{primary_topic}" site:youtube.com/watch -top10 -compilation -software -saas -tool -generator -walkthrough',
-            f'"{primary_topic}" popular creator review OR breakdown site:youtube.com/watch -top10 -compilation -course -ai -generator'
+            f'"{clean_name}" competitor OR similar "{primary_topic}" site:youtube.com/watch -top10 -compilation -software -saas'
         ]
 
         queries_negative = [
-            f"{creator_name} criticism controversy complaints review feedback reddit"
+            f"{creator_name} criticism complaints review feedback reddit"
         ]
 
         queries_trending = [
-            f"{primary_topic} viral trending topic controversy debate 2025 reddit OR youtube"
+            f"{primary_topic} viral trending topic debate reddit OR youtube"
         ]
 
         def _exec_search(q: str, limit: int = 4):
@@ -830,9 +827,9 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
             if not res or not hasattr(res, "web") or not res.web:
                 continue
             for item in res.web:
-                u = getattr(item, "url", "")
-                t = getattr(item, "title", "")
-                s = getattr(item, "description", "")
+                u = str(getattr(item, "url", "") or "")
+                t = str(getattr(item, "title", "") or "")
+                s = str(getattr(item, "description", "") or "")
 
                 if category == "own":
                     if "/reel/" in u or "/p/" in u or "/tv/" in u:
@@ -1637,7 +1634,7 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
     n_lines = [f"- [{v.get('platform')}] {v.get('title')}: {v.get('url')}" for v in niche_vids]
     n_text = "\n".join(n_lines) if n_lines else f"Viral videos and reels in {detected_niche} by other creators."
 
-    snippets = [f"- [{r.get('title', '')}]: {r.get('snippet', '')[:120]}" for r in raw_results[:4]]
+    snippets = [f"- [{r.get('title') or ''}]: {(r.get('snippet') or '')[:120]}" for r in raw_results[:4]]
     research_text = "\n".join(snippets) if snippets else "No external search snippets."
 
     # 3 & 4 & 6. Parallel Execution of Call A, Call B, and Call D (Zero mutual dependencies)
@@ -1667,7 +1664,7 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
 
     neg_context = ""
     if negative_snippets:
-        neg_lines = [f"  - [{n.get('title', '')}]: {n.get('snippet', '')[:140]}" for n in negative_snippets[:4]]
+        neg_lines = [f"  - [{n.get('title') or ''}]: {(n.get('snippet') or '')[:140]}" for n in negative_snippets[:4]]
         neg_context = (
             "<untrusted_context type=\"viewer_feedback_snippets\">\n"
             + "\n".join(neg_lines)
@@ -1766,13 +1763,13 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
     # Discovered Live Trends & Community Debates from Query 5
     trending_context = ""
     if trending_snippets:
-        t_lines = [f"  - [{t.get('title', '')}]: {t.get('snippet', '')[:140]}" for t in trending_snippets[:4]]
+        t_lines = [f"  - [{t.get('title') or ''}]: {(t.get('snippet') or '')[:140]}" for t in trending_snippets[:4]]
         trending_context = "LIVE DISCOVERED NICHE TOPICS, CONTROVERSIES & DEBATES:\n" + "\n".join(t_lines) + "\n\n"
 
     # Audience Complaints & Sentiment from Query 4
     complaints_context = ""
     if negative_snippets:
-        c_lines = [f"  - [{n.get('title', '')}]: {n.get('snippet', '')[:140]}" for n in negative_snippets[:3]]
+        c_lines = [f"  - [{n.get('title') or ''}]: {(n.get('snippet') or '')[:140]}" for n in negative_snippets[:3]]
         complaints_context = "AUDIENCE COMPLAINTS & VIEWER FATIGUE POINTS IN THIS NICHE:\n" + "\n".join(c_lines) + "\n\n"
 
     # Memory continuity
