@@ -234,7 +234,6 @@ def resolve_reference_video(s: dict, candidate_videos: list[dict], core_niche: s
 
     # If currently assigned reference is genuinely relevant (score >= 3.0), keep it
     if cur_title and score_reference_relevance(cur_title, c_title, core_niche) >= 3.0:
-        current_ref["verified"] = True
         return current_ref
 
     # Search candidates for the highest scoring relevant match
@@ -254,7 +253,7 @@ def resolve_reference_video(s: dict, candidate_videos: list[dict], core_niche: s
             "platform": best_candidate.get("platform", "YouTube"),
             "creator": best_candidate.get("author") or best_candidate.get("channel") or comp_target or "Niche Benchmark",
             "why_reference": f"Demonstrates proven {core_niche} format and viewer retention pacing.",
-            "verified": True
+            "verified": bool(best_candidate.get("verified", False))
         }
 
     # If no crawled video is specifically about this concept, build authoritative benchmark search
@@ -266,7 +265,7 @@ def resolve_reference_video(s: dict, candidate_videos: list[dict], core_niche: s
         "platform": "YouTube",
         "creator": benchmark_creator,
         "why_reference": f"Direct format benchmark against {benchmark_creator} category retention pacing.",
-        "verified": True
+        "verified": False
     }
 
 
@@ -1303,7 +1302,7 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                 "target_audience_appeal": f"Addresses {primary_age} viewers who are cynical about paid influencer praise.",
                 "audience_sentiment_reaction": "Relief and intense validation that someone called out the deceptive industry standard.",
                 "benchmark_differentiation": f"Shows unedited real data while {comp_target or 'competitors'} play it safe for brand deals.",
-                "reference_video": {"title": f"{comp_target or 'Category'} Transparency Benchmark", "url": f"https://www.youtube.com/results?search_query={requests.utils.quote((comp_target or core_niche) + ' transparency review')}", "platform": "YouTube", "creator": comp_target or "Benchmark", "verified": True},
+                "reference_video": {"title": f"{comp_target or 'Category'} Transparency Benchmark", "url": f"https://www.youtube.com/results?search_query={requests.utils.quote((comp_target or core_niche) + ' transparency review')}", "platform": "YouTube", "creator": comp_target or "Benchmark", "verified": False},
                 "candidate_hooks": [
                     {"sid": "S1", "archetype": "Incident / Stakes", "text": f"I bought the exact top-rated {core_niche} product everyone recommends. It failed in 10 minutes.", "hook_technique": "Names immediate product failure with visceral speed."},
                     {"sid": "S2", "archetype": "Curiosity Gap", "text": f"The #1 rule in {core_niche} is actually a marketing lie invented by sponsors.", "hook_technique": "Open-loop mystery that challenges common wisdom."},
@@ -1320,7 +1319,7 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                 "target_audience_appeal": f"Inspires {primary_age} creators and fans who cannot afford overpriced gear.",
                 "audience_sentiment_reaction": "Fascination and cheering for the underdog budget option to win.",
                 "benchmark_differentiation": f"Puts luxury and budget head-to-head with blind tests unlike {comp_target or 'rivals'}.",
-                "reference_video": {"title": f"{comp_target or 'Category'} Budget Benchmark", "url": f"https://www.youtube.com/results?search_query={requests.utils.quote((comp_target or core_niche) + ' budget vs expensive')}", "platform": "YouTube", "creator": comp_target or "Benchmark", "verified": True},
+                "reference_video": {"title": f"{comp_target or 'Category'} Budget Benchmark", "url": f"https://www.youtube.com/results?search_query={requests.utils.quote((comp_target or core_niche) + ' budget vs expensive')}", "platform": "YouTube", "creator": comp_target or "Benchmark", "verified": False},
                 "candidate_hooks": [
                     {"sid": "S1", "text": f"I put a ₹50,000 setup against a ₹500 thrift item in {core_niche}.", "archetype": "Incident / Stakes", "hook_technique": "Concrete price contrast stops the scroll instantly."},
                     {"sid": "S2", "text": f"Can a blindfolded expert tell the difference between these two {core_niche} outputs?", "archetype": "Curiosity Gap", "hook_technique": "Gamified test hook with viewer participation."},
@@ -1337,7 +1336,7 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                 "target_audience_appeal": f"Engages {audience_vibe} who follow ongoing community debates.",
                 "audience_sentiment_reaction": "Heated debate and intense comment participation defending opposing sides.",
                 "benchmark_differentiation": f"Breaks down receipts, timeline, and forensic proof instead of emotional gossip.",
-                "reference_video": {"title": f"{comp_target or 'Category'} Investigation Benchmark", "url": f"https://www.youtube.com/results?search_query={requests.utils.quote((comp_target or core_niche) + ' investigation breakdown')}", "platform": "YouTube", "creator": comp_target or "Benchmark", "verified": True},
+                "reference_video": {"title": f"{comp_target or 'Category'} Investigation Benchmark", "url": f"https://www.youtube.com/results?search_query={requests.utils.quote((comp_target or core_niche) + ' investigation breakdown')}", "platform": "YouTube", "creator": comp_target or "Benchmark", "verified": False},
                 "candidate_hooks": [
                     {"sid": "S1", "text": f"At 2:14 AM yesterday, the entire {core_niche} community blew up over this.", "archetype": "Incident / Stakes", "hook_technique": "Timestamp urgency implies breaking real-time news."},
                     {"sid": "S2", "text": f"Everyone missed the single detail that proves who was lying in {core_niche}.", "archetype": "Curiosity Gap", "hook_technique": "Detective-style micro-clue hook."},
@@ -1354,7 +1353,7 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                 "target_audience_appeal": f"Captivates {primary_age} viewers with authentic physical and mental hurdles.",
                 "audience_sentiment_reaction": "Nail-biting suspense and admiration for genuine commitment.",
                 "benchmark_differentiation": f"Zero cuts, real fatigue, and true struggle vs {comp_target or 'competitors'}' glossed-over clips.",
-                "reference_video": {"title": f"{comp_target or 'Category'} Endurance Benchmark", "url": f"https://www.youtube.com/results?search_query={requests.utils.quote((comp_target or core_niche) + ' 24 hour challenge')}", "platform": "YouTube", "creator": comp_target or "Benchmark", "verified": True},
+                "reference_video": {"title": f"{comp_target or 'Category'} Endurance Benchmark", "url": f"https://www.youtube.com/results?search_query={requests.utils.quote((comp_target or core_niche) + ' 24 hour challenge')}", "platform": "YouTube", "creator": comp_target or "Benchmark", "verified": False},
                 "candidate_hooks": [
                     {"sid": "S1", "text": f"I have 24 hours to finish this {core_niche} milestone or delete this channel.", "archetype": "Incident / Stakes", "hook_technique": "Ultimate personal stakes with irreversible consequence."},
                     {"sid": "S2", "text": f"Hour 17 of {core_niche}: My gear gave up, and we are 40km from civilization.", "archetype": "Curiosity Gap", "hook_technique": "Mid-crisis cold open hooks attention instantly."},
@@ -1371,7 +1370,7 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
                 "target_audience_appeal": f"Perfect for {primary_age} beginners and enthusiasts eager for practical progress.",
                 "audience_sentiment_reaction": "Mind-blown realization and eagerness to share the video with friends.",
                 "benchmark_differentiation": f"Cuts straight to actionable mechanics without 15 minutes of sponsor fluff.",
-                "reference_video": {"title": f"{comp_target or 'Category'} Mastery Benchmark", "url": f"https://www.youtube.com/results?search_query={requests.utils.quote((comp_target or core_niche) + ' common mistakes debunked')}", "platform": "YouTube", "creator": comp_target or "Benchmark", "verified": True},
+                "reference_video": {"title": f"{comp_target or 'Category'} Mastery Benchmark", "url": f"https://www.youtube.com/results?search_query={requests.utils.quote((comp_target or core_niche) + ' common mistakes debunked')}", "platform": "YouTube", "creator": comp_target or "Benchmark", "verified": False},
                 "candidate_hooks": [
                     {"sid": "S1", "text": f"If your {core_niche} routine takes more than 30 minutes, you are wasting 80% of your time.", "archetype": "Incident / Stakes", "hook_technique": "Specific quantitative challenge stops the scroll."},
                     {"sid": "S2", "text": f"The hidden setting in {core_niche} that instantly fixes your results.", "archetype": "Curiosity Gap", "hook_technique": "Quick-fix insider secret triggers instant curiosity."},
