@@ -1078,48 +1078,13 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
     rc["est_instagram_reel_rate"] = rc.get("est_instagram_reel_rate") or ig_rate
     rc["est_story_rate"]          = rc.get("est_story_rate")          or story_rate
 
-    # ── Niche-specific brand affinity (not generic placeholders) ────────────
-    _brand_map = {
-        "finance":   {
-            "niches": ["Fintech & Investments", "Banking & Credit Cards", "Personal Finance Apps", "Insurance & Wealth Management"],
-            "sponsors": ["Groww", "Zerodha", "CRED", "INDmoney", "Upstox", "Paytm Money", "HDFC Bank", "NordVPN (data security)"]
-        },
-        "tech": {
-            "niches": ["Consumer Electronics", "Mobile & Laptops", "Software & SaaS", "Audio & Peripherals"],
-            "sponsors": ["OnePlus", "Asus ROG", "Samsung", "Apple", "Intel", "Boat Lifestyle", "JBL", "Razer", "Logitech", "NordVPN"]
-        },
-        "fitness": {
-            "niches": ["Sports Nutrition & Supplements", "Activewear & Gym Gear", "Fitness Apps & Wearables", "Health & Wellness"],
-            "sponsors": ["MyProtein", "Optimum Nutrition", "Cult.fit", "Noise (wearables)", "Decathlon", "Puma", "Nike", "Healthkart"]
-        },
-        "music": {
-            "niches": ["DJ Gear & Pro Audio", "Music Streaming", "Lifestyle & Nightlife", "Clothing & Streetwear"],
-            "sponsors": ["Pioneer DJ", "Native Instruments", "Denon DJ", "Spotify", "JBL", "Boat Lifestyle", "Sennheiser", "Audio-Technica", "Puma", "Red Bull"]
-        },
-        "lifestyle": {
-            "niches": ["Fashion & Apparel", "Luxury & Travel", "Beauty & Personal Care", "Food & D2C Brands"],
-            "sponsors": ["Myntra", "Nykaa", "MamaEarth", "Levi's", "H&M", "Airbnb", "MakeMyTrip", "Tata CLiQ Luxury"]
-        },
-        "gaming": {
-            "niches": ["Gaming Peripherals", "Mobile Gaming", "Streaming Tech", "Energy Drinks & Lifestyle"],
-            "sponsors": ["Asus ROG", "Razer", "HyperX", "Logitech G", "Red Bull", "NordVPN", "Discord Nitro", "Steam"]
-        },
-        "general": {
-            "niches": ["Digital Lifestyle Brands", "Consumer Apps", "D2C Products", "Personal Care"],
-            "sponsors": ["Amazon", "Flipkart", "Boat Lifestyle", "Lenskart", "Swiggy/Zomato", "CRED", "Heads Up For Tails"]
-        }
-    }
-
-    brand_data = _brand_map.get(niche_tier, _brand_map["general"])
+    # Sponsors and brand affinity: strictly grounded, zero fabricated brand lists
     if not rc.get("brand_affinity_niches"):
-        rc["brand_affinity_niches"] = brand_data["niches"]
+        rc["brand_affinity_niches"] = []
     if not rc.get("past_or_likely_sponsors"):
-        rc["past_or_likely_sponsors"] = brand_data["sponsors"]
+        rc["past_or_likely_sponsors"] = []
     if not rc.get("why_brands_partner"):
-        rc["why_brands_partner"] = (
-            f"Highly engaged niche-specific audience with strong {niche_tier.title()} purchase intent, "
-            f"authentic creator endorsement credibility, and reliable view delivery per upload."
-        )
+        rc["why_brands_partner"] = ""
 
     # Assign to BOTH keys so frontend always finds it regardless of which key it reads
     intel["rate_card_and_sponsors"] = rc
