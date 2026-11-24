@@ -286,15 +286,15 @@ def _fallback_piracy(competitor_name: str, niche: str) -> dict:
         },
         {
             "competitor_did": f"Solo {niche} vlog",
-            "your_upgrade_title": f"I made a {niche} video with zero budget vs ₹50,000 budget",
+            "your_upgrade_title": f"I made a {niche} video with zero budget vs professional studio setup",
             "why_yours_wins": "Budget contrast creates relatable vs aspirational tension simultaneously.",
             "upgrade_angle": "More relatable",
             "candidate_hooks": [
-                {"sid": "S1", "text": f"₹0 vs ₹50,000 {niche} setup. You decide the winner."},
+                {"sid": "S1", "text": f"Zero budget vs pro studio {niche} setup. You decide the winner."},
                 {"sid": "S2", "text": f"I made a {niche} video with just my phone."},
                 {"sid": "S3", "text": f"Zero budget {niche} vs professional setup — same result?"},
                 {"sid": "S4", "text": f"Does budget actually matter in {niche}? I tested it."},
-                {"sid": "S5", "text": f"Look at these side-by-side frames — you won’t guess which cost ₹0."}
+                {"sid": "S5", "text": f"Look at these side-by-side frames — you won’t guess which cost zero."}
             ],
             "estimated_views": "🔥 1M - 3M"
         },
