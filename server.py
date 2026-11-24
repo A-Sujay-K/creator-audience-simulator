@@ -696,4 +696,5 @@ if __name__ == "__main__":
     import uvicorn
     # In production, reload must be False
     is_dev = os.getenv("ENV", "development").lower() == "development"
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=is_dev)
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("server:app", host="0.0.0.0", port=port, reload=is_dev)
