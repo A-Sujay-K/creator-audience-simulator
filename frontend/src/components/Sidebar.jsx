@@ -46,9 +46,6 @@ export default function Sidebar({
               <span className="font-heading font-extrabold text-sm tracking-tight text-[var(--text-display)]">
                 HookLab
               </span>
-              <span className="font-mono text-[9px] px-1.5 py-0.2 rounded font-bold bg-[var(--brand-volt)]/15 text-[var(--brand-volt)] border border-[var(--brand-volt)]/30">
-                PRO
-              </span>
             </div>
             <div className="text-[10px] text-[var(--text-dim)] font-mono">Control Room OS</div>
           </div>

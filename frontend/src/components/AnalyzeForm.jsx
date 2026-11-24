@@ -23,7 +23,7 @@ export default function AnalyzeForm({
       <div className="space-y-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--border-hairline)] bg-[var(--bg-subtle)] text-xs font-mono text-[var(--text-secondary)]">
           <span className="w-2 h-2 rounded-full bg-[var(--brand-volt)] animate-pulse"></span>
-          <span>HookLab Intelligence Deck v2.4</span>
+          <span>HookLab Creator Intelligence</span>
         </div>
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-[var(--text-display)] leading-[1.1]">
           Decouple Viral Retention Mechanics. <br className="hidden sm:inline" />
@@ -67,7 +67,7 @@ export default function AnalyzeForm({
           <div className="flex items-center gap-3">
             <div className="text-[11px] font-mono px-3 py-1 rounded-full border border-[var(--border-hairline)] bg-[var(--bg-subtle)] flex items-center gap-1.5 text-[var(--text-secondary)]">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-volt)]"></span>
-              <span>Autonomous Crawl</span>
+              <span>Channel Analysis</span>
             </div>
             <HelpTooltip
               title="How Creator Analysis Works"
@@ -139,7 +139,7 @@ export default function AnalyzeForm({
         {/* Preset Shelf */}
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <span className="text-[10px] font-mono uppercase text-[var(--text-dim)] font-bold mr-1">
-            Verified Benchmarks:
+            Example Creators:
           </span>
           {presetCreators.map((p, pIdx) => (
             <button

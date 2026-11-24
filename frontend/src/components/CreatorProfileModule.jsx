@@ -278,7 +278,7 @@ export default function CreatorProfileModule({
                 <h3 className="font-heading font-extrabold text-base text-[var(--text-display)]">
                   Top Performing Uploads ({creatorVideos.length} Deconstructed)
                 </h3>
-                <ProvenanceBadge type="verified" label="VERIFIED UPLOADS" size="xs" />
+                <ProvenanceBadge type="verified" label="PUBLIC UPLOADS" size="xs" />
               </div>
               <p className="text-xs text-[var(--text-muted)] mt-0.5">
                 Inspect proven 3-second opening hooks and why viewer retention held
