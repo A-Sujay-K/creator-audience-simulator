@@ -442,12 +442,15 @@ def api_analyze(req: AnalyzeRequest, request: Request, authorization: Optional[s
             "target_intel": intel,
         }
 
-        # Auto-save to profile & Bridge store
+        # Auto-save to profile & Bridge store (graceful fallback if profile not initialized)
         if active_user:
-            save_intel(active_user, creator, t_niche, intel, comparison_creator=comp_creator)
-            push_summary_to_bridge(active_user, creator, intel)
-            save_clone_run(active_user, creator, dossier["style_card"], dossier["blueprints"], dossier["piracy_ideas"])
-            save_to_bridge_user_store(active_user, creator, intel, copy_result, comparison_creator=comp_creator)
+            try:
+                save_intel(active_user, creator, t_niche, intel, comparison_creator=comp_creator)
+                push_summary_to_bridge(active_user, creator, intel)
+                save_clone_run(active_user, creator, dossier["style_card"], dossier["blueprints"], dossier["piracy_ideas"])
+                save_to_bridge_user_store(active_user, creator, intel, copy_result, comparison_creator=comp_creator)
+            except Exception as save_err:
+                logger.warning(f"Failed to auto-save intelligence for {active_user}: {save_err}")
             
             # Master Intelligence Dossier is strictly archived for verified Admin ONLY (never for normal users)
             if is_admin:
@@ -469,6 +472,12 @@ def api_analyze(req: AnalyzeRequest, request: Request, authorization: Optional[s
             "prev_findings": prev_findings
         }
     except Exception as e:
+        err_msg = str(e).lower()
+        if "invalid_api_key" in err_msg or "authentication" in err_msg or "api key" in err_msg:
+            raise HTTPException(
+                status_code=503,
+                detail="GROQ_API_KEY is not configured or is invalid in your hosting environment variables. Please check your Render Dashboard -> Environment tab."
+            )
         raise _safe_500(e, "creator intelligence synthesis")
 
 @app.post("/api/hooks/simulate")

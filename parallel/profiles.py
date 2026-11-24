@@ -223,9 +223,12 @@ def get_all_usernames() -> list[str]:
 def save_intel(username: str, creator_name: str, niche: str, intel: dict, comparison_creator: str = "") -> str:
     """
     Save a creator intelligence result to the user's profile.
-    Returns the search ID for reference.
+    Returns the search ID for reference, or empty string if profile does not exist.
     """
-    profile = _load(username)
+    try:
+        profile = _load(username)
+    except ProfileNotFound:
+        return ""
     search_id = str(uuid.uuid4())[:8]
 
     # Check if this creator was already searched → update, don't duplicate
@@ -440,8 +443,11 @@ def get_bridge_user_store(username: str, creator_name: str = None) -> list | dic
 
 def save_clone_run(username: str, target_creator: str, style_card: dict,
                    blueprints: list, piracy_ideas: list) -> str:
-    """Save a style-copy / piracy run to the user's profile."""
-    profile = _load(username)
+    """Save a style-copy / piracy run to the user's profile. Returns empty string if profile missing."""
+    try:
+        profile = _load(username)
+    except ProfileNotFound:
+        return ""
     run_id = str(uuid.uuid4())[:8]
     entry = {
         "id": run_id,
