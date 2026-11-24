@@ -15,7 +15,7 @@ import logging
 from fastapi import FastAPI, HTTPException, Query, Header, Request, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, HTMLResponse
 from pydantic import BaseModel
 
 logger = logging.getLogger("parallel.server")
@@ -682,6 +682,10 @@ def api_send_hook_study(req: HookStudyRequest, request: Request, user: dict = De
 assets_dir = _DIST_DIR / "assets"
 if assets_dir.exists():
     app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+
+@app.get("/google8899b53cae8190b7.html")
+def google_site_verification():
+    return HTMLResponse("google-site-verification: google8899b53cae8190b7.html\n")
 
 @app.get("/{full_path:path}")
 def serve_spa(full_path: str):
