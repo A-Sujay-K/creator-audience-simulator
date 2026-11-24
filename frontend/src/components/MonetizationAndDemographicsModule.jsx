@@ -185,68 +185,73 @@ export default function MonetizationAndDemographicsModule({
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-          {/* Geographic Breakdown (100% normalized with Other Regions) */}
-          <div className="p-5 rounded-xl bg-[var(--bg-card-inner)] border border-[var(--border-hairline)] space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase font-bold tracking-wider">
-                Top Geographic Countries (100% Summed)
-              </span>
-              <span className="text-[10px] font-mono text-emerald-400 font-bold">100% Total</span>
+        {demographics.status === 'UNAVAILABLE' || !normalizedCountries.length ? (
+          <div className="p-8 text-center rounded-xl bg-[var(--bg-card-inner)] border border-[var(--border-hairline)] space-y-2">
+            <Globe className="w-8 h-8 mx-auto text-[var(--text-dim)]" />
+            <p className="text-sm font-semibold text-[var(--text-secondary)]">Demographics Telemetry Unavailable</p>
+            <p className="text-xs text-[var(--text-muted)]">
+              {demographics.reason || 'Audience demographics require authenticated channel owner OAuth (private YouTube Analytics data).'}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+            {/* Geographic Breakdown (100% normalized with Other Regions) */}
+            <div className="p-5 rounded-xl bg-[var(--bg-card-inner)] border border-[var(--border-hairline)] space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase font-bold tracking-wider">
+                  Top Geographic Countries (100% Summed)
+                </span>
+                <span className="text-[10px] font-mono text-emerald-400 font-bold">100% Total</span>
+              </div>
+
+              <div className="space-y-3">
+                {normalizedCountries.map((c, cIdx) => (
+                  <div key={cIdx} className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-semibold text-[var(--text-primary)]">{c.country}</span>
+                      <span className="font-mono font-bold text-[var(--brand-volt)]">{c.share}</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full overflow-hidden bg-[var(--bg-card)] border border-[var(--border-hairline)]">
+                      <div
+                        className={`h-full rounded-full ${
+                          c.isRemainder ? 'bg-zinc-600' : 'bg-gradient-to-r from-indigo-500 to-[var(--brand-volt)]'
+                        }`}
+                        style={{ width: `${c.percent}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="space-y-3">
-              {normalizedCountries.map((c, cIdx) => (
-                <div key={cIdx} className="space-y-1.5">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-semibold text-[var(--text-primary)]">{c.country}</span>
-                    <span className="font-mono font-bold text-[var(--brand-volt)]">{c.share}</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full overflow-hidden bg-[var(--bg-card)] border border-[var(--border-hairline)]">
-                    <div
-                      className={`h-full rounded-full ${
-                        c.isRemainder ? 'bg-zinc-600' : 'bg-gradient-to-r from-indigo-500 to-[var(--brand-volt)]'
-                      }`}
-                      style={{ width: `${c.percent}%` }}
-                    />
-                  </div>
+            {/* Age & Gender Segmentation */}
+            <div className="space-y-4">
+              <div className="p-5 rounded-xl bg-[var(--bg-card-inner)] border border-[var(--border-hairline)] space-y-2">
+                <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase font-bold tracking-wider block">
+                  Primary Age Cohort:
+                </span>
+                <div className="text-2xl font-black text-[var(--text-display)] telemetry-num">
+                  {demographics.primary_age || 'Unavailable'}
                 </div>
-              ))}
-            </div>
-          </div>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Age cohort telemetry from channel analytics
+                </p>
+              </div>
 
-          {/* Age & Gender Segmentation */}
-          <div className="space-y-4">
-            <div className="p-5 rounded-xl bg-[var(--bg-card-inner)] border border-[var(--border-hairline)] space-y-2">
-              <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase font-bold tracking-wider block">
-                Primary Age Cohort:
-              </span>
-              <div className="text-2xl font-black text-[var(--text-display)] telemetry-num">
-                {demographics.primary_age || '18-24 (Gen Z)'}
-              </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Prime commercial buying demographic with peak digital consumption
-              </p>
-            </div>
-
-            <div className="p-5 rounded-xl bg-[var(--bg-card-inner)] border border-[var(--border-hairline)] space-y-2">
-              <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase font-bold tracking-wider block">
-                Audience Gender Split:
-              </span>
-              <div className="text-2xl font-black text-cyan-400 telemetry-num">
-                {demographics.gender_skew || '76% Male / 24% Female'}
-              </div>
-              <div className="w-full h-2 rounded-full overflow-hidden bg-[var(--bg-card)] border border-[var(--border-hairline)] flex">
-                <div className="bg-cyan-500 h-full w-[76%]" />
-                <div className="bg-pink-500 h-full w-[24%]" />
-              </div>
-              <div className="text-[10px] font-mono text-[var(--text-dim)] flex justify-between">
-                <span>Male</span>
-                <span>Female</span>
+              <div className="p-5 rounded-xl bg-[var(--bg-card-inner)] border border-[var(--border-hairline)] space-y-2">
+                <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase font-bold tracking-wider block">
+                  Audience Gender Split:
+                </span>
+                <div className="text-2xl font-black text-cyan-400 telemetry-num">
+                  {demographics.gender_skew || 'Unavailable'}
+                </div>
+                <div className="text-[10px] text-[var(--text-muted)]">
+                  Gender distribution telemetry from channel analytics
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ─── 03. AUDIENCE SIZE & AD RATES (INTERACTIVE SIMULATOR) ────────── */}

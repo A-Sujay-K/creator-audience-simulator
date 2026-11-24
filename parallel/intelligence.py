@@ -1090,34 +1090,15 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
     intel["rate_card_and_sponsors"] = rc
     intel["commercial_rate_card"]   = rc
 
-    # Demographics Grounded in Detected Location
-    demo = intel.get("audience_demographics") or {}
-    if not demo.get("top_countries"):
-        if is_india:
-            demo["top_countries"] = [
-                {"country": "India", "share": "64%"},
-                {"country": "United Arab Emirates", "share": "8%"},
-                {"country": "United States", "share": "6%"},
-                {"country": "United Kingdom", "share": "4%"}
-            ]
-        elif "United Kingdom" in profile.get("location", ""):
-            demo["top_countries"] = [
-                {"country": "United Kingdom", "share": "52%"},
-                {"country": "United States", "share": "22%"},
-                {"country": "Ireland", "share": "8%"},
-                {"country": "Australia", "share": "5%"}
-            ]
-        else:
-            demo["top_countries"] = [
-                {"country": "United States", "share": "48%"},
-                {"country": "United Kingdom", "share": "14%"},
-                {"country": "Canada", "share": "9%"},
-                {"country": "Australia", "share": "6%"}
-            ]
-    if not demo.get("primary_age"):
-        demo["primary_age"] = "18-24 (Gen Z)"
-    if not demo.get("gender_skew"):
-        demo["gender_skew"] = "68% Male / 32% Female"
+    # Audience Demographics: Private YouTube Analytics data.
+    # When channel owner OAuth is absent, demographics are strictly marked UNAVAILABLE. Zero simulated numbers.
+    demo = {
+        "status": "UNAVAILABLE",
+        "reason": "Audience demographics require authenticated channel owner OAuth (private YouTube Analytics data).",
+        "top_countries": [],
+        "primary_age": None,
+        "gender_skew": None
+    }
     intel["audience_demographics"] = demo
 
     # ── Creator's OWN Videos Integrity Check ─────────────────────────────────
@@ -1300,8 +1281,8 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
     # Content Suggestions: GUARANTEE PLAYABLE REFERENCE VIDEO PER IDEA & HYPER-GROUNDED 4-HOOK ARCHETYPES
     suggestions = intel.get("content_suggestions") or []
     demo = intel.get("audience_demographics") or {}
-    primary_age = demo.get("primary_age", "18-24 (Gen Z)")
-    audience_vibe = profile.get("audience_vibe", "Passionate, mobile-first community.")
+    primary_age = demo.get("primary_age") or "General Audience"
+    audience_vibe = profile.get("audience_vibe", "Passionate community.")
     core_niche = profile.get("core_niche", detected_niche or "Digital Content")
     comp_target = comparison_creator.strip() if comparison_creator else ""
 
@@ -1690,8 +1671,8 @@ def generate_creator_intelligence(creator_name: str, niche: str = "", previous_f
     demo = part_a.get("audience_demographics", {}) if isinstance(part_a, dict) else {}
     tone = prof.get("tone_and_style", f"Engaging, high-retention delivery tailored for {detected_niche}.")
     audience_vibe = prof.get("audience_vibe", f"Passionate {detected_niche} community.")
-    primary_age = demo.get("primary_age", "18-24 (Gen Z)")
-    gender_skew = demo.get("gender_skew", "Balanced")
+    primary_age = demo.get("primary_age") or "General Audience"
+    gender_skew = demo.get("gender_skew") or "Not Specified"
     location = prof.get("location", "Global")
 
     audience_context = (
