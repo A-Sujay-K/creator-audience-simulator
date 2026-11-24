@@ -758,13 +758,9 @@ def search_creator_footprint(creator_name: str, niche: str = "") -> tuple[list[d
             # Combine real video titles into a rich text signal for niche re-detection
             yt_titles_text = " ".join(v.get("title", "") for v in yt_direct_videos).lower()
             # Re-evaluate niche using real video titles — overrides snippet-based guess if confident
-            if not niche.strip():  # Only upgrade if user didn't explicitly specify a niche
-                from .suggestions import infer_specific_niche
-                yt_derived_niche = infer_specific_niche(clean_name, context=yt_titles_text)
-                # Only upgrade if the new signal is more specific than the current detection
-                generic_markers = ["digital content", "visual storytelling", "content creation"]
-                if any(g in detected_niche.lower() for g in generic_markers) or not detected_niche:
-                    detected_niche = yt_derived_niche
+            if not niche.strip():  # If user did not supply niche, pass Unclassified
+                if not detected_niche or any(g in detected_niche.lower() for g in ["digital content", "visual storytelling", "content creation"]):
+                    detected_niche = "Unclassified"
             # Add real YT videos to creator_videos (deduplicated later)
             for v in yt_direct_videos:
                 if not is_generic_or_compilation(v.get("title", ""), v.get("url", ""), detected_niche):

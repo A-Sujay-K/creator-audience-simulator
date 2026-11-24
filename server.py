@@ -417,7 +417,7 @@ def api_analyze(req: AnalyzeRequest, request: Request, authorization: Optional[s
 
         t_profile = intel.get("creator_profile", {})
         t_raw_niche = t_profile.get("core_niche", niche)
-        t_niche = t_raw_niche if t_raw_niche and "digital content" not in t_raw_niche.lower() else infer_specific_niche(creator)
+        t_niche = t_raw_niche if t_raw_niche and "digital content" not in t_raw_niche.lower() else "Unclassified"
         try:
             register_analyzed_creator(creator, t_niche)
         except Exception as _e:
