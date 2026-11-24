@@ -2,28 +2,30 @@
 # Pinned for reproducible deployments (Python 3.11+)
 
 # Web Framework & ASGI
-fastapi==0.142.2
-starlette==1.7.0
-uvicorn==0.54.0
-pydantic==2.13.5
-python-multipart==0.0.32
+fastapi>=0.115.0
+starlette>=0.38.0
+uvicorn>=0.30.0
+pydantic>=2.8.0
+python-multipart>=0.0.9
 
 # External Services & APIs
-requests==2.34.2
-groq==1.7.0
-firecrawl-py==4.46.2
-youtube-transcript-api==1.2.4
+requests>=2.32.0
+groq>=0.11.0
+firecrawl-py>=1.0.0
+youtube-transcript-api>=0.6.2
 
 # Data Processing & Calibration Engine
-pandas==3.0.6
-numpy==2.4.6
-scikit-learn==1.9.1
-scipy==1.17.1
+pandas>=2.2.0
+numpy>=1.26.0
+scikit-learn>=1.5.0
+scipy>=1.14.0
+PyYAML>=6.0.1
+plotly>=5.24.0
 
 # Environment & Config
-python-dotenv==1.2.4
-certifi==2026.7.22
+python-dotenv>=1.0.1
+certifi>=2024.7.4
 
 # Testing & Quality
-pytest==9.1.1
-httpx==0.28.1
+pytest>=8.3.0
+httpx>=0.27.0
