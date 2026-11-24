@@ -1013,69 +1013,14 @@ def _normalize_intel(intel: dict, creator_name: str, avatar_url: str, creator_vi
     else:
         niche_tier = "general"
 
-    # ── Per-tier, per-niche rate calculation (USD base, then INR at 83x) ───
-    # Rates reflect actual India influencer market + YouTube Brand Partnership norms
-    _usd_to_inr = 83
-
-    def _fmt(usd_min: int, usd_max: int) -> str:
-        """Format as '$X,XXX - $Y,YYY / ₹A.BL - ₹C.DCr' ready for the USD/INR toggle."""
-        inr_min = usd_min * _usd_to_inr
-        inr_max = usd_max * _usd_to_inr
-
-        def _inr_str(v: int) -> str:
-            if v >= 10_000_000:
-                return f"₹{v / 10_000_000:.1f}Cr"
-            if v >= 100_000:
-                return f"₹{v / 100_000:.0f}L"
-            if v >= 1_000:
-                return f"₹{v / 1_000:.0f}K"
-            return f"₹{v}"
-
-        def _usd_str(v: int) -> str:
-            if v >= 1_000_000:
-                return f"${v / 1_000_000:.1f}M"
-            if v >= 1_000:
-                return f"${v:,}"
-            return f"${v}"
-
-        return f"{_usd_str(usd_min)} - {_usd_str(usd_max)} / {_inr_str(inr_min)} - {_inr_str(inr_max)}"
-
-    # Niche multipliers applied on top of tier base rates
-    _niche_mult = {
-        "finance": 1.8,
-        "tech": 1.4,
-        "fitness": 1.2,
-        "lifestyle": 1.1,
-        "music": 0.75,
-        "gaming": 0.65,
-        "general": 1.0,
-    }
-    nm = _niche_mult.get(niche_tier, 1.0)
-
-    if "Mega" in tier_label:
-        yt_base = (50_000, 150_000)
-        ig_base = (20_000, 60_000)
-        st_base = (5_000, 15_000)
-    elif "Macro" in tier_label:
-        yt_base = (10_000, 35_000)
-        ig_base = (4_000, 12_000)
-        st_base = (1_000, 3_500)
-    elif "Mid" in tier_label:
-        yt_base = (2_000, 8_000)
-        ig_base = (800, 3_500)
-        st_base = (300, 1_000)
-    else:  # Micro (< 100K)
-        yt_base = (400, 1_500)
-        ig_base = (200, 700)
-        st_base = (100, 300)
-
-    yt_rate  = _fmt(int(yt_base[0] * nm), int(yt_base[1] * nm))
-    ig_rate  = _fmt(int(ig_base[0] * nm), int(ig_base[1] * nm))
-    story_rate = _fmt(int(st_base[0] * nm), int(st_base[1] * nm))
-
-    rc["est_youtube_rate"]        = rc.get("est_youtube_rate")        or yt_rate
-    rc["est_instagram_reel_rate"] = rc.get("est_instagram_reel_rate") or ig_rate
-    rc["est_story_rate"]          = rc.get("est_story_rate")          or story_rate
+    # Commercial rate cards: strictly ungrounded without verified ad telemetry.
+    # Zero static multiplier fallbacks (hardcoded rate calculations removed per Truth Contract).
+    if not rc.get("est_youtube_rate"):
+        rc["est_youtube_rate"] = None
+    if not rc.get("est_instagram_reel_rate"):
+        rc["est_instagram_reel_rate"] = None
+    if not rc.get("est_story_rate"):
+        rc["est_story_rate"] = None
 
     # Sponsors and brand affinity: strictly grounded, zero fabricated brand lists
     if not rc.get("brand_affinity_niches"):
